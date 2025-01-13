@@ -1,16 +1,11 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { LoadingLayout } from "@/components/LoadingLayout";
+import { useAdminAuthStore } from "@/stores/useAdminAuthStore";
 
 export default function AdminLayout() {
-  const { session, isLoading } = useAuth();
+  const { isAuthenticated } = useAdminAuthStore();
   const location = useLocation();
 
-  if (isLoading) {
-    return <LoadingLayout />;
-  }
-
-  if (!session) {
+  if (!isAuthenticated) {
     return <Navigate to="/admin/auth" state={{ from: location }} replace />;
   }
 
