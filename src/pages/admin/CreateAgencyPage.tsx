@@ -5,13 +5,12 @@ import { z } from "zod"
 import { Form } from "@/components/ui/form"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { toast } from "sonner"
+import { toast } from "@/hooks/use-toast"
 import { AgencyBasicInfo } from "@/components/admin/agencies/create/AgencyBasicInfo"
 import { AgencyAddress } from "@/components/admin/agencies/create/AgencyAddress"
 import { AgencyCustomization } from "@/components/admin/agencies/create/AgencyCustomization"
 import { useState } from "react"
 import { supabase } from "@/integrations/supabase/client"
-import type { TablesInsert } from "@/integrations/supabase/types"
 
 const formSchema = z.object({
   // Basic Info
@@ -51,9 +50,11 @@ export default function CreateAgencyPage() {
   const onSubmit = async (data: FormValues) => {
     try {
       setIsSubmitting(true)
+      console.log("Submitting data:", data)
 
-      const { data: result, error: fnError } = await supabase
-        .rpc('create_agency_user_and_profile', {
+      const { data: result, error: fnError } = await supabase.rpc(
+        'create_agency_user_and_profile',
+        {
           email: data.contact_email,
           agency_name: data.agency_name,
           agency_slug: data.slug,
@@ -62,30 +63,55 @@ export default function CreateAgencyPage() {
           address: data.address,
           city: data.city,
           postal_code: data.postal_code,
-          logo_url: data.logo_url,
+          logo_url: data.logo_url || '',
           primary_color: data.primary_color,
           secondary_color: data.secondary_color,
-        })
+        }
+      )
 
       if (fnError) {
+        console.error("Function error:", fnError)
         if (fnError.message.includes('Email already exists')) {
-          toast.error("Cet email est déjà utilisé")
+          toast({
+            title: "Erreur",
+            description: "Cet email est déjà utilisé",
+            variant: "destructive",
+          })
         } else if (fnError.message.includes('License number already exists')) {
-          toast.error("Ce numéro de licence est déjà utilisé")
+          toast({
+            title: "Erreur",
+            description: "Ce numéro de licence est déjà utilisé",
+            variant: "destructive",
+          })
         } else if (fnError.message.includes('Slug already exists')) {
-          toast.error("Ce slug est déjà utilisé")
+          toast({
+            title: "Erreur",
+            description: "Ce slug est déjà utilisé",
+            variant: "destructive",
+          })
         } else {
-          toast.error("Erreur lors de la création de l'agence")
+          toast({
+            title: "Erreur",
+            description: "Erreur lors de la création de l'agence",
+            variant: "destructive",
+          })
         }
-        console.error("Error:", fnError)
         return
       }
 
-      toast.success("Agence créée avec succès")
+      console.log("Agency created successfully:", result)
+      toast({
+        title: "Succès",
+        description: "Agence créée avec succès",
+      })
       navigate("/admin/agencies")
     } catch (error) {
       console.error("Error:", error)
-      toast.error("Erreur lors de la création de l'agence")
+      toast({
+        title: "Erreur",
+        description: "Erreur lors de la création de l'agence",
+        variant: "destructive",
+      })
     } finally {
       setIsSubmitting(false)
     }
