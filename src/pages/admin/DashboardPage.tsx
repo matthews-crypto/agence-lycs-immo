@@ -1,11 +1,11 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, Users, Briefcase, TrendingUp } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Building2, Users, Briefcase, TrendingUp } from "lucide-react"
 
 export default function AdminDashboardPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8">
+    <div className="container space-y-8 p-8">
       {/* Header Section */}
-      <div className="mb-8">
+      <div>
         <h1 className="text-4xl font-bold text-gray-800 mb-2 animate-fade-in">
           Tableau de bord administrateur
         </h1>
@@ -15,7 +15,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="hover:shadow-lg transition-shadow duration-300 hover:-translate-y-1">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium">Total Agences</CardTitle>
@@ -108,5 +108,5 @@ export default function AdminDashboardPage() {
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }
