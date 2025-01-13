@@ -32,14 +32,15 @@ export const useAdminAuthStore = create<AdminAuthState>((set) => ({
         throw new Error("Unauthorized: Not an admin user");
       }
 
-      // Check if user exists in admin_users table
+      // Check if user exists in admin_users table using maybeSingle() instead of single()
       const { data: adminData, error: adminError } = await supabase
         .from("admin_users")
         .select("id")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
 
-      if (adminError || !adminData) {
+      if (adminError) throw adminError;
+      if (!adminData) {
         throw new Error("Unauthorized: User not found in admin table");
       }
 
