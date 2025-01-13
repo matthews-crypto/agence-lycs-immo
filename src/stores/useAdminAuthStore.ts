@@ -7,6 +7,7 @@ interface AdminAuthState {
   isLoading: boolean;
   isAuthenticated: boolean;
   error: string | null;
+  setAuthenticated: (value: boolean) => void;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -15,11 +16,13 @@ export const useAdminAuthStore = create<AdminAuthState>((set) => ({
   isLoading: false,
   isAuthenticated: false,
   error: null,
+  
+  setAuthenticated: (value: boolean) => set({ isAuthenticated: value }),
 
   login: async (email: string, password: string) => {
     set({ isLoading: true, error: null });
     try {
-      console.log("Starting login process for:", email); // Debug log
+      console.log("Starting login process for:", email);
 
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
@@ -27,26 +30,24 @@ export const useAdminAuthStore = create<AdminAuthState>((set) => ({
       });
 
       if (signInError) {
-        console.error("SignIn Error:", signInError); // Debug log
+        console.error("SignIn Error:", signInError);
         throw signInError;
       }
 
       const user = signInData.user;
       if (!user) {
-        console.error("No user data received"); // Debug log
+        console.error("No user data received");
         throw new Error("No user data");
       }
 
-      console.log("User authenticated, checking admin status"); // Debug log
+      console.log("User authenticated, checking admin status");
 
-      // Check if user has admin role in metadata
       const isAdmin = user.app_metadata?.role === "ADMIN";
       if (!isAdmin) {
-        console.error("User is not an admin"); // Debug log
+        console.error("User is not an admin");
         throw new Error("Unauthorized: Not an admin user");
       }
 
-      // Check if user exists in admin_users table
       const { data: adminData, error: adminError } = await supabase
         .from("admin_users")
         .select("id")
@@ -54,20 +55,20 @@ export const useAdminAuthStore = create<AdminAuthState>((set) => ({
         .maybeSingle();
 
       if (adminError) {
-        console.error("Admin check error:", adminError); // Debug log
+        console.error("Admin check error:", adminError);
         throw adminError;
       }
       
       if (!adminData) {
-        console.error("User not found in admin_users table"); // Debug log
+        console.error("User not found in admin_users table");
         throw new Error("Unauthorized: User not found in admin table");
       }
 
-      console.log("Login successful, user is admin"); // Debug log
+      console.log("Login successful, user is admin");
       set({ isAuthenticated: true, error: null });
       toast.success("Successfully logged in");
     } catch (error) {
-      console.error("Final error:", error); // Debug log
+      console.error("Final error:", error);
       let message = "Failed to login";
       if (error instanceof AuthError) {
         message = error.message;

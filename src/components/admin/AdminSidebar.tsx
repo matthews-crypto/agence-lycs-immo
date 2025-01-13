@@ -37,7 +37,11 @@ const menuItems = [
 
 export function AdminSidebar() {
   return (
-    <Sidebar variant="floating" collapsible="icon" className="group">
+    <Sidebar 
+      variant="floating" 
+      collapsible="offcanvas" 
+      className="group hover:translate-x-0 transition-transform"
+    >
       <SidebarRail />
       <SidebarHeader className="p-4">
         <h2 className="text-lg font-semibold">LYCS IMMO Admin</h2>
