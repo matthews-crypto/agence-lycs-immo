@@ -11,6 +11,7 @@ import { AgencyAddress } from "@/components/admin/agencies/create/AgencyAddress"
 import { AgencyCustomization } from "@/components/admin/agencies/create/AgencyCustomization"
 import { useState } from "react"
 import { supabase } from "@/integrations/supabase/client"
+import type { TablesInsert } from "@/integrations/supabase/types"
 
 const formSchema = z.object({
   // Basic Info
@@ -48,9 +49,23 @@ export default function CreateAgencyPage() {
 
   const onSubmit = async (data: FormValues) => {
     try {
+      const agencyData: TablesInsert<'agencies'> = {
+        agency_name: data.agency_name,
+        slug: data.slug,
+        contact_email: data.contact_email,
+        contact_phone: data.contact_phone,
+        license_number: data.license_number,
+        address: data.address,
+        city: data.city,
+        postal_code: data.postal_code,
+        logo_url: data.logo_url,
+        primary_color: data.primary_color,
+        secondary_color: data.secondary_color,
+      }
+
       const { error } = await supabase
         .from("agencies")
-        .insert([data])
+        .insert(agencyData)
         .select()
         .single()
 

@@ -8,10 +8,10 @@ export function StatsCards() {
     queryKey: ['admin', 'agencies', 'stats'],
     queryFn: async () => {
       const [totalResult, activeResult, inactiveResult, recentResult] = await Promise.all([
-        supabase.from('agencies').count(),
-        supabase.from('agencies').count().eq('is_active', true),
-        supabase.from('agencies').count().eq('is_active', false),
-        supabase.from('agencies').select('created_at').gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()).count()
+        supabase.from('agencies').select('*', { count: 'exact', head: true }),
+        supabase.from('agencies').select('*', { count: 'exact', head: true }).eq('is_active', true),
+        supabase.from('agencies').select('*', { count: 'exact', head: true }).eq('is_active', false),
+        supabase.from('agencies').select('*', { count: 'exact', head: true }).gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
       ])
 
       return {
