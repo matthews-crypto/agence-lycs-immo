@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { toast } from "sonner";
 
 const formSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -25,7 +27,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 export default function AdminAuthPage() {
   const navigate = useNavigate();
-  const { login, isLoading, isAuthenticated } = useAdminAuthStore();
+  const { login, isLoading, isAuthenticated, error } = useAdminAuthStore();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -42,11 +44,12 @@ export default function AdminAuthPage() {
   }, [isAuthenticated, navigate]);
 
   const onSubmit = async (values: FormValues) => {
+    console.log("Attempting login with:", values.email); // Debug log
     try {
       await login(values.email, values.password);
     } catch (error) {
-      // Error is handled in the store
-      console.error("Login error:", error);
+      console.error("Login error:", error); // Debug log
+      toast.error("Failed to login. Please check your credentials.");
     }
   };
 
@@ -60,6 +63,11 @@ export default function AdminAuthPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
