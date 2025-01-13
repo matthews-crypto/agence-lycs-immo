@@ -1,6 +1,6 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { Skeleton } from "@/components/ui/skeleton";
+import { LoadingLayout } from "@/components/LoadingLayout";
 
 export default function AdminLayout() {
   const { session, isLoading } = useAuth();
@@ -10,7 +10,6 @@ export default function AdminLayout() {
     return <LoadingLayout />;
   }
 
-  // Check if user is admin (you'll need to implement this logic)
   if (!session) {
     return <Navigate to="/admin/auth" state={{ from: location }} replace />;
   }
