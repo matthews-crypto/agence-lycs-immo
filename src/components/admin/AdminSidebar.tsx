@@ -39,8 +39,8 @@ export function AdminSidebar() {
   return (
     <Sidebar 
       variant="floating" 
-      collapsible="offcanvas" 
-      className="group hover:translate-x-0 transition-transform"
+      collapsible="icon" 
+      className="group -translate-x-[calc(100%-theme(spacing.14))] hover:translate-x-0 transition-transform"
     >
       <SidebarRail />
       <SidebarHeader className="p-4">
