@@ -439,6 +439,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_agency_user_and_profile: {
+        Args: {
+          email: string
+          agency_name: string
+          agency_slug: string
+          license_number: string
+          contact_phone: string
+          address: string
+          city: string
+          postal_code: string
+          logo_url: string
+          primary_color: string
+          secondary_color: string
+        }
+        Returns: string
+      }
       is_admin: {
         Args: {
           user_id: string

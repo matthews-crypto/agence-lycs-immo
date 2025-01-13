@@ -16,15 +16,15 @@ import type { TablesInsert } from "@/integrations/supabase/types"
 const formSchema = z.object({
   // Basic Info
   agency_name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
-  contact_email: z.string().email("Email invalide"),
-  contact_phone: z.string().min(10, "Numéro de téléphone invalide"),
+  contact_email: z.string().email("Email invalide").regex(/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/, "Format d'email professionnel invalide"),
+  contact_phone: z.string().regex(/^(?:(?:\+|00)33|0)\s*[1-9](?:[\s.-]*\d{2}){4}$/, "Format de téléphone français invalide"),
   license_number: z.string().min(1, "Numéro de licence requis"),
   slug: z.string().min(2, "Slug invalide"),
   
   // Address
   address: z.string().min(1, "Adresse requise"),
   city: z.string().min(1, "Ville requise"),
-  postal_code: z.string().min(5, "Code postal invalide"),
+  postal_code: z.string().regex(/^\d{5}$/, "Code postal invalide"),
   
   // Customization
   logo_url: z.string().optional(),
@@ -36,6 +36,7 @@ type FormValues = z.infer<typeof formSchema>
 
 export default function CreateAgencyPage() {
   const [currentStep, setCurrentStep] = useState(0)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const navigate = useNavigate()
   const steps = ["Informations", "Adresse", "Personnalisation"]
 
@@ -49,33 +50,44 @@ export default function CreateAgencyPage() {
 
   const onSubmit = async (data: FormValues) => {
     try {
-      const agencyData: TablesInsert<'agencies'> = {
-        agency_name: data.agency_name,
-        slug: data.slug,
-        contact_email: data.contact_email,
-        contact_phone: data.contact_phone,
-        license_number: data.license_number,
-        address: data.address,
-        city: data.city,
-        postal_code: data.postal_code,
-        logo_url: data.logo_url,
-        primary_color: data.primary_color,
-        secondary_color: data.secondary_color,
+      setIsSubmitting(true)
+
+      const { data: result, error: fnError } = await supabase
+        .rpc('create_agency_user_and_profile', {
+          email: data.contact_email,
+          agency_name: data.agency_name,
+          agency_slug: data.slug,
+          license_number: data.license_number,
+          contact_phone: data.contact_phone,
+          address: data.address,
+          city: data.city,
+          postal_code: data.postal_code,
+          logo_url: data.logo_url,
+          primary_color: data.primary_color,
+          secondary_color: data.secondary_color,
+        })
+
+      if (fnError) {
+        if (fnError.message.includes('Email already exists')) {
+          toast.error("Cet email est déjà utilisé")
+        } else if (fnError.message.includes('License number already exists')) {
+          toast.error("Ce numéro de licence est déjà utilisé")
+        } else if (fnError.message.includes('Slug already exists')) {
+          toast.error("Ce slug est déjà utilisé")
+        } else {
+          toast.error("Erreur lors de la création de l'agence")
+        }
+        console.error("Error:", fnError)
+        return
       }
-
-      const { error } = await supabase
-        .from("agencies")
-        .insert(agencyData)
-        .select()
-        .single()
-
-      if (error) throw error
 
       toast.success("Agence créée avec succès")
       navigate("/admin/agencies")
     } catch (error) {
       console.error("Error:", error)
       toast.error("Erreur lors de la création de l'agence")
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -135,15 +147,17 @@ export default function CreateAgencyPage() {
                 type="button"
                 variant="outline"
                 onClick={prevStep}
-                disabled={currentStep === 0}
+                disabled={currentStep === 0 || isSubmitting}
               >
                 Précédent
               </Button>
               
               {currentStep === steps.length - 1 ? (
-                <Button type="submit">Créer l'agence</Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Création en cours..." : "Créer l'agence"}
+                </Button>
               ) : (
-                <Button type="button" onClick={nextStep}>
+                <Button type="button" onClick={nextStep} disabled={isSubmitting}>
                   Suivant
                 </Button>
               )}
