@@ -9,6 +9,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarRail,
 } from "@/components/ui/sidebar"
 
 const menuItems = [
@@ -36,7 +37,8 @@ const menuItems = [
 
 export function AdminSidebar() {
   return (
-    <Sidebar>
+    <Sidebar variant="sidebar" collapsible="icon">
+      <SidebarRail />
       <SidebarHeader className="p-4">
         <h2 className="text-lg font-semibold">LYCS IMMO Admin</h2>
       </SidebarHeader>
