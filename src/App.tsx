@@ -9,12 +9,13 @@ import AgencyLayout from "@/layouts/AgencyLayout";
 import { AgencyProvider } from "@/contexts/AgencyContext";
 import { LoadingLayout } from "@/components/LoadingLayout";
 
-// Pages (to be implemented)
+// Pages
 import HomePage from "@/pages/HomePage";
 import AdminAuthPage from "@/pages/admin/AuthPage";
 import AdminDashboardPage from "@/pages/admin/DashboardPage";
 import AdminAgenciesPage from "@/pages/admin/AgenciesPage";
 import AdminSettingsPage from "@/pages/admin/SettingsPage";
+import CreateAgencyPage from "@/pages/admin/CreateAgencyPage";
 import AgencyAuthPage from "@/pages/agency/AuthPage";
 import AgencyHomePage from "@/pages/agency/HomePage";
 import AgencyPropertiesPage from "@/pages/agency/PropertiesPage";
@@ -50,6 +51,7 @@ const App = () => (
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<AdminDashboardPage />} />
               <Route path="agencies" element={<AdminAgenciesPage />} />
+              <Route path="agencies/create" element={<CreateAgencyPage />} />
               <Route path="settings" element={<AdminSettingsPage />} />
             </Route>
 
