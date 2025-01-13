@@ -37,7 +37,7 @@ const menuItems = [
 
 export function AdminSidebar() {
   return (
-    <Sidebar variant="sidebar" collapsible="icon">
+    <Sidebar variant="floating" collapsible="icon" className="group">
       <SidebarRail />
       <SidebarHeader className="p-4">
         <h2 className="text-lg font-semibold">LYCS IMMO Admin</h2>
