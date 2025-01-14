@@ -13,12 +13,22 @@ export default function AdminLayout() {
   useEffect(() => {
     const checkAdminStatus = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
+        console.log("Checking admin session status...")
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
         
-        if (!session) {
+        if (sessionError) {
+          console.error("Session error:", sessionError)
           setAuthenticated(false)
           return
         }
+
+        if (!session) {
+          console.log("No active session found")
+          setAuthenticated(false)
+          return
+        }
+
+        console.log("Session found, checking admin status for user:", session.user.id)
 
         const { data: adminData, error: adminError } = await supabase
           .from("admin_users")
@@ -32,7 +42,9 @@ export default function AdminLayout() {
           return
         }
 
-        setAuthenticated(!!adminData)
+        const isAdmin = !!adminData
+        console.log("Admin status check result:", isAdmin)
+        setAuthenticated(isAdmin)
       } catch (error) {
         console.error("Session check error:", error)
         setAuthenticated(false)
@@ -41,25 +53,40 @@ export default function AdminLayout() {
 
     checkAdminStatus()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state change event:", event)
+      
       if (!session) {
+        console.log("No session in auth state change")
         setAuthenticated(false)
         return
       }
 
-      const { data: adminData } = await supabase
+      const { data: adminData, error: adminError } = await supabase
         .from("admin_users")
         .select("id")
         .eq("id", session.user.id)
         .maybeSingle()
 
-      setAuthenticated(!!adminData)
+      if (adminError) {
+        console.error("Admin check error in auth state change:", adminError)
+        setAuthenticated(false)
+        return
+      }
+
+      const isAdmin = !!adminData
+      console.log("Setting admin status on auth state change:", isAdmin)
+      setAuthenticated(isAdmin)
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      console.log("Cleaning up auth state change subscription")
+      subscription.unsubscribe()
+    }
   }, [setAuthenticated])
 
   if (!isAuthenticated) {
+    console.log("User not authenticated, redirecting to auth page")
     return <Navigate to="/admin/auth" state={{ from: location }} replace />
   }
 

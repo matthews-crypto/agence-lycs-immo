@@ -7,22 +7,33 @@ export function useAuth() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    console.log("Initializing auth hook...")
+    
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setIsLoading(false);
-    });
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error("Error getting initial session:", error)
+      } else {
+        console.log("Initial session state:", session ? "Active" : "No session")
+      }
+      setSession(session)
+      setIsLoading(false)
+    })
 
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setIsLoading(false);
-    });
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state change in hook:", event)
+      setSession(session)
+      setIsLoading(false)
+    })
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      console.log("Cleaning up auth hook subscription")
+      subscription.unsubscribe()
+    }
+  }, [])
 
-  return { session, isLoading };
+  return { session, isLoading }
 }
