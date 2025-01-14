@@ -137,9 +137,9 @@ export function AgenciesTable() {
                     title={agency.is_active ? "Désactiver" : "Activer"}
                   >
                     {agency.is_active ? (
-                      <XSquare className="text-destructive" />
+                      <XSquare className="h-4 w-4 text-red-500" />
                     ) : (
-                      <CheckSquare className="text-success" />
+                      <CheckSquare className="h-4 w-4 text-green-500" />
                     )}
                   </Button>
                   <Button
@@ -148,7 +148,7 @@ export function AgenciesTable() {
                     onClick={() => console.log("Edit agency:", agency.id)}
                     title="Modifier"
                   >
-                    <Edit className="text-primary" />
+                    <Edit className="h-4 w-4 text-blue-500" />
                   </Button>
                   <Button
                     variant="ghost"
@@ -156,7 +156,7 @@ export function AgenciesTable() {
                     onClick={() => handleDelete(agency.id)}
                     title="Supprimer"
                   >
-                    <Trash className="text-destructive" />
+                    <Trash className="h-4 w-4 text-red-500" />
                   </Button>
                 </div>
               </TableCell>
