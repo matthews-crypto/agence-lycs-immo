@@ -12,9 +12,12 @@ import { Badge } from "@/components/ui/badge"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Button } from "@/components/ui/button"
+import { Edit, Trash, CheckSquare, XSquare } from "lucide-react"
+import { toast } from "sonner"
 
 export function AgenciesTable() {
-  const { data: agencies, isLoading } = useQuery({
+  const { data: agencies, isLoading, refetch } = useQuery({
     queryKey: ["admin", "agencies"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -26,6 +29,42 @@ export function AgenciesTable() {
       return data
     },
   })
+
+  const handleStatusChange = async (id: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("agencies")
+        .update({ is_active: !currentStatus })
+        .eq("id", id)
+
+      if (error) throw error
+
+      toast.success("Statut de l'agence mis à jour avec succès")
+      refetch()
+    } catch (error) {
+      console.error("Error updating agency status:", error)
+      toast.error("Erreur lors de la mise à jour du statut")
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer cette agence ?")) return
+
+    try {
+      const { error } = await supabase
+        .from("agencies")
+        .delete()
+        .eq("id", id)
+
+      if (error) throw error
+
+      toast.success("Agence supprimée avec succès")
+      refetch()
+    } catch (error) {
+      console.error("Error deleting agency:", error)
+      toast.error("Erreur lors de la suppression de l'agence")
+    }
+  }
 
   if (isLoading) {
     return (
@@ -49,6 +88,7 @@ export function AgenciesTable() {
             <TableHead>Statut</TableHead>
             <TableHead>Date de création</TableHead>
             <TableHead>Thème</TableHead>
+            <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -86,6 +126,38 @@ export function AgenciesTable() {
                       backgroundColor: agency.secondary_color || "#ffffff",
                     }}
                   />
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleStatusChange(agency.id, agency.is_active)}
+                    title={agency.is_active ? "Désactiver" : "Activer"}
+                  >
+                    {agency.is_active ? (
+                      <XSquare className="h-4 w-4 text-red-500" />
+                    ) : (
+                      <CheckSquare className="h-4 w-4 text-green-500" />
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => console.log("Edit agency:", agency.id)}
+                    title="Modifier"
+                  >
+                    <Edit className="h-4 w-4 text-blue-500" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDelete(agency.id)}
+                    title="Supprimer"
+                  >
+                    <Trash className="h-4 w-4 text-red-500" />
+                  </Button>
                 </div>
               </TableCell>
             </TableRow>
