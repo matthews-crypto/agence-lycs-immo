@@ -39,7 +39,7 @@ export default function UsersPage() {
   const { data: users, isLoading } = useQuery({
     queryKey: ["admin", "users"],
     queryFn: async () => {
-      // Fetch agents with their user data
+      // Fetch agents with their user data and agency info
       const { data: agents, error: agentsError } = await supabase
         .from("real_estate_agents")
         .select(`
@@ -48,11 +48,10 @@ export default function UsersPage() {
             agency_name
           )
         `)
-        .returns<any[]>()
       
       if (agentsError) throw agentsError
 
-      // Fetch clients with their user data
+      // Fetch clients with their user data and agency info
       const { data: clients, error: clientsError } = await supabase
         .from("clients")
         .select(`
@@ -61,39 +60,29 @@ export default function UsersPage() {
             agency_name
           )
         `)
-        .returns<any[]>()
       
       if (clientsError) throw clientsError
 
-      // Get user data for agents
-      const { data: agentUsers, error: agentUsersError } = await supabase
-        .from('auth')
-        .select('*')
-        .in('id', agents.map(agent => agent.user_id))
-      
-      if (agentUsersError) throw agentUsersError
-
-      // Get user data for clients
-      const { data: clientUsers, error: clientUsersError } = await supabase
-        .from('auth')
-        .select('*')
-        .in('id', clients.map(client => client.user_id))
-      
-      if (clientUsersError) throw clientUsersError
-
-      // Combine and format the data
-      const formattedAgents: UserData[] = agents.map(agent => ({
-        ...agent,
+      // Format agents data
+      const formattedAgents: UserData[] = (agents || []).map(agent => ({
+        id: agent.id,
         role: 'Agent',
         agencyName: agent.agencies?.agency_name,
-        email: agentUsers?.find(user => user.id === agent.user_id)?.email,
+        first_name: null, // These will come from your profile data if needed
+        last_name: null,
+        email: null,
+        phone_number: null
       }))
 
-      const formattedClients: UserData[] = clients.map(client => ({
-        ...client,
+      // Format clients data
+      const formattedClients: UserData[] = (clients || []).map(client => ({
+        id: client.id,
         role: 'Client',
         agencyName: client.agencies?.agency_name,
-        email: clientUsers?.find(user => user.id === client.user_id)?.email,
+        first_name: client.first_name,
+        last_name: client.last_name,
+        email: null,
+        phone_number: client.phone_number
       }))
 
       return [...formattedAgents, ...formattedClients]
@@ -102,8 +91,8 @@ export default function UsersPage() {
 
   const filteredUsers = users?.filter(user => {
     const matchesSearch = 
-      (user.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) || '') ||
-      (user.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) || '')
+      ((user.first_name || '').toLowerCase().includes(searchTerm.toLowerCase())) ||
+      ((user.last_name || '').toLowerCase().includes(searchTerm.toLowerCase()))
     
     const matchesRole = roleFilter === "all" || user.role.toLowerCase() === roleFilter.toLowerCase()
 
