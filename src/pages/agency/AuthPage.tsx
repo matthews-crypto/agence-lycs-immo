@@ -14,49 +14,69 @@ export default function AgencyAuthPage() {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session);
+      
       if (event === 'SIGNED_IN' && session?.user) {
         setIsLoading(true);
         try {
+          console.log('Checking user role for:', session.user.email);
+          
           // Check if user is an agency
-          const { data: agencyData } = await supabase
+          const { data: agencyData, error: agencyError } = await supabase
             .from('agencies')
             .select('*')
             .eq('user_id', session.user.id)
             .eq('slug', agency?.slug)
             .single();
 
+          if (agencyError) {
+            console.error('Error checking agency role:', agencyError);
+          }
+
           if (agencyData) {
+            console.log('User is an agency:', agencyData);
             navigate(`/${agency?.slug}/agency/dashboard`);
             return;
           }
 
           // Check if user is an agent
-          const { data: agentData } = await supabase
+          const { data: agentData, error: agentError } = await supabase
             .from('real_estate_agents')
             .select('*')
             .eq('user_id', session.user.id)
             .eq('agency_id', agency?.id)
             .single();
 
+          if (agentError) {
+            console.error('Error checking agent role:', agentError);
+          }
+
           if (agentData) {
+            console.log('User is an agent:', agentData);
             navigate(`/${agency?.slug}/agent/dashboard`);
             return;
           }
 
           // Check if user is a client
-          const { data: clientData } = await supabase
+          const { data: clientData, error: clientError } = await supabase
             .from('clients')
             .select('*')
             .eq('user_id', session.user.id)
             .eq('agency_id', agency?.id)
             .single();
 
+          if (clientError) {
+            console.error('Error checking client role:', clientError);
+          }
+
           if (clientData) {
+            console.log('User is a client:', clientData);
             navigate(`/${agency?.slug}/client/dashboard`);
             return;
           }
 
           // If no role is found for this agency
+          console.log('No role found for this user in this agency');
           toast.error("Vous n'avez pas accès à cette agence");
           await supabase.auth.signOut();
           
@@ -66,6 +86,8 @@ export default function AgencyAuthPage() {
         } finally {
           setIsLoading(false);
         }
+      } else if (event === 'SIGNED_OUT') {
+        console.log('User signed out');
       }
     });
 
