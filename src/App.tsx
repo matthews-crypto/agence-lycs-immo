@@ -31,6 +31,7 @@ import ClientDashboardPage from "@/pages/agency/client/DashboardPage";
 import ClientFavoritesPage from "@/pages/agency/client/FavoritesPage";
 import ClientAppointmentsPage from "@/pages/agency/client/AppointmentsPage";
 import NotFoundPage from "@/pages/NotFoundPage";
+import UsersPage from "@/pages/admin/UsersPage";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +55,7 @@ const App = () => (
               <Route path="agencies" element={<AdminAgenciesPage />} />
               <Route path="agencies/create" element={<CreateAgencyPage />} />
               <Route path="agencies/:id/edit" element={<EditAgencyPage />} />
+              <Route path="users" element={<UsersPage />} />
               <Route path="settings" element={<AdminSettingsPage />} />
             </Route>
 

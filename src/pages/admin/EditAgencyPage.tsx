@@ -138,6 +138,10 @@ export default function EditAgencyPage() {
     setCurrentStep(prev => Math.max(prev - 1, 0))
   }
 
+  const handleCancel = () => {
+    navigate("/admin/agencies")
+  }
+
   if (isLoading) {
     return (
       <div className="container mx-auto p-8 space-y-8">
@@ -189,14 +193,23 @@ export default function EditAgencyPage() {
             {currentStep === 2 && <AgencyCustomization />}
 
             <div className="flex justify-between pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={prevStep}
-                disabled={currentStep === 0 || isSubmitting}
-              >
-                Précédent
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={prevStep}
+                  disabled={currentStep === 0 || isSubmitting}
+                >
+                  Précédent
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancel}
+                >
+                  Annuler
+                </Button>
+              </div>
               
               <Button 
                 type="button" 
