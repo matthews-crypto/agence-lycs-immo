@@ -15,8 +15,10 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Edit, Trash, CheckSquare, XSquare } from "lucide-react"
 import { toast } from "sonner"
+import { useNavigate } from "react-router-dom"
 
 export function AgenciesTable() {
+  const navigate = useNavigate()
   const { data: agencies, isLoading, refetch } = useQuery({
     queryKey: ["admin", "agencies"],
     queryFn: async () => {
@@ -64,6 +66,10 @@ export function AgenciesTable() {
       console.error("Error deleting agency:", error)
       toast.error("Erreur lors de la suppression de l'agence")
     }
+  }
+
+  const handleEdit = (id: string) => {
+    navigate(`/admin/agencies/${id}/edit`)
   }
 
   if (isLoading) {
@@ -145,7 +151,7 @@ export function AgenciesTable() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => console.log("Edit agency:", agency.id)}
+                    onClick={() => handleEdit(agency.id)}
                     title="Modifier"
                   >
                     <Edit className="h-4 w-4 text-blue-500" />
