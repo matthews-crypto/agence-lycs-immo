@@ -118,11 +118,8 @@ export default function EditAgencyPage() {
 
   const nextStep = async () => {
     const fields = [
-      // Step 1 fields
       ["agency_name", "contact_email", "contact_phone", "license_number", "slug"],
-      // Step 2 fields
       ["address", "city", "postal_code"],
-      // Step 3 fields
       ["primary_color", "secondary_color"],
     ][currentStep]
 
@@ -170,16 +167,17 @@ export default function EditAgencyPage() {
           </h1>
           <div className="flex justify-between mb-8">
             {steps.map((step, index) => (
-              <div
+              <button
                 key={step}
-                className={`flex-1 text-center ${
+                onClick={() => setCurrentStep(index)}
+                className={`flex-1 text-center py-2 px-4 transition-colors hover:text-primary ${
                   index === currentStep
                     ? "text-primary font-bold"
                     : "text-muted-foreground"
                 }`}
               >
                 {step}
-              </div>
+              </button>
             ))}
           </div>
         </div>
