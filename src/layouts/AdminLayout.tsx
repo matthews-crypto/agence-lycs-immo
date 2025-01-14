@@ -7,31 +7,32 @@ import { supabase } from "@/integrations/supabase/client"
 import { LoadingLayout } from "@/components/LoadingLayout"
 
 export default function AdminLayout() {
-  const { isAuthenticated, setAuthenticated, isLoading } = useAdminAuthStore()
+  const { isAuthenticated, setAuthenticated } = useAdminAuthStore()
   const location = useLocation()
 
   useEffect(() => {
     const checkAdminStatus = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession()
-        if (session) {
-          // Vérifier si l'utilisateur est un admin
-          const { data: adminData, error: adminError } = await supabase
-            .from("admin_users")
-            .select("id")
-            .eq("id", session.user.id)
-            .maybeSingle()
-
-          if (adminError) {
-            console.error("Admin check error:", adminError)
-            setAuthenticated(false)
-            return
-          }
-
-          setAuthenticated(!!adminData)
-        } else {
+        
+        if (!session) {
           setAuthenticated(false)
+          return
         }
+
+        const { data: adminData, error: adminError } = await supabase
+          .from("admin_users")
+          .select("id")
+          .eq("id", session.user.id)
+          .maybeSingle()
+
+        if (adminError) {
+          console.error("Admin check error:", adminError)
+          setAuthenticated(false)
+          return
+        }
+
+        setAuthenticated(!!adminData)
       } catch (error) {
         console.error("Session check error:", error)
         setAuthenticated(false)
@@ -40,28 +41,23 @@ export default function AdminLayout() {
 
     checkAdminStatus()
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session) {
-        const { data: adminData } = await supabase
-          .from("admin_users")
-          .select("id")
-          .eq("id", session.user.id)
-          .maybeSingle()
-
-        setAuthenticated(!!adminData)
-      } else {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!session) {
         setAuthenticated(false)
+        return
       }
+
+      const { data: adminData } = await supabase
+        .from("admin_users")
+        .select("id")
+        .eq("id", session.user.id)
+        .maybeSingle()
+
+      setAuthenticated(!!adminData)
     })
 
     return () => subscription.unsubscribe()
   }, [setAuthenticated])
-
-  if (isLoading) {
-    return <LoadingLayout />
-  }
 
   if (!isAuthenticated) {
     return <Navigate to="/admin/auth" state={{ from: location }} replace />

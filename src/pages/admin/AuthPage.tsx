@@ -16,7 +16,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { toast } from "sonner";
 
 const formSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -44,12 +43,10 @@ export default function AdminAuthPage() {
   }, [isAuthenticated, navigate]);
 
   const onSubmit = async (values: FormValues) => {
-    console.log("Attempting login with:", values.email); // Debug log
     try {
       await login(values.email, values.password);
     } catch (error) {
-      console.error("Login error:", error); // Debug log
-      toast.error("Failed to login. Please check your credentials.");
+      console.error("Login error:", error);
     }
   };
 

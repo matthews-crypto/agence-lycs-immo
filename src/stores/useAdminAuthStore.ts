@@ -13,7 +13,7 @@ interface AdminAuthState {
 }
 
 export const useAdminAuthStore = create<AdminAuthState>((set) => ({
-  isLoading: true,
+  isLoading: false,
   isAuthenticated: false,
   error: null,
   
@@ -29,40 +29,28 @@ export const useAdminAuthStore = create<AdminAuthState>((set) => ({
         password,
       });
 
-      if (signInError) {
-        console.error("SignIn Error:", signInError);
-        throw signInError;
-      }
+      if (signInError) throw signInError;
 
-      const user = signInData.user;
-      if (!user) {
-        console.error("No user data received");
-        throw new Error("No user data");
+      if (!signInData.user) {
+        throw new Error("No user data received");
       }
-
-      console.log("User authenticated, checking admin status");
 
       const { data: adminData, error: adminError } = await supabase
         .from("admin_users")
         .select("id")
-        .eq("id", user.id)
+        .eq("id", signInData.user.id)
         .maybeSingle();
 
-      if (adminError) {
-        console.error("Admin check error:", adminError);
-        throw adminError;
-      }
+      if (adminError) throw adminError;
       
       if (!adminData) {
-        console.error("User not found in admin_users table");
-        throw new Error("Unauthorized: User not found in admin table");
+        throw new Error("Unauthorized: Not an admin user");
       }
 
-      console.log("Login successful, user is admin");
       set({ isAuthenticated: true, error: null });
       toast.success("Connexion réussie");
     } catch (error) {
-      console.error("Final error:", error);
+      console.error("Login error:", error);
       let message = "Échec de la connexion";
       if (error instanceof AuthError) {
         message = error.message;
@@ -83,6 +71,7 @@ export const useAdminAuthStore = create<AdminAuthState>((set) => ({
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       set({ isAuthenticated: false });
+      toast.success("Déconnexion réussie");
     } catch (error) {
       let message = "Échec de la déconnexion";
       if (error instanceof Error) {
@@ -90,7 +79,6 @@ export const useAdminAuthStore = create<AdminAuthState>((set) => ({
       }
       set({ error: message });
       toast.error(message);
-      throw error;
     } finally {
       set({ isLoading: false });
     }
