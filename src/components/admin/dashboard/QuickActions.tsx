@@ -6,6 +6,21 @@ import { useNavigate } from "react-router-dom"
 export function QuickActions() {
   const navigate = useNavigate()
 
+  const handleCreateAgency = () => {
+    console.log("Navigating to create agency page...")
+    navigate("/admin/agencies/create")
+  }
+
+  const handleManageAgencies = () => {
+    console.log("Navigating to agencies page...")
+    navigate("/admin/agencies")
+  }
+
+  const handleSettings = () => {
+    console.log("Navigating to settings page...")
+    navigate("/admin/settings")
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -13,7 +28,7 @@ export function QuickActions() {
       </CardHeader>
       <CardContent className="flex gap-4">
         <Button 
-          onClick={() => navigate("/admin/agencies/create")}
+          onClick={handleCreateAgency}
           className="flex-1"
         >
           <Plus className="mr-2 h-4 w-4" />
@@ -21,7 +36,7 @@ export function QuickActions() {
         </Button>
         <Button 
           variant="outline"
-          onClick={() => navigate("/admin/agencies")}
+          onClick={handleManageAgencies}
           className="flex-1"
         >
           <RefreshCw className="mr-2 h-4 w-4" />
@@ -29,7 +44,7 @@ export function QuickActions() {
         </Button>
         <Button 
           variant="outline"
-          onClick={() => navigate("/admin/settings")}
+          onClick={handleSettings}
           className="flex-1"
         >
           <Settings className="mr-2 h-4 w-4" />
