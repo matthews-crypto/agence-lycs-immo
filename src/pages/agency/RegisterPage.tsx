@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
+import { ThemeSupa } from '@supabase/auth-ui-shared'
 
 export default function AgencyRegisterPage() {
   const { agency } = useAgencyContext();
@@ -35,7 +36,7 @@ export default function AgencyRegisterPage() {
           <Auth
             supabaseClient={supabase}
             appearance={{
-              theme: 'light',
+              theme: ThemeSupa,
               variables: {
                 default: {
                   colors: {
