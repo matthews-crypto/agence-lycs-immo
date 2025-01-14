@@ -19,6 +19,19 @@ import {
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 
+type UserData = {
+  id: string
+  role: 'Agent' | 'Client'
+  agencyName?: string
+  first_name?: string | null
+  last_name?: string | null
+  email?: string | null
+  phone_number?: string | null
+  agencies?: {
+    agency_name: string
+  } | null
+}
+
 export default function UsersPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [roleFilter, setRoleFilter] = useState<string>("all")
@@ -26,7 +39,7 @@ export default function UsersPage() {
   const { data: users, isLoading } = useQuery({
     queryKey: ["admin", "users"],
     queryFn: async () => {
-      // Fetch agents
+      // Fetch agents with their user data
       const { data: agents, error: agentsError } = await supabase
         .from("real_estate_agents")
         .select(`
@@ -35,10 +48,11 @@ export default function UsersPage() {
             agency_name
           )
         `)
+        .returns<any[]>()
       
       if (agentsError) throw agentsError
 
-      // Fetch clients
+      // Fetch clients with their user data
       const { data: clients, error: clientsError } = await supabase
         .from("clients")
         .select(`
@@ -47,20 +61,39 @@ export default function UsersPage() {
             agency_name
           )
         `)
+        .returns<any[]>()
       
       if (clientsError) throw clientsError
 
+      // Get user data for agents
+      const { data: agentUsers, error: agentUsersError } = await supabase
+        .from('auth')
+        .select('*')
+        .in('id', agents.map(agent => agent.user_id))
+      
+      if (agentUsersError) throw agentUsersError
+
+      // Get user data for clients
+      const { data: clientUsers, error: clientUsersError } = await supabase
+        .from('auth')
+        .select('*')
+        .in('id', clients.map(client => client.user_id))
+      
+      if (clientUsersError) throw clientUsersError
+
       // Combine and format the data
-      const formattedAgents = agents.map(agent => ({
+      const formattedAgents: UserData[] = agents.map(agent => ({
         ...agent,
         role: 'Agent',
-        agencyName: agent.agencies?.agency_name
+        agencyName: agent.agencies?.agency_name,
+        email: agentUsers?.find(user => user.id === agent.user_id)?.email,
       }))
 
-      const formattedClients = clients.map(client => ({
+      const formattedClients: UserData[] = clients.map(client => ({
         ...client,
         role: 'Client',
-        agencyName: client.agencies?.agency_name
+        agencyName: client.agencies?.agency_name,
+        email: clientUsers?.find(user => user.id === client.user_id)?.email,
       }))
 
       return [...formattedAgents, ...formattedClients]
@@ -69,8 +102,8 @@ export default function UsersPage() {
 
   const filteredUsers = users?.filter(user => {
     const matchesSearch = 
-      user.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.last_name?.toLowerCase().includes(searchTerm.toLowerCase())
+      (user.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) || '') ||
+      (user.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) || '')
     
     const matchesRole = roleFilter === "all" || user.role.toLowerCase() === roleFilter.toLowerCase()
 
@@ -127,12 +160,12 @@ export default function UsersPage() {
             {filteredUsers?.map((user) => (
               <TableRow key={user.id}>
                 <TableCell>
-                  {user.first_name} {user.last_name}
+                  {user.first_name || ''} {user.last_name || ''}
                 </TableCell>
                 <TableCell>{user.role}</TableCell>
                 <TableCell>{user.agencyName}</TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>{user.phone_number}</TableCell>
+                <TableCell>{user.email || ''}</TableCell>
+                <TableCell>{user.phone_number || ''}</TableCell>
               </TableRow>
             ))}
           </TableBody>
