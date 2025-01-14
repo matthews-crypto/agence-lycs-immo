@@ -1,4 +1,5 @@
 import { Building2, Home, Settings, Users } from "lucide-react"
+import { useLocation } from "react-router-dom"
 import {
   Sidebar,
   SidebarContent,
@@ -35,6 +36,8 @@ const menuItems = [
 ]
 
 export function AdminSidebar() {
+  const location = useLocation()
+
   return (
     <Sidebar variant="sidebar" className="border-r">
       <SidebarHeader className="p-4">
@@ -50,6 +53,7 @@ export function AdminSidebar() {
                   <SidebarMenuButton
                     asChild
                     className="transition-colors"
+                    data-active={location.pathname === item.url}
                   >
                     <a href={item.url}>
                       <item.icon className="h-4 w-4" />
