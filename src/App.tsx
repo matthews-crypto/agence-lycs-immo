@@ -16,6 +16,7 @@ import AdminDashboardPage from "@/pages/admin/DashboardPage";
 import AdminAgenciesPage from "@/pages/admin/AgenciesPage";
 import AdminSettingsPage from "@/pages/admin/SettingsPage";
 import CreateAgencyPage from "@/pages/admin/CreateAgencyPage";
+import EditAgencyPage from "@/pages/admin/EditAgencyPage";
 import AgencyAuthPage from "@/pages/agency/AuthPage";
 import AgencyHomePage from "@/pages/agency/HomePage";
 import AgencyPropertiesPage from "@/pages/agency/PropertiesPage";
@@ -52,6 +53,7 @@ const App = () => (
               <Route path="dashboard" element={<AdminDashboardPage />} />
               <Route path="agencies" element={<AdminAgenciesPage />} />
               <Route path="agencies/create" element={<CreateAgencyPage />} />
+              <Route path="agencies/:id/edit" element={<EditAgencyPage />} />
               <Route path="settings" element={<AdminSettingsPage />} />
             </Route>
 
