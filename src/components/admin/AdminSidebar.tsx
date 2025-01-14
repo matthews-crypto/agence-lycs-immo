@@ -37,12 +37,7 @@ const menuItems = [
 
 export function AdminSidebar() {
   return (
-    <Sidebar 
-      variant="floating" 
-      collapsible="icon" 
-      className="group -translate-x-[calc(100%-theme(spacing.14))] hover:translate-x-0 transition-transform"
-    >
-      <SidebarRail />
+    <Sidebar variant="fixed" className="border-r">
       <SidebarHeader className="p-4">
         <h2 className="text-lg font-semibold">LYCS IMMO Admin</h2>
       </SidebarHeader>
@@ -54,7 +49,6 @@ export function AdminSidebar() {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
-                    tooltip={item.title}
                     asChild
                     className="transition-colors"
                   >

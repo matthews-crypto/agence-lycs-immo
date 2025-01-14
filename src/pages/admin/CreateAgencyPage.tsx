@@ -15,15 +15,15 @@ import { supabase } from "@/integrations/supabase/client"
 const formSchema = z.object({
   // Basic Info
   agency_name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
-  contact_email: z.string().email("Email invalide").regex(/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/, "Format d'email professionnel invalide"),
-  contact_phone: z.string().regex(/^(?:(?:\+|00)33|0)\s*[1-9](?:[\s.-]*\d{2}){4}$/, "Format de téléphone français invalide"),
+  contact_email: z.string().email("Email invalide"),
+  contact_phone: z.string().regex(/^(70|75|76|77|78)[0-9]{7}$/, "Format de téléphone sénégalais invalide (ex: 771234567)"),
   license_number: z.string().min(1, "Numéro de licence requis"),
   slug: z.string().min(2, "Slug invalide"),
   
   // Address
   address: z.string().min(1, "Adresse requise"),
   city: z.string().min(1, "Ville requise"),
-  postal_code: z.string().regex(/^\d{5}$/, "Code postal invalide"),
+  postal_code: z.string().regex(/^[0-9]{5}$/, "Code postal invalide"),
   
   // Customization
   logo_url: z.string().optional(),
