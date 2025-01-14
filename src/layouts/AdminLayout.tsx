@@ -32,7 +32,7 @@ export default function AdminLayout() {
   }
 
   return (
-    <SidebarProvider defaultOpen={false}>
+    <SidebarProvider defaultOpen={true}>
       <div className="flex min-h-screen w-full bg-background">
         <AdminSidebar />
         <main className="flex-1 overflow-x-hidden">

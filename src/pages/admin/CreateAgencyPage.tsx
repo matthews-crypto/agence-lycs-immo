@@ -5,7 +5,7 @@ import { z } from "zod"
 import { Form } from "@/components/ui/form"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { toast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 import { AgencyBasicInfo } from "@/components/admin/agencies/create/AgencyBasicInfo"
 import { AgencyAddress } from "@/components/admin/agencies/create/AgencyAddress"
 import { AgencyCustomization } from "@/components/admin/agencies/create/AgencyCustomization"
@@ -72,52 +72,32 @@ export default function CreateAgencyPage() {
       if (fnError) {
         console.error("Function error:", fnError)
         if (fnError.message.includes('Email already exists')) {
-          toast({
-            title: "Erreur",
-            description: "Cet email est déjà utilisé",
-            variant: "destructive",
-          })
+          toast.error("Cet email est déjà utilisé")
+          return
         } else if (fnError.message.includes('License number already exists')) {
-          toast({
-            title: "Erreur",
-            description: "Ce numéro de licence est déjà utilisé",
-            variant: "destructive",
-          })
+          toast.error("Ce numéro de licence est déjà utilisé")
+          return
         } else if (fnError.message.includes('Slug already exists')) {
-          toast({
-            title: "Erreur",
-            description: "Ce slug est déjà utilisé",
-            variant: "destructive",
-          })
+          toast.error("Ce slug est déjà utilisé")
+          return
         } else {
-          toast({
-            title: "Erreur",
-            description: "Erreur lors de la création de l'agence",
-            variant: "destructive",
-          })
+          toast.error("Erreur lors de la création de l'agence")
+          return
         }
-        return
       }
 
       console.log("Agency created successfully:", result)
-      toast({
-        title: "Succès",
-        description: "Agence créée avec succès",
-      })
+      toast.success("Agence créée avec succès")
       navigate("/admin/agencies")
     } catch (error) {
       console.error("Error:", error)
-      toast({
-        title: "Erreur",
-        description: "Erreur lors de la création de l'agence",
-        variant: "destructive",
-      })
+      toast.error("Erreur lors de la création de l'agence")
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const nextStep = () => {
+  const nextStep = async () => {
     const fields = [
       // Step 1 fields
       ["agency_name", "contact_email", "contact_phone", "license_number", "slug"],
@@ -127,12 +107,9 @@ export default function CreateAgencyPage() {
       ["primary_color", "secondary_color"],
     ][currentStep]
 
-    const stepValid = fields.every(field => {
-      const valid = form.trigger(field as keyof FormValues)
-      return valid
-    })
-
-    if (stepValid) {
+    const isValid = await form.trigger(fields as Array<keyof FormValues>)
+    
+    if (isValid) {
       setCurrentStep(prev => Math.min(prev + 1, steps.length - 1))
     }
   }
