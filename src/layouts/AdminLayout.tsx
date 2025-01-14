@@ -30,21 +30,19 @@ export default function AdminLayout() {
 
         console.log("Session found, checking admin status for user:", session.user.id)
 
-        const { data: adminData, error: adminError } = await supabase
-          .from("admin_users")
-          .select("id")
-          .eq("id", session.user.id)
-          .maybeSingle()
+        // Utiliser la fonction rpc is_admin pour vérifier le statut d'administrateur
+        const { data: isAdmin, error: adminCheckError } = await supabase
+          .rpc('is_admin', { user_id: session.user.id });
 
-        if (adminError) {
-          console.error("Admin check error:", adminError)
+        if (adminCheckError) {
+          console.error("Admin check error:", adminCheckError)
           setAuthenticated(false)
           return
         }
 
-        const isAdmin = !!adminData
-        console.log("Admin status check result:", isAdmin)
-        setAuthenticated(isAdmin)
+        const isAdminUser = !!isAdmin
+        console.log("Admin status check result:", isAdminUser)
+        setAuthenticated(isAdminUser)
       } catch (error) {
         console.error("Session check error:", error)
         setAuthenticated(false)
@@ -62,21 +60,19 @@ export default function AdminLayout() {
         return
       }
 
-      const { data: adminData, error: adminError } = await supabase
-        .from("admin_users")
-        .select("id")
-        .eq("id", session.user.id)
-        .maybeSingle()
+      // Utiliser la fonction rpc is_admin pour vérifier le statut d'administrateur
+      const { data: isAdmin, error: adminCheckError } = await supabase
+        .rpc('is_admin', { user_id: session.user.id });
 
-      if (adminError) {
-        console.error("Admin check error in auth state change:", adminError)
+      if (adminCheckError) {
+        console.error("Admin check error in auth state change:", adminCheckError)
         setAuthenticated(false)
         return
       }
 
-      const isAdmin = !!adminData
-      console.log("Setting admin status on auth state change:", isAdmin)
-      setAuthenticated(isAdmin)
+      const isAdminUser = !!isAdmin
+      console.log("Setting admin status on auth state change:", isAdminUser)
+      setAuthenticated(isAdminUser)
     })
 
     return () => {

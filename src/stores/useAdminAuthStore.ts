@@ -44,18 +44,16 @@ export const useAdminAuthStore = create<AdminAuthState>((set) => ({
         throw new Error("No user data received");
       }
 
-      const { data: adminData, error: adminError } = await supabase
-        .from("admin_users")
-        .select("id")
-        .eq("id", signInData.user.id)
-        .maybeSingle();
+      // Utiliser la fonction rpc is_admin pour vérifier le statut d'administrateur
+      const { data: isAdmin, error: adminCheckError } = await supabase
+        .rpc('is_admin', { user_id: signInData.user.id });
 
-      if (adminError) {
-        console.error("Admin check error:", adminError);
-        throw adminError;
+      if (adminCheckError) {
+        console.error("Admin check error:", adminCheckError);
+        throw adminCheckError;
       }
-      
-      if (!adminData) {
+
+      if (!isAdmin) {
         console.error("User is not an admin");
         throw new Error("Unauthorized: Not an admin user");
       }
