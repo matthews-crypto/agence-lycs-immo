@@ -1,5 +1,5 @@
-import { Building2, Home, Settings, Users } from "lucide-react"
-import { useLocation } from "react-router-dom"
+import { Building2, Home, LogOut, Settings, Users } from "lucide-react"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import {
   Sidebar,
   SidebarContent,
@@ -11,6 +11,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { useAdminAuthStore } from "@/stores/useAdminAuthStore"
+import { Button } from "@/components/ui/button"
+import { toast } from "sonner"
 
 const menuItems = [
   {
@@ -37,13 +40,26 @@ const menuItems = [
 
 export function AdminSidebar() {
   const location = useLocation()
+  const navigate = useNavigate()
+  const { logout } = useAdminAuthStore()
+
+  const handleLogout = async () => {
+    try {
+      await logout()
+      navigate("/admin/auth")
+      toast.success("Déconnexion réussie")
+    } catch (error) {
+      console.error("Logout error:", error)
+      toast.error("Erreur lors de la déconnexion")
+    }
+  }
 
   return (
     <Sidebar variant="sidebar" className="border-r">
       <SidebarHeader className="p-4">
         <h2 className="text-lg font-semibold">LYCS IMMO Admin</h2>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="flex flex-col h-full">
         <SidebarGroup>
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -55,16 +71,27 @@ export function AdminSidebar() {
                     className="transition-colors"
                     data-active={location.pathname === item.url}
                   >
-                    <a href={item.url}>
+                    <Link to={item.url}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        
+        <div className="mt-auto p-4">
+          <Button
+            variant="ghost"
+            className="w-full justify-start"
+            onClick={handleLogout}
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            Déconnexion
+          </Button>
+        </div>
       </SidebarContent>
     </Sidebar>
   )

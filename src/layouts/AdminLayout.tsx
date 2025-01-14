@@ -4,28 +4,64 @@ import { AdminSidebar } from "@/components/admin/AdminSidebar"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { useEffect } from "react"
 import { supabase } from "@/integrations/supabase/client"
+import { LoadingLayout } from "@/components/LoadingLayout"
 
 export default function AdminLayout() {
-  const { isAuthenticated, setAuthenticated } = useAdminAuthStore()
+  const { isAuthenticated, setAuthenticated, isLoading } = useAdminAuthStore()
   const location = useLocation()
 
   useEffect(() => {
-    // Check for existing session on mount
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setAuthenticated(true)
-      }
-    })
+    const checkAdminStatus = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
+          // Vérifier si l'utilisateur est un admin
+          const { data: adminData, error: adminError } = await supabase
+            .from("admin_users")
+            .select("id")
+            .eq("id", session.user.id)
+            .maybeSingle()
 
-    // Listen for auth changes
+          if (adminError) {
+            console.error("Admin check error:", adminError)
+            setAuthenticated(false)
+            return
+          }
+
+          setAuthenticated(!!adminData)
+        } else {
+          setAuthenticated(false)
+        }
+      } catch (error) {
+        console.error("Session check error:", error)
+        setAuthenticated(false)
+      }
+    }
+
+    checkAdminStatus()
+
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setAuthenticated(!!session)
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session) {
+        const { data: adminData } = await supabase
+          .from("admin_users")
+          .select("id")
+          .eq("id", session.user.id)
+          .maybeSingle()
+
+        setAuthenticated(!!adminData)
+      } else {
+        setAuthenticated(false)
+      }
     })
 
     return () => subscription.unsubscribe()
   }, [setAuthenticated])
+
+  if (isLoading) {
+    return <LoadingLayout />
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/admin/auth" state={{ from: location }} replace />

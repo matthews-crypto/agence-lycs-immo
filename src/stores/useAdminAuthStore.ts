@@ -13,11 +13,11 @@ interface AdminAuthState {
 }
 
 export const useAdminAuthStore = create<AdminAuthState>((set) => ({
-  isLoading: false,
+  isLoading: true,
   isAuthenticated: false,
   error: null,
   
-  setAuthenticated: (value: boolean) => set({ isAuthenticated: value }),
+  setAuthenticated: (value: boolean) => set({ isAuthenticated: value, isLoading: false }),
 
   login: async (email: string, password: string) => {
     set({ isLoading: true, error: null });
@@ -42,12 +42,6 @@ export const useAdminAuthStore = create<AdminAuthState>((set) => ({
 
       console.log("User authenticated, checking admin status");
 
-      const isAdmin = user.app_metadata?.role === "ADMIN";
-      if (!isAdmin) {
-        console.error("User is not an admin");
-        throw new Error("Unauthorized: Not an admin user");
-      }
-
       const { data: adminData, error: adminError } = await supabase
         .from("admin_users")
         .select("id")
@@ -66,16 +60,16 @@ export const useAdminAuthStore = create<AdminAuthState>((set) => ({
 
       console.log("Login successful, user is admin");
       set({ isAuthenticated: true, error: null });
-      toast.success("Successfully logged in");
+      toast.success("Connexion réussie");
     } catch (error) {
       console.error("Final error:", error);
-      let message = "Failed to login";
+      let message = "Échec de la connexion";
       if (error instanceof AuthError) {
         message = error.message;
       } else if (error instanceof Error) {
         message = error.message;
       }
-      set({ error: message });
+      set({ error: message, isAuthenticated: false });
       toast.error(message);
       throw error;
     } finally {
@@ -89,14 +83,14 @@ export const useAdminAuthStore = create<AdminAuthState>((set) => ({
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       set({ isAuthenticated: false });
-      toast.success("Successfully logged out");
     } catch (error) {
-      let message = "Failed to logout";
+      let message = "Échec de la déconnexion";
       if (error instanceof Error) {
         message = error.message;
       }
       set({ error: message });
       toast.error(message);
+      throw error;
     } finally {
       set({ isLoading: false });
     }
