@@ -110,7 +110,11 @@ export default function CreateAgencyPage() {
     const isValid = await form.trigger(fields as Array<keyof FormValues>)
     
     if (isValid) {
-      setCurrentStep(prev => Math.min(prev + 1, steps.length - 1))
+      if (currentStep === steps.length - 1) {
+        await form.handleSubmit(onSubmit)()
+      } else {
+        setCurrentStep(prev => Math.min(prev + 1, steps.length - 1))
+      }
     }
   }
 
@@ -140,7 +144,7 @@ export default function CreateAgencyPage() {
         </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
             {currentStep === 0 && <AgencyBasicInfo />}
             {currentStep === 1 && <AgencyAddress />}
             {currentStep === 2 && <AgencyCustomization />}
@@ -155,15 +159,16 @@ export default function CreateAgencyPage() {
                 Précédent
               </Button>
               
-              {currentStep === steps.length - 1 ? (
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Création en cours..." : "Créer l'agence"}
-                </Button>
-              ) : (
-                <Button type="button" onClick={nextStep} disabled={isSubmitting}>
-                  Suivant
-                </Button>
-              )}
+              <Button 
+                type="button" 
+                onClick={nextStep} 
+                disabled={isSubmitting}
+              >
+                {currentStep === steps.length - 1 
+                  ? (isSubmitting ? "Création en cours..." : "Créer l'agence")
+                  : "Suivant"
+                }
+              </Button>
             </div>
           </form>
         </Form>
