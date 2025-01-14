@@ -198,6 +198,7 @@ export type Database = {
         Row: {
           agency_id: string | null
           created_at: string
+          email: string | null
           first_name: string | null
           id: string
           last_name: string | null
@@ -209,6 +210,7 @@ export type Database = {
         Insert: {
           agency_id?: string | null
           created_at?: string
+          email?: string | null
           first_name?: string | null
           id?: string
           last_name?: string | null
@@ -220,6 +222,7 @@ export type Database = {
         Update: {
           agency_id?: string | null
           created_at?: string
+          email?: string | null
           first_name?: string | null
           id?: string
           last_name?: string | null
@@ -338,6 +341,7 @@ export type Database = {
         Row: {
           agency_id: string | null
           created_at: string
+          email: string | null
           id: string
           is_agency_head: boolean | null
           joined_date: string
@@ -349,6 +353,7 @@ export type Database = {
         Insert: {
           agency_id?: string | null
           created_at?: string
+          email?: string | null
           id?: string
           is_agency_head?: boolean | null
           joined_date?: string
@@ -360,6 +365,7 @@ export type Database = {
         Update: {
           agency_id?: string | null
           created_at?: string
+          email?: string | null
           id?: string
           is_agency_head?: boolean | null
           joined_date?: string
