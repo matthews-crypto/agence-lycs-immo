@@ -29,10 +29,7 @@ export const useAdminAuthStore = create<AdminAuthState>((set) => ({
 
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/admin/dashboard`
-        }
+        password
       });
 
       if (signInError) {
