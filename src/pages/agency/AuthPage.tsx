@@ -18,8 +18,16 @@ export default function AgencyAuthPage() {
   useEffect(() => {
     // Check if there's already a session
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      console.log("Checking initial session...");
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error("Error checking session:", sessionError);
+        return;
+      }
+      
       if (session?.user) {
+        console.log("Found existing session, checking role...");
         setIsLoading(true);
         handleUserRole(session.user.id);
       }
@@ -28,9 +36,10 @@ export default function AgencyAuthPage() {
     checkSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session);
+      console.log('Auth state changed:', event, session?.user?.email);
       
       if (event === 'SIGNED_IN' && session?.user) {
+        console.log('User signed in, checking role...');
         setIsLoading(true);
         setError(null);
         await handleUserRole(session.user.id);
@@ -40,12 +49,15 @@ export default function AgencyAuthPage() {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log("Cleaning up auth subscriptions");
+      subscription.unsubscribe();
+    };
   }, [navigate, agency?.slug, agency?.id]);
 
   const handleUserRole = async (userId: string) => {
     try {
-      console.log('Checking user role for:', userId);
+      console.log('Checking user role for:', userId, 'in agency:', agency?.slug);
       
       // Check if user is an agency
       const { data: agencyData, error: agencyError } = await supabase
@@ -55,13 +67,13 @@ export default function AgencyAuthPage() {
         .eq('slug', agency?.slug)
         .single();
 
-      if (agencyError) {
+      if (agencyError && agencyError.code !== 'PGRST116') {
         console.error('Error checking agency role:', agencyError);
         throw new Error("Erreur lors de la vérification du rôle de l'agence");
       }
 
       if (agencyData) {
-        console.log('User is an agency:', agencyData);
+        console.log('User confirmed as agency owner:', agencyData);
         navigate(`/${agency?.slug}/agency/dashboard`);
         return;
       }
@@ -80,7 +92,7 @@ export default function AgencyAuthPage() {
       }
 
       if (agentData) {
-        console.log('User is an agent:', agentData);
+        console.log('User confirmed as agent:', agentData);
         navigate(`/${agency?.slug}/agent/dashboard`);
         return;
       }
@@ -99,7 +111,7 @@ export default function AgencyAuthPage() {
       }
 
       if (clientData) {
-        console.log('User is a client:', clientData);
+        console.log('User confirmed as client:', clientData);
         navigate(`/${agency?.slug}/client/dashboard`);
         return;
       }
@@ -110,10 +122,23 @@ export default function AgencyAuthPage() {
       
     } catch (error) {
       console.error('Error in handleUserRole:', error);
-      let message = "Une erreur est survenue";
-      if (error instanceof Error) {
+      let message = "Une erreur est survenue lors de la connexion";
+      
+      if (error instanceof AuthError) {
+        switch (error.message) {
+          case 'Invalid login credentials':
+            message = "Email ou mot de passe incorrect";
+            break;
+          case 'Email not confirmed':
+            message = "Veuillez confirmer votre email avant de vous connecter";
+            break;
+          default:
+            message = error.message;
+        }
+      } else if (error instanceof Error) {
         message = error.message;
       }
+      
       setError(message);
       toast.error(message);
       await supabase.auth.signOut();
@@ -171,6 +196,14 @@ export default function AgencyAuthPage() {
                   password_label: 'Mot de passe',
                   button_label: 'Se connecter',
                   loading_button_label: 'Connexion en cours...',
+                  email_input_placeholder: 'Votre adresse email',
+                  password_input_placeholder: 'Votre mot de passe',
+                },
+                sign_up: {
+                  email_label: 'Adresse email',
+                  password_label: 'Mot de passe',
+                  button_label: "S'inscrire",
+                  loading_button_label: 'Inscription en cours...',
                   email_input_placeholder: 'Votre adresse email',
                   password_input_placeholder: 'Votre mot de passe',
                 },
