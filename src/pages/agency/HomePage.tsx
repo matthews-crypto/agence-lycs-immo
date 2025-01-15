@@ -1,7 +1,10 @@
 import { useAgencyContext } from "@/contexts/AgencyContext";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 export default function AgencyHomePage() {
   const { agency } = useAgencyContext();
+  const navigate = useNavigate();
 
   return (
     <div 
