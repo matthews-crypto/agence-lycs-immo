@@ -5,12 +5,39 @@ import { SidebarProvider } from "@/components/ui/sidebar"
 import { useEffect } from "react"
 import { supabase } from "@/integrations/supabase/client"
 import { LoadingLayout } from "@/components/LoadingLayout"
+import { toast } from "sonner"
 
 export default function AdminLayout() {
   const { isAuthenticated, setAuthenticated } = useAdminAuthStore()
   const location = useLocation()
 
   useEffect(() => {
+    let inactivityTimeout: NodeJS.Timeout
+
+    const resetInactivityTimer = () => {
+      // Effacer le timeout existant
+      if (inactivityTimeout) {
+        clearTimeout(inactivityTimeout)
+      }
+
+      // Définir un nouveau timeout (8 heures)
+      inactivityTimeout = setTimeout(async () => {
+        console.log("Session expirée après 8 heures d'inactivité")
+        await supabase.auth.signOut()
+        setAuthenticated(false)
+        toast.info("Session expirée. Veuillez vous reconnecter.")
+      }, 8 * 60 * 60 * 1000) // 8 heures en millisecondes
+    }
+
+    // Ajouter les écouteurs d'événements pour réinitialiser le timer
+    const events = ['mousedown', 'keydown', 'mousemove', 'wheel']
+    events.forEach(event => {
+      document.addEventListener(event, resetInactivityTimer)
+    })
+
+    // Démarrer le timer initial
+    resetInactivityTimer()
+
     const checkAdminStatus = async () => {
       try {
         console.log("Checking admin session status...")
@@ -30,7 +57,6 @@ export default function AdminLayout() {
 
         console.log("Session found, checking admin status for user:", session.user.id)
 
-        // Utiliser la fonction rpc is_admin pour vérifier le statut d'administrateur
         const { data: isAdmin, error: adminCheckError } = await supabase
           .rpc('is_admin', { user_id: session.user.id });
 
@@ -60,7 +86,6 @@ export default function AdminLayout() {
         return
       }
 
-      // Utiliser la fonction rpc is_admin pour vérifier le statut d'administrateur
       const { data: isAdmin, error: adminCheckError } = await supabase
         .rpc('is_admin', { user_id: session.user.id });
 
@@ -75,9 +100,17 @@ export default function AdminLayout() {
       setAuthenticated(isAdminUser)
     })
 
+    // Cleanup function
     return () => {
       console.log("Cleaning up auth state change subscription")
       subscription.unsubscribe()
+      // Nettoyer le timer et les écouteurs d'événements
+      if (inactivityTimeout) {
+        clearTimeout(inactivityTimeout)
+      }
+      events.forEach(event => {
+        document.removeEventListener(event, resetInactivityTimer)
+      })
     }
   }, [setAuthenticated])
 
