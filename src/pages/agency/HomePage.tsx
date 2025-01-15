@@ -1,10 +1,7 @@
 import { useAgencyContext } from "@/contexts/AgencyContext";
-import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
 
 export default function AgencyHomePage() {
   const { agency } = useAgencyContext();
-  const navigate = useNavigate();
 
   return (
     <div 
@@ -23,27 +20,6 @@ export default function AgencyHomePage() {
               className="h-16 object-contain"
             />
           )}
-          <div className="flex gap-4">
-            <Button 
-              onClick={() => navigate(`/${agency?.slug}/auth`)}
-              style={{
-                backgroundColor: agency?.secondary_color || '#000000',
-                color: agency?.primary_color || '#ffffff'
-              }}
-            >
-              Se connecter
-            </Button>
-            <Button 
-              onClick={() => navigate(`/${agency?.slug}/register`)}
-              variant="outline"
-              style={{
-                borderColor: agency?.secondary_color || '#000000',
-                color: agency?.secondary_color || '#000000'
-              }}
-            >
-              S'inscrire
-            </Button>
-          </div>
         </div>
 
         <div className="text-center mt-20">
@@ -65,17 +41,6 @@ export default function AgencyHomePage() {
               }}
             >
               Voir nos biens
-            </Button>
-            <Button 
-              onClick={() => navigate(`/${agency?.slug}/register`)}
-              className="text-lg px-8 py-6"
-              variant="outline"
-              style={{
-                borderColor: agency?.secondary_color || '#000000',
-                color: agency?.secondary_color || '#000000'
-              }}
-            >
-              Devenir client
             </Button>
           </div>
         </div>
