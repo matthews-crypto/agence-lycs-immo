@@ -15,127 +15,60 @@ export default function AgencyAuthPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Check if there's already a session
-    const checkSession = async () => {
-      console.log("Checking initial session...");
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.error("Error checking session:", sessionError);
-        return;
-      }
-      
-      if (session?.user) {
-        console.log("Found existing session, checking role...");
-        setIsLoading(true);
-        handleUserRole(session.user.id);
-      }
-    };
-    
-    checkSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session?.user?.email);
-      
-      if (event === 'SIGNED_IN' && session?.user) {
-        console.log('User signed in, checking role...');
-        setIsLoading(true);
-        setError(null);
-        await handleUserRole(session.user.id);
-      } else if (event === 'SIGNED_OUT') {
-        console.log('User signed out');
-        setError(null);
-      }
-    });
-
-    return () => {
-      console.log("Cleaning up auth subscriptions");
-      subscription.unsubscribe();
-    };
-  }, [navigate, agency?.slug, agency?.id]);
-
-  const handleUserRole = async (userId: string) => {
+  const checkUserRole = async (userId: string) => {
     try {
-      console.log('Checking user role for:', userId, 'in agency:', agency?.slug);
-      
-      // Check if user is an agency
-      const { data: agencyData, error: agencyError } = await supabase
+      console.log('Checking user role for:', userId);
+      setIsLoading(true);
+      setError(null);
+
+      // First, check if user is an agency owner
+      const { data: agencyData } = await supabase
         .from('agencies')
         .select('*')
         .eq('user_id', userId)
         .eq('slug', agency?.slug)
         .single();
 
-      if (agencyError && agencyError.code !== 'PGRST116') {
-        console.error('Error checking agency role:', agencyError);
-        throw new Error("Erreur lors de la vérification du rôle de l'agence");
-      }
-
       if (agencyData) {
-        console.log('User confirmed as agency owner:', agencyData);
+        console.log('User is agency owner, redirecting to agency dashboard');
         navigate(`/${agency?.slug}/agency/dashboard`);
         return;
       }
 
-      // Check if user is an agent
-      const { data: agentData, error: agentError } = await supabase
+      // Then, check if user is an agent
+      const { data: agentData } = await supabase
         .from('real_estate_agents')
         .select('*')
         .eq('user_id', userId)
         .eq('agency_id', agency?.id)
         .single();
 
-      if (agentError && agentError.code !== 'PGRST116') {
-        console.error('Error checking agent role:', agentError);
-        throw new Error("Erreur lors de la vérification du rôle de l'agent");
-      }
-
       if (agentData) {
-        console.log('User confirmed as agent:', agentData);
+        console.log('User is agent, redirecting to agent dashboard');
         navigate(`/${agency?.slug}/agent/dashboard`);
         return;
       }
 
-      // Check if user is a client
-      const { data: clientData, error: clientError } = await supabase
+      // Finally, check if user is a client
+      const { data: clientData } = await supabase
         .from('clients')
         .select('*')
         .eq('user_id', userId)
         .eq('agency_id', agency?.id)
         .single();
 
-      if (clientError && clientError.code !== 'PGRST116') {
-        console.error('Error checking client role:', clientError);
-        throw new Error("Erreur lors de la vérification du rôle du client");
-      }
-
       if (clientData) {
-        console.log('User confirmed as client:', clientData);
+        console.log('User is client, redirecting to client dashboard');
         navigate(`/${agency?.slug}/client/dashboard`);
         return;
       }
 
-      // If no role is found for this agency
-      console.log('No role found for this user in this agency');
       throw new Error("Vous n'avez pas accès à cette agence");
-      
     } catch (error) {
-      console.error('Error in handleUserRole:', error);
-      let message = "Une erreur est survenue lors de la connexion";
+      console.error('Error in checkUserRole:', error);
+      let message = "Une erreur est survenue lors de la vérification de votre rôle";
       
-      if (error instanceof AuthError) {
-        switch (error.message) {
-          case 'Invalid login credentials':
-            message = "Email ou mot de passe incorrect";
-            break;
-          case 'Email not confirmed':
-            message = "Veuillez confirmer votre email avant de vous connecter";
-            break;
-          default:
-            message = error.message;
-        }
-      } else if (error instanceof Error) {
+      if (error instanceof Error) {
         message = error.message;
       }
       
@@ -146,6 +79,29 @@ export default function AgencyAuthPage() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        await checkUserRole(session.user.id);
+      }
+    };
+    
+    checkSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event);
+      
+      if (event === 'SIGNED_IN' && session?.user) {
+        await checkUserRole(session.user.id);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate, agency?.slug, agency?.id]);
 
   if (isLoading) {
     return (
