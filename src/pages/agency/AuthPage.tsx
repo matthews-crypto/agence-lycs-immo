@@ -17,52 +17,31 @@ export default function AgencyAuthPage() {
 
   const checkUserRole = async (userId: string) => {
     try {
-      console.log('Checking user role for:', userId);
+      console.log('Checking if user is agency owner:', userId);
       setIsLoading(true);
       setError(null);
 
-      // First, check if user is an agency owner
-      const { data: agencyData } = await supabase
+      // Vérifier uniquement dans la table agencies
+      const { data: agencyData, error: agencyError } = await supabase
         .from('agencies')
         .select('*')
         .eq('user_id', userId)
         .eq('slug', agency?.slug)
         .single();
 
+      if (agencyError) {
+        console.error('Error checking agency role:', agencyError);
+        throw agencyError;
+      }
+
       if (agencyData) {
-        console.log('User is agency owner, redirecting to agency dashboard');
+        console.log('User is agency owner, redirecting to dashboard');
         navigate(`/${agency?.slug}/agency/dashboard`);
         return;
       }
 
-      // Then, check if user is an agent
-      const { data: agentData } = await supabase
-        .from('real_estate_agents')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('agency_id', agency?.id)
-        .single();
-
-      if (agentData) {
-        console.log('User is agent, redirecting to agent dashboard');
-        navigate(`/${agency?.slug}/agent/dashboard`);
-        return;
-      }
-
-      // Finally, check if user is a client
-      const { data: clientData } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('agency_id', agency?.id)
-        .single();
-
-      if (clientData) {
-        console.log('User is client, redirecting to client dashboard');
-        navigate(`/${agency?.slug}/client/dashboard`);
-        return;
-      }
-
+      // Si on arrive ici, l'utilisateur n'est pas une agence
+      console.error('User is not associated with this agency');
       throw new Error("Vous n'avez pas accès à cette agence");
     } catch (error) {
       console.error('Error in checkUserRole:', error);
@@ -101,7 +80,7 @@ export default function AgencyAuthPage() {
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate, agency?.slug, agency?.id]);
+  }, [navigate, agency?.slug]);
 
   if (isLoading) {
     return (
