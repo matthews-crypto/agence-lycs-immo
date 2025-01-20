@@ -27,6 +27,11 @@ export const useAdminAuthStore = create<AdminAuthState>((set) => ({
     try {
       console.log("Starting login process for:", email);
 
+      // Nettoyer toute session existante d'abord
+      console.log("Cleaning existing sessions...");
+      await supabase.auth.signOut();
+      console.log("Existing sessions cleaned");
+
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password
