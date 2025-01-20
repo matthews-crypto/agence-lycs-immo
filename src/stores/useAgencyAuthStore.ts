@@ -25,73 +25,49 @@ export const useAgencyAuthStore = create<AgencyAuthState>((set) => ({
   login: async (email: string, password: string, agencySlug: string) => {
     set({ isLoading: true, error: null });
     try {
-      console.log("Starting agency login process for:", email);
-      console.log("Agency slug:", agencySlug);
-
-      // 1. Vérifier d'abord si l'agence existe
-      const { data: agencyData, error: agencyError } = await supabase
-        .from('agencies')
-        .select('*')
-        .eq('slug', agencySlug)
-        .single();
-
-      if (agencyError) {
-        console.error("Agency check error:", agencyError);
-        throw new Error("Cette agence n'existe pas");
-      }
-
-      console.log("Agency found:", agencyData);
-
-      // 2. Tentative de connexion
-      console.log("Attempting sign in with email:", email);
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      // 1. Nettoyer toute session existante
+      await supabase.auth.signOut();
+      
+      console.log("Attempting login with:", { email, agencySlug });
+      
+      // 2. Tenter la connexion avec plus de logs
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
+      
+      console.log("Auth response:", { data, error });
+      
+      if (error) throw error;
+      
+      // 3. Si la connexion réussit, vérifier la session
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log("Current session:", session);
 
-      if (signInError) {
-        console.error("Sign in error:", signInError);
-        throw signInError;
+      // 4. Vérifier l'association avec l'agence
+      if (session) {
+        const { data: agencyData, error: agencyError } = await supabase
+          .from('agencies')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .eq('slug', agencySlug)
+          .single();
+
+        console.log("Agency check:", { agencyData, agencyError });
+
+        if (agencyError || !agencyData) {
+          throw new Error("Accès non autorisé à cette agence");
+        }
+
+        if (!agencyData.is_active) {
+          throw new Error("Cette agence n'est pas active");
+        }
+
+        set({ isAuthenticated: true, error: null });
+        toast.success("Connexion réussie");
+      } else {
+        throw new Error("Session invalide");
       }
-
-      console.log("Sign in successful, checking agency association");
-
-      if (!signInData.user) {
-        console.error("No user data received");
-        throw new Error("No user data received");
-      }
-
-      console.log("User ID:", signInData.user.id);
-
-      // 3. Vérifier si l'utilisateur est associé à l'agence
-      const { data: userAgencyData, error: userAgencyError } = await supabase
-        .from('agencies')
-        .select('*')
-        .eq('user_id', signInData.user.id)
-        .eq('slug', agencySlug)
-        .single();
-
-      console.log("User agency data:", userAgencyData);
-      console.log("User agency error:", userAgencyError);
-
-      if (userAgencyError) {
-        console.error("User-agency check error:", userAgencyError);
-        throw new Error("Vous n'avez pas accès à cette agence");
-      }
-
-      if (!userAgencyData) {
-        console.error("User is not associated with this agency");
-        throw new Error("Vous n'avez pas accès à cette agence");
-      }
-
-      if (!userAgencyData.is_active) {
-        console.error("Agency is not active");
-        throw new Error("Cette agence n'est pas active");
-      }
-
-      console.log("Agency check successful, setting authenticated state");
-      set({ isAuthenticated: true, error: null });
-      toast.success("Connexion réussie");
     } catch (error) {
       console.error("Login error:", error);
       let message = "Échec de la connexion";
@@ -111,7 +87,6 @@ export const useAgencyAuthStore = create<AgencyAuthState>((set) => ({
       }
       set({ error: message, isAuthenticated: false });
       toast.error(message);
-      await supabase.auth.signOut();
     } finally {
       set({ isLoading: false });
     }
