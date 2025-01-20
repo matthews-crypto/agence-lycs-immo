@@ -26,7 +26,23 @@ export const useAgencyAuthStore = create<AgencyAuthState>((set) => ({
     set({ isLoading: true, error: null });
     try {
       console.log("Starting agency login process for:", email);
+      console.log("Agency slug:", agencySlug);
 
+      // 1. Vérifier d'abord si l'agence existe
+      const { data: agencyData, error: agencyError } = await supabase
+        .from('agencies')
+        .select('*')
+        .eq('slug', agencySlug)
+        .single();
+
+      if (agencyError) {
+        console.error("Agency check error:", agencyError);
+        throw new Error("Cette agence n'existe pas");
+      }
+
+      console.log("Agency found:", agencyData);
+
+      // 2. Tentative de connexion
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -37,32 +53,32 @@ export const useAgencyAuthStore = create<AgencyAuthState>((set) => ({
         throw signInError;
       }
 
-      console.log("Sign in successful, checking agency data");
+      console.log("Sign in successful, checking agency association");
 
       if (!signInData.user) {
         console.error("No user data received");
         throw new Error("No user data received");
       }
 
-      // Vérifier si l'utilisateur est associé à l'agence avec le bon slug
-      const { data: agencyData, error: agencyError } = await supabase
+      // 3. Vérifier si l'utilisateur est associé à l'agence
+      const { data: userAgencyData, error: userAgencyError } = await supabase
         .from('agencies')
         .select('*')
         .eq('user_id', signInData.user.id)
         .eq('slug', agencySlug)
         .single();
 
-      if (agencyError) {
-        console.error("Agency check error:", agencyError);
-        throw agencyError;
+      if (userAgencyError) {
+        console.error("User-agency check error:", userAgencyError);
+        throw new Error("Vous n'avez pas accès à cette agence");
       }
 
-      if (!agencyData) {
+      if (!userAgencyData) {
         console.error("User is not associated with this agency");
         throw new Error("Vous n'avez pas accès à cette agence");
       }
 
-      if (!agencyData.is_active) {
+      if (!userAgencyData.is_active) {
         console.error("Agency is not active");
         throw new Error("Cette agence n'est pas active");
       }
@@ -74,14 +90,22 @@ export const useAgencyAuthStore = create<AgencyAuthState>((set) => ({
       console.error("Login error:", error);
       let message = "Échec de la connexion";
       if (error instanceof AuthError) {
-        message = error.message;
+        switch (error.message) {
+          case 'Invalid login credentials':
+            message = "Email ou mot de passe incorrect";
+            break;
+          case 'Email not confirmed':
+            message = "Veuillez confirmer votre email avant de vous connecter";
+            break;
+          default:
+            message = error.message;
+        }
       } else if (error instanceof Error) {
         message = error.message;
       }
       set({ error: message, isAuthenticated: false });
       toast.error(message);
       await supabase.auth.signOut();
-      throw error;
     } finally {
       set({ isLoading: false });
     }
