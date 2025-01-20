@@ -2,15 +2,15 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
 interface CreateAgencyUserPayload {
-  email: string
   agency_name: string
-  agency_slug: string
-  license_number: string
+  contact_email: string
   contact_phone: string
+  license_number: string
+  slug: string
   address: string
   city: string
   postal_code: string
-  logo_url: string
+  logo_url?: string
   primary_color: string
   secondary_color: string
 }
@@ -29,25 +29,11 @@ Deno.serve(async (req) => {
 
     // Récupérer et valider le corps de la requête
     const payload: CreateAgencyUserPayload = await req.json()
-    const { 
-      email, 
-      agency_name, 
-      agency_slug, 
-      license_number,
-      contact_phone,
-      address,
-      city,
-      postal_code,
-      logo_url,
-      primary_color,
-      secondary_color
-    } = payload
-
     console.log('Creating agency user with payload:', payload)
 
     // Vérifier si l'email existe déjà
-    const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers()
-    if (existingUser?.users.some(user => user.email === email)) {
+    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
+    if (existingUsers?.users.some(user => user.email === payload.contact_email)) {
       return new Response(
         JSON.stringify({ error: 'Email already exists' }),
         { 
@@ -61,7 +47,7 @@ Deno.serve(async (req) => {
     const { data: existingLicense } = await supabaseAdmin
       .from('agencies')
       .select('license_number')
-      .eq('license_number', license_number)
+      .eq('license_number', payload.license_number)
       .single()
 
     if (existingLicense) {
@@ -78,7 +64,7 @@ Deno.serve(async (req) => {
     const { data: existingSlug } = await supabaseAdmin
       .from('agencies')
       .select('slug')
-      .eq('slug', agency_slug)
+      .eq('slug', payload.slug)
       .single()
 
     if (existingSlug) {
@@ -93,7 +79,7 @@ Deno.serve(async (req) => {
 
     // Créer l'utilisateur avec l'API admin
     const { data: userData, error: userError } = await supabaseAdmin.auth.admin.createUser({
-      email,
+      email: payload.contact_email,
       password: 'passer2025',
       email_confirm: true,
       user_metadata: {
@@ -103,7 +89,13 @@ Deno.serve(async (req) => {
 
     if (userError || !userData.user) {
       console.error('Error creating user:', userError)
-      throw userError
+      return new Response(
+        JSON.stringify({ error: userError?.message || 'Failed to create user' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
     }
 
     console.log('User created successfully:', userData.user)
@@ -113,17 +105,17 @@ Deno.serve(async (req) => {
       .from('agencies')
       .insert({
         user_id: userData.user.id,
-        agency_name,
-        slug: agency_slug,
-        license_number,
-        contact_email: email,
-        contact_phone,
-        address,
-        city,
-        postal_code,
-        logo_url,
-        primary_color,
-        secondary_color,
+        agency_name: payload.agency_name,
+        slug: payload.slug,
+        license_number: payload.license_number,
+        contact_email: payload.contact_email,
+        contact_phone: payload.contact_phone,
+        address: payload.address,
+        city: payload.city,
+        postal_code: payload.postal_code,
+        logo_url: payload.logo_url,
+        primary_color: payload.primary_color,
+        secondary_color: payload.secondary_color,
         is_active: true,
         must_change_password: true
       })
@@ -134,7 +126,13 @@ Deno.serve(async (req) => {
       console.error('Error creating agency:', agencyError)
       // Supprimer l'utilisateur créé si l'agence n'a pas pu être créée
       await supabaseAdmin.auth.admin.deleteUser(userData.user.id)
-      throw agencyError
+      return new Response(
+        JSON.stringify({ error: agencyError.message }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
     }
 
     console.log('Agency created successfully:', agencyData)
