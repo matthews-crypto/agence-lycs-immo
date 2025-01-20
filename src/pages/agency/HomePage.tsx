@@ -6,6 +6,12 @@ export default function AgencyHomePage() {
   const { agency } = useAgencyContext();
   const navigate = useNavigate();
 
+  const handleLogin = () => {
+    if (agency?.slug) {
+      navigate(`/${agency.slug}/auth`);
+    }
+  };
+
   return (
     <div 
       className="min-h-screen"
@@ -23,6 +29,16 @@ export default function AgencyHomePage() {
               className="h-16 object-contain"
             />
           )}
+          <Button 
+            onClick={handleLogin}
+            variant="outline"
+            style={{
+              borderColor: agency?.secondary_color || '#000000',
+              color: agency?.secondary_color || '#000000'
+            }}
+          >
+            Se connecter
+          </Button>
         </div>
 
         <div className="text-center mt-20">
