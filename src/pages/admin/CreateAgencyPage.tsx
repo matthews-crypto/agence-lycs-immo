@@ -52,32 +52,19 @@ export default function CreateAgencyPage() {
       setIsSubmitting(true)
       console.log("Submitting data:", data)
 
-      const { data: result, error: fnError } = await supabase.rpc(
-        'create_agency_user_and_profile',
-        {
-          email: data.contact_email,
-          agency_name: data.agency_name,
-          agency_slug: data.slug,
-          license_number: data.license_number,
-          contact_phone: data.contact_phone,
-          address: data.address,
-          city: data.city,
-          postal_code: data.postal_code,
-          logo_url: data.logo_url || '',
-          primary_color: data.primary_color,
-          secondary_color: data.secondary_color,
-        }
-      )
+      const { data: result, error } = await supabase.functions.invoke('create-agency-user', {
+        body: data
+      })
 
-      if (fnError) {
-        console.error("Function error:", fnError)
-        if (fnError.message.includes('Email already exists')) {
+      if (error) {
+        console.error("Function error:", error)
+        if (error.message.includes('Email already exists')) {
           toast.error("Cet email est déjà utilisé")
           return
-        } else if (fnError.message.includes('License number already exists')) {
+        } else if (error.message.includes('License number already exists')) {
           toast.error("Ce numéro de licence est déjà utilisé")
           return
-        } else if (fnError.message.includes('Slug already exists')) {
+        } else if (error.message.includes('Slug already exists')) {
           toast.error("Ce slug est déjà utilisé")
           return
         } else {

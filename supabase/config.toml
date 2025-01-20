@@ -1,1 +1,2 @@
-project_id = "gdgooabpwdnuiagjoknv"
+[functions.create-agency-user]
+verify_jwt = true
