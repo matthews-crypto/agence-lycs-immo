@@ -43,6 +43,7 @@ export const useAgencyAuthStore = create<AgencyAuthState>((set) => ({
       console.log("Agency found:", agencyData);
 
       // 2. Tentative de connexion
+      console.log("Attempting sign in with email:", email);
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -60,6 +61,8 @@ export const useAgencyAuthStore = create<AgencyAuthState>((set) => ({
         throw new Error("No user data received");
       }
 
+      console.log("User ID:", signInData.user.id);
+
       // 3. Vérifier si l'utilisateur est associé à l'agence
       const { data: userAgencyData, error: userAgencyError } = await supabase
         .from('agencies')
@@ -67,6 +70,9 @@ export const useAgencyAuthStore = create<AgencyAuthState>((set) => ({
         .eq('user_id', signInData.user.id)
         .eq('slug', agencySlug)
         .single();
+
+      console.log("User agency data:", userAgencyData);
+      console.log("User agency error:", userAgencyError);
 
       if (userAgencyError) {
         console.error("User-agency check error:", userAgencyError);
