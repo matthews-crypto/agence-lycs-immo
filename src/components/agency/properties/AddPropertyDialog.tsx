@@ -75,7 +75,7 @@ export function AddPropertyDialog() {
   });
 
   const onSubmit = async (data: PropertyFormValues) => {
-    if (!agency?.id || !agency?.slug) {
+    if (!agency?.id) {
       toast({
         variant: "destructive",
         title: "Erreur",
@@ -120,7 +120,7 @@ export function AddPropertyDialog() {
       setOpen(false);
       form.reset();
       
-      // Redirection vers la page de gestion des images avec le slug de l'agence
+      // Redirection vers la page de gestion des images
       if (newProperty) {
         navigate(`/${agency.slug}/properties/${newProperty.id}/images`);
       }

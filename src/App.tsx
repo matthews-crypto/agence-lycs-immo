@@ -7,7 +7,6 @@ import AgentDashboardPage from "@/pages/agency/agent/DashboardPage";
 import AgentPropertiesPage from "@/pages/agency/agent/PropertiesPage";
 import AgentAppointmentsPage from "@/pages/agency/agent/AppointmentsPage";
 import PropertyImagesPage from "@/pages/agency/PropertyImagesPage";
-import PropertyDetailPage from "@/pages/agency/PropertyDetailPage";
 
 export default function App() {
   return (
@@ -16,7 +15,6 @@ export default function App() {
         <Route path="/:slug">
           <Route path="dashboard" element={<AgencyDashboardPage />} />
           <Route path="properties" element={<AgencyPropertiesPage />} />
-          <Route path="properties/:id" element={<PropertyDetailPage />} />
           <Route path="properties/:id/images" element={<PropertyImagesPage />} />
           <Route path="agents" element={<AgencyAgentsPage />} />
           <Route path="agent">

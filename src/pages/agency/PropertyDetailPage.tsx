@@ -6,16 +6,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
 export default function PropertyDetailPage() {
-  const { id, slug } = useParams<{ id: string; slug: string }>();
+  const params = useParams<{ id: string; slug: string }>();
   const navigate = useNavigate();
 
   const { data: property, isLoading } = useQuery({
-    queryKey: ['property', id],
+    queryKey: ['property', params.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('properties')
         .select('*')
-        .eq('id', id)
+        .eq('id', params.id)
         .single();
       
       if (error) throw error;
@@ -37,7 +37,7 @@ export default function PropertyDetailPage() {
         <Button variant="outline" onClick={() => navigate(-1)}>
           Retour
         </Button>
-        <Link to={`/${slug}/properties/${id}/images`}>
+        <Link to={`/${params.slug}/properties/${params.id}/images`}>
           <Button className="flex items-center gap-2">
             <ImageIcon className="h-4 w-4" />
             Gérer les images
@@ -48,6 +48,7 @@ export default function PropertyDetailPage() {
       <div className="mt-6">
         <h1 className="text-2xl font-bold mb-4">{property?.title}</h1>
         <p className="text-gray-600">{property?.description}</p>
+        {/* Add more property details as needed */}
       </div>
     </div>
   );
