@@ -83,16 +83,14 @@ export function AddPropertyDialog() {
     }
 
     try {
-      const propertyData = {
+      const { error } = await supabase.from("properties").insert({
         ...data,
         agency_id: agency.id,
         property_status: "AVAILABLE" as const,
         is_available: true,
-        amenities: [], // Initialize with empty array as per schema
-        photos: [], // Initialize with empty array as per schema
-      };
-
-      const { error } = await supabase.from("properties").insert(propertyData);
+        amenities: [],
+        photos: [],
+      });
 
       if (error) throw error;
 
