@@ -73,13 +73,26 @@ export function AddPropertyDialog() {
   });
 
   const onSubmit = async (data: PropertyFormValues) => {
-    try {
-      const { error } = await supabase.from("properties").insert({
-        ...data,
-        agency_id: agency?.id,
-        property_status: "AVAILABLE",
-        is_available: true,
+    if (!agency?.id) {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "ID de l'agence non trouvé",
       });
+      return;
+    }
+
+    try {
+      const propertyData = {
+        ...data,
+        agency_id: agency.id,
+        property_status: "AVAILABLE" as const,
+        is_available: true,
+        amenities: [], // Initialize with empty array as per schema
+        photos: [], // Initialize with empty array as per schema
+      };
+
+      const { error } = await supabase.from("properties").insert(propertyData);
 
       if (error) throw error;
 
@@ -318,4 +331,4 @@ export function AddPropertyDialog() {
       </DialogContent>
     </Dialog>
   );
-}
+});
