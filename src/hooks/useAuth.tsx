@@ -7,58 +7,33 @@ export function useAuth() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    console.log("Initializing auth hook...");
+    console.log("Initializing auth hook...")
     
-    // Fonction pour récupérer et définir la session
-    const setServerSession = async () => {
-      try {
-        const { data: { session: serverSession }, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error("Error getting server session:", error);
-          return;
-        }
-        
-        if (serverSession) {
-          console.log("Server session found:", serverSession.user.email);
-          setSession(serverSession);
-        } else {
-          console.log("No server session found");
-          setSession(null);
-        }
-      } catch (error) {
-        console.error("Unexpected error getting session:", error);
-      } finally {
-        setIsLoading(false);
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error("Error getting initial session:", error)
+      } else {
+        console.log("Initial session state:", session ? "Active" : "No session")
       }
-    };
+      setSession(session)
+      setIsLoading(false)
+    })
 
-    // Initialiser la session au chargement
-    setServerSession();
-
-    // Écouter les changements d'état d'authentification
+    // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
-      console.log("Auth state change:", event, currentSession?.user?.email);
-      
-      if (event === 'SIGNED_IN') {
-        setSession(currentSession);
-        setIsLoading(false);
-      } else if (event === 'SIGNED_OUT') {
-        setSession(null);
-        setIsLoading(false);
-      } else if (event === 'TOKEN_REFRESHED') {
-        setSession(currentSession);
-        setIsLoading(false);
-      }
-    });
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state change in hook:", event)
+      setSession(session)
+      setIsLoading(false)
+    })
 
-    // Nettoyer la souscription
     return () => {
-      console.log("Cleaning up auth hook subscription");
-      subscription.unsubscribe();
-    };
-  }, []);
+      console.log("Cleaning up auth hook subscription")
+      subscription.unsubscribe()
+    }
+  }, [])
 
-  return { session, isLoading };
+  return { session, isLoading }
 }
