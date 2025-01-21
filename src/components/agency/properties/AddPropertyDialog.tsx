@@ -331,4 +331,4 @@ export function AddPropertyDialog() {
       </DialogContent>
     </Dialog>
   );
-});
+}
