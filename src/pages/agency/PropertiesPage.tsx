@@ -75,7 +75,7 @@ export default function AgencyPropertiesPage() {
                   {filteredProperties?.map((property) => (
                     <Link 
                       key={property.id} 
-                      to={`/properties/${property.id}`}
+                      to={`/${agency?.slug}/properties/${property.id}`}
                       className="transition-transform hover:scale-105"
                     >
                       <Card className="overflow-hidden h-full">
