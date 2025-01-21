@@ -3,12 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Home, Euro, Bath, BedDouble, ArrowRight, PlusCircle } from "lucide-react";
+import { Search, Home, Euro, Bath, BedDouble, ArrowRight } from "lucide-react";
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { AgencySidebar } from "@/components/agency/AgencySidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { AddPropertyDialog } from "@/components/agency/properties/AddPropertyDialog";
 
 export default function AgencyPropertiesPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -44,12 +44,7 @@ export default function AgencyPropertiesPage() {
               <div className="flex flex-col space-y-4">
                 <div className="flex justify-between items-center">
                   <h1 className="text-4xl font-bold">Nos Biens Immobiliers</h1>
-                  <Button 
-                    className="flex items-center gap-2 bg-sidebar-primary hover:bg-sidebar-primary/90"
-                  >
-                    <PlusCircle className="h-5 w-5" />
-                    Ajouter un bien
-                  </Button>
+                  <AddPropertyDialog />
                 </div>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -102,7 +97,7 @@ export default function AgencyPropertiesPage() {
                           </div>
                           <div className="flex items-center space-x-2 text-muted-foreground">
                             <Euro className="h-4 w-4" />
-                            <span>{property.price.toLocaleString()} €</span>
+                            <span>{property.price.toLocaleString()} FCFA</span>
                           </div>
                           {(property.bedrooms || property.bathrooms) && (
                             <div className="flex space-x-4">
