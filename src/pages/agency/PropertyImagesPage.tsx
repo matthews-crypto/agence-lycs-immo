@@ -80,8 +80,8 @@ export default function PropertyImagesPage() {
           .from('property-images')
           .upload(fileName, file, {
             upsert: false,
-            onUploadProgress: (progress) => {
-              newProgress[fileName] = (progress.loaded / progress.total) * 100;
+            onUploadProgress: (event: ProgressEvent) => {
+              newProgress[fileName] = (event.loaded / event.total) * 100;
               setUploadProgress(newProgress);
             },
           });
