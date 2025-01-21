@@ -29,11 +29,15 @@ export default function AgencyDashboardPage() {
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen w-full">
-        <AgencySidebar />
-        <main className="flex-1 p-8">
-          <h1 className="text-2xl font-bold mb-4">Tableau de bord de l'agence</h1>
-          {/* Le reste du contenu du tableau de bord sera ajouté ici */}
+      <div className="flex h-screen w-full bg-background">
+        <div className="bg-muted">
+          <AgencySidebar />
+        </div>
+        <main className="flex-1 p-8 overflow-auto">
+          <div className="max-w-5xl mx-auto">
+            <h1 className="text-2xl font-bold mb-4">Tableau de bord de l'agence</h1>
+            {/* Le reste du contenu du tableau de bord sera ajouté ici */}
+          </div>
         </main>
       </div>
     </SidebarProvider>
