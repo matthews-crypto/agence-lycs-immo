@@ -36,16 +36,18 @@ import {
 import { useAgencyAuthStore } from "@/stores/useAgencyAuthStore"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
+import { useAgencyContext } from "@/contexts/AgencyContext"
 
 export function AgencySidebar() {
   const location = useLocation()
   const navigate = useNavigate()
   const { logout } = useAgencyAuthStore()
+  const { agency } = useAgencyContext()
 
   const handleLogout = async () => {
     try {
       await logout()
-      navigate("auth")
+      navigate(`/${agency?.slug}`) // Redirection vers la page de l'agence
       toast.success("Déconnexion réussie")
     } catch (error) {
       console.error("Logout error:", error)
