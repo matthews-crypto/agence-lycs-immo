@@ -33,9 +33,10 @@ export function AgencySidebar() {
   const { agency } = useAgencyContext()
 
   useEffect(() => {
-    console.log("Agency data:", agency)
-    console.log("Secondary color:", agency?.secondary_color)
-  }, [agency])
+    if (agency?.secondary_color) {
+      document.documentElement.style.setProperty('--sidebar-background', agency.secondary_color);
+    }
+  }, [agency?.secondary_color]);
 
   const handleLogout = async () => {
     try {
@@ -101,18 +102,10 @@ export function AgencySidebar() {
     },
   ]
 
-  const sidebarStyle = {
-    backgroundColor: agency?.secondary_color || '#f3f4f6',
-    transition: 'background-color 0.3s ease'
-  }
-
-  console.log("Applied sidebar style:", sidebarStyle)
-
   return (
     <Sidebar 
       variant="sidebar" 
-      className="border-r"
-      style={sidebarStyle}
+      className="border-r bg-sidebar"
     >
       <SidebarHeader className="p-4">
         <h2 className="text-lg font-semibold">Dashboard Agence</h2>
