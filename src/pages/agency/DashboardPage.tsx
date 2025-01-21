@@ -30,7 +30,7 @@ export default function AgencyDashboardPage() {
   return (
     <SidebarProvider>
       <div className="flex h-screen w-full bg-background">
-        <div className="bg-muted">
+        <div style={{ backgroundColor: agency?.secondary_color || '#f3f4f6' }}>
           <AgencySidebar />
         </div>
         <main className="flex-1 p-8 overflow-auto">
