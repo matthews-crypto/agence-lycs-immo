@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Image as ImageIcon } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
@@ -38,10 +38,7 @@ export default function PropertyDetailPage() {
           Retour
         </Button>
         <Link to={`/${params.slug}/properties/${params.id}/images`}>
-          <Button className="flex items-center gap-2">
-            <ImageIcon className="h-4 w-4" />
-            Gérer les images
-          </Button>
+          <Button>Gérer les images</Button>
         </Link>
       </div>
 
