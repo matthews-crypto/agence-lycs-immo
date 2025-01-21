@@ -75,35 +75,15 @@ export default function PropertyImagesPage() {
       const uploadPromises = acceptedFiles.map(async (file) => {
         const fileExt = file.name.split('.').pop();
         const fileName = `${id}/${crypto.randomUUID()}.${fileExt}`;
-
-        // Create a ReadableStream from the file
-        const stream = new ReadableStream({
-          start(controller) {
-            const reader = new FileReader();
-            reader.onload = () => {
-              controller.enqueue(new Uint8Array(reader.result as ArrayBuffer));
-              controller.close();
-            };
-            reader.readAsArrayBuffer(file);
-          },
-        });
-
-        // Track upload progress
-        let loaded = 0;
-        const total = file.size;
-        const transformStream = new TransformStream({
-          transform(chunk, controller) {
-            loaded += chunk.length;
-            newProgress[fileName] = (loaded / total) * 100;
-            setUploadProgress({ ...newProgress });
-            controller.enqueue(chunk);
-          },
-        });
-
+        
         const { error: uploadError, data } = await supabase.storage
           .from('property-images')
           .upload(fileName, file, {
             upsert: false,
+            onUploadProgress: (progress) => {
+              newProgress[fileName] = (progress.loaded / progress.total) * 100;
+              setUploadProgress(newProgress);
+            },
           });
 
         if (uploadError) throw uploadError;
