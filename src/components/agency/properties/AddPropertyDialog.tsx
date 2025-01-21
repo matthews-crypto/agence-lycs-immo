@@ -83,14 +83,27 @@ export function AddPropertyDialog() {
     }
 
     try {
-      const { error } = await supabase.from("properties").insert({
-        ...data,
+      // Create the property data object with all required fields
+      const propertyData = {
+        title: data.title,
+        description: data.description,
+        price: data.price,
+        property_type: data.property_type,
+        bedrooms: data.bedrooms,
+        bathrooms: data.bathrooms,
+        surface_area: data.surface_area,
+        address: data.address,
+        city: data.city,
+        postal_code: data.postal_code,
+        year_built: data.year_built,
         agency_id: agency.id,
         property_status: "AVAILABLE" as const,
         is_available: true,
-        amenities: [],
-        photos: [],
-      });
+        amenities: [] as string[],
+        photos: [] as string[],
+      };
+
+      const { error } = await supabase.from("properties").insert(propertyData);
 
       if (error) throw error;
 
