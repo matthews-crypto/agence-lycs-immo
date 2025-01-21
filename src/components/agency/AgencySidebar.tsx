@@ -49,7 +49,7 @@ export function AgencySidebar() {
         {
           title: "Tableau de bord",
           icon: LayoutDashboard,
-          url: "dashboard",
+          url: "agency/dashboard",
         },
       ],
     },
@@ -59,17 +59,17 @@ export function AgencySidebar() {
         {
           title: "Biens Immobiliers",
           icon: Home,
-          url: "properties",
+          url: "agency/properties",
         },
         {
           title: "Rendez-vous",
           icon: Calendar,
-          url: "appointments",
+          url: "agency/appointments",
         },
         {
           title: "Clients",
           icon: Users,
-          url: "clients",
+          url: "agency/clients",
         },
       ],
     },
@@ -79,17 +79,17 @@ export function AgencySidebar() {
         {
           title: "Analytics & Rapports",
           icon: ChartBar,
-          url: "analytics",
+          url: "agency/analytics",
         },
         {
           title: "Configuration",
           icon: Settings,
-          url: "settings",
+          url: "agency/settings",
         },
         {
           title: "Chat WhatsApp",
           icon: MessageSquare,
-          url: "whatsapp",
+          url: "agency/whatsapp",
         },
       ],
     },
