@@ -7,16 +7,6 @@ import {
   ChartBar,
   Settings,
   MessageSquare,
-  PlusCircle,
-  Clock,
-  List,
-  History,
-  TrendingUp,
-  MapPin,
-  FileText,
-  User,
-  Palette,
-  Bot,
   LogOut,
 } from "lucide-react"
 import {
@@ -29,9 +19,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 import { useAgencyAuthStore } from "@/stores/useAgencyAuthStore"
 import { Button } from "@/components/ui/button"
@@ -63,135 +50,46 @@ export function AgencySidebar() {
           title: "Tableau de bord",
           icon: LayoutDashboard,
           url: "dashboard",
-          subItems: [
-            { title: "Statistiques clés", url: "stats" },
-            { title: "Indicateurs de performance", url: "kpis" },
-          ],
         },
       ],
     },
     {
-      label: "Biens Immobiliers",
+      label: "Gestion",
       items: [
         {
-          title: "Liste des propriétés",
+          title: "Biens Immobiliers",
           icon: Home,
           url: "properties",
         },
         {
-          title: "Ajouter une propriété",
-          icon: PlusCircle,
-          url: "properties/new",
-        },
-        {
-          title: "Gérer les disponibilités",
-          icon: Clock,
-          url: "properties/availability",
-        },
-      ],
-    },
-    {
-      label: "Rendez-vous",
-      items: [
-        {
-          title: "Calendrier des visites",
+          title: "Rendez-vous",
           icon: Calendar,
           url: "appointments",
         },
         {
-          title: "Demandes en attente",
-          icon: List,
-          url: "appointments/pending",
-        },
-        {
-          title: "Historique des visites",
-          icon: History,
-          url: "appointments/history",
-        },
-      ],
-    },
-    {
-      label: "Clients",
-      items: [
-        {
-          title: "Liste des clients",
+          title: "Clients",
           icon: Users,
           url: "clients",
         },
-        {
-          title: "Demandes de contact",
-          icon: MessageSquare,
-          url: "clients/requests",
-        },
-        {
-          title: "Historique des interactions",
-          icon: History,
-          url: "clients/history",
-        },
       ],
     },
     {
-      label: "Analytics & Rapports",
+      label: "Analyse & Configuration",
       items: [
         {
-          title: "Statistiques de vues",
+          title: "Analytics & Rapports",
           icon: ChartBar,
-          url: "analytics/views",
+          url: "analytics",
         },
         {
-          title: "Taux de conversion",
-          icon: TrendingUp,
-          url: "analytics/conversion",
-        },
-        {
-          title: "Performance par zone",
-          icon: MapPin,
-          url: "analytics/geography",
-        },
-        {
-          title: "Rapports d'activité",
-          icon: FileText,
-          url: "analytics/reports",
-        },
-      ],
-    },
-    {
-      label: "Configuration",
-      items: [
-        {
-          title: "Profil de l'agence",
-          icon: User,
-          url: "settings/profile",
-        },
-        {
-          title: "Paramètres de compte",
+          title: "Configuration",
           icon: Settings,
-          url: "settings/account",
+          url: "settings",
         },
         {
-          title: "Gestion des thèmes",
-          icon: Palette,
-          url: "settings/theme",
-        },
-      ],
-    },
-    {
-      label: "Chat WhatsApp",
-      items: [
-        {
-          title: "État du bot",
-          icon: Bot,
-          url: "whatsapp/status",
-        },
-        {
-          title: "Historique des conversations",
-          icon: History,
-          url: "whatsapp/history",
-        },
-        {
-          title: "Configuration des réponses",
-          icon: Settings,
-          url: "whatsapp/settings",
+          title: "Chat WhatsApp",
+          icon: MessageSquare,
+          url: "whatsapp",
         },
       ],
     },
@@ -220,20 +118,6 @@ export function AgencySidebar() {
                         <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
-                    {item.subItems && (
-                      <SidebarMenuSub>
-                        {item.subItems.map((subItem) => (
-                          <SidebarMenuSubItem key={subItem.title}>
-                            <SidebarMenuSubButton
-                              asChild
-                              data-active={location.pathname.includes(subItem.url)}
-                            >
-                              <Link to={subItem.url}>{subItem.title}</Link>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        ))}
-                      </SidebarMenuSub>
-                    )}
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
