@@ -16,11 +16,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useState, useEffect } from "react";
 
 export default function AgencyPropertyDetailPage() {
   const { propertyId, agencySlug } = useParams();
   const navigate = useNavigate();
   const { agency } = useAgencyContext();
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [api, setApi] = useState<any>();
 
   const { data: property, isLoading } = useQuery({
     queryKey: ["property", propertyId],
@@ -36,6 +40,21 @@ export default function AgencyPropertyDetailPage() {
     },
     enabled: !!propertyId,
   });
+
+  // Auto-scroll every 5 seconds
+  useEffect(() => {
+    if (!api) return;
+
+    const interval = setInterval(() => {
+      if (api.canScrollNext()) {
+        api.scrollNext();
+      } else {
+        api.scrollTo(0);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [api]);
 
   if (isLoading) {
     return (
@@ -92,13 +111,17 @@ export default function AgencyPropertyDetailPage() {
             align: "start",
             loop: true,
           }}
+          setApi={setApi}
           className="w-full"
         >
           <CarouselContent>
             {property.photos?.length > 0 ? (
               property.photos.map((photo, index) => (
                 <CarouselItem key={index}>
-                  <div className="relative aspect-[16/9]">
+                  <div 
+                    className="relative aspect-[16/9] cursor-pointer"
+                    onClick={() => setSelectedImage(photo)}
+                  >
                     <img
                       src={photo}
                       alt={`${property.title} - Photo ${index + 1}`}
@@ -119,6 +142,19 @@ export default function AgencyPropertyDetailPage() {
           <CarouselNext />
         </Carousel>
       </div>
+
+      {/* Image Modal */}
+      <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+        <DialogContent className="max-w-[90vw] max-h-[90vh] p-0">
+          {selectedImage && (
+            <img
+              src={selectedImage}
+              alt="Property"
+              className="w-full h-full object-contain"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Main Info */}
