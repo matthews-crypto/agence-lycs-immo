@@ -41,11 +41,12 @@ export default function AgencyPropertiesPage() {
         <div className="flex-1">
           <div className="container mx-auto py-8 px-4">
             <div className="flex flex-col space-y-8">
-              {/* Header, Search and Add Button */}
               <div className="flex flex-col space-y-4">
                 <div className="flex justify-between items-center">
                   <h1 className="text-4xl font-bold">Nos Biens Immobiliers</h1>
-                  <Button className="flex items-center gap-2">
+                  <Button 
+                    className="flex items-center gap-2 bg-sidebar-primary hover:bg-sidebar-primary/90"
+                  >
                     <PlusCircle className="h-5 w-5" />
                     Ajouter un bien
                   </Button>
