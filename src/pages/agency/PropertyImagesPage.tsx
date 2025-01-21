@@ -79,11 +79,7 @@ export default function PropertyImagesPage() {
         const { error: uploadError, data } = await supabase.storage
           .from('property-images')
           .upload(fileName, file, {
-            upsert: false,
-            onUploadProgress: (progress) => {
-              newProgress[fileName] = (progress.loaded / progress.total) * 100;
-              setUploadProgress(newProgress);
-            },
+            upsert: false
           });
 
         if (uploadError) throw uploadError;
