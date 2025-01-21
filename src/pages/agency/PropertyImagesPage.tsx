@@ -18,7 +18,7 @@ const ACCEPTED_FILE_TYPES = {
 };
 
 export default function PropertyImagesPage() {
-  const { propertyId, slug } = useParams();
+  const { propertyId, agencySlug } = useParams();
   const navigate = useNavigate();
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -167,7 +167,7 @@ export default function PropertyImagesPage() {
       <div className="mb-8">
         <Button
           variant="ghost"
-          onClick={() => navigate(`/${slug}/properties/${propertyId}`)}
+          onClick={() => navigate(`/${agencySlug}/properties/${propertyId}`)}
           className="mb-4"
           style={{ color: agency?.primary_color }}
         >
