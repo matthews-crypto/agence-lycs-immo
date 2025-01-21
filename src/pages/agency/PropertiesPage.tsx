@@ -14,19 +14,32 @@ export default function AgencyPropertiesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const { agency } = useAgencyContext();
 
-  const { data: properties, isLoading } = useQuery({
+  const { data: properties, isLoading, error } = useQuery({
     queryKey: ["properties", agency?.id],
     queryFn: async () => {
+      if (!agency?.id) {
+        throw new Error("Agency ID not found");
+      }
+
       const { data, error } = await supabase
         .from("properties")
         .select("*")
-        .eq("agency_id", agency?.id);
+        .eq("agency_id", agency.id);
 
       if (error) throw error;
       return data;
     },
     enabled: !!agency?.id,
   });
+
+  if (error) {
+    console.error("Error fetching properties:", error);
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-red-500">Une erreur est survenue lors du chargement des propriétés</p>
+      </div>
+    );
+  }
 
   const filteredProperties = properties?.filter(
     (property) =>
