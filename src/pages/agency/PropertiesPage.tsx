@@ -3,9 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Home, Euro, Bath, BedDouble, ArrowRight } from "lucide-react";
+import { Search, Home, Euro, Bath, BedDouble, ArrowRight, PlusCircle } from "lucide-react";
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { AgencySidebar } from "@/components/agency/AgencySidebar";
 
 export default function AgencyPropertiesPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -32,92 +34,103 @@ export default function AgencyPropertiesPage() {
   );
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="flex flex-col space-y-8">
-        {/* Header and Search */}
-        <div className="flex flex-col space-y-4">
-          <h1 className="text-4xl font-bold">Nos Biens Immobiliers</h1>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <Input
-              placeholder="Rechercher par nom ou ville..."
-              className="pl-10"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+    <div className="flex min-h-screen bg-background">
+      <AgencySidebar />
+      <div className="flex-1">
+        <div className="container mx-auto py-8 px-4">
+          <div className="flex flex-col space-y-8">
+            {/* Header, Search and Add Button */}
+            <div className="flex flex-col space-y-4">
+              <div className="flex justify-between items-center">
+                <h1 className="text-4xl font-bold">Nos Biens Immobiliers</h1>
+                <Button className="flex items-center gap-2">
+                  <PlusCircle className="h-5 w-5" />
+                  Ajouter un bien
+                </Button>
+              </div>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <Input
+                  placeholder="Rechercher par nom ou ville..."
+                  className="pl-10"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Properties Grid */}
+            {isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <Card key={n} className="animate-pulse">
+                    <div className="h-48 bg-gray-200 rounded-t-lg" />
+                    <CardContent className="p-4">
+                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-4" />
+                      <div className="h-4 bg-gray-200 rounded w-1/2" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredProperties?.map((property) => (
+                  <Link 
+                    key={property.id} 
+                    to={`/properties/${property.id}`}
+                    className="transition-transform hover:scale-105"
+                  >
+                    <Card className="overflow-hidden h-full">
+                      <div 
+                        className="h-48 bg-cover bg-center"
+                        style={{
+                          backgroundImage: property.photos?.length 
+                            ? `url(${property.photos[0]})` 
+                            : "url(/placeholder.svg)"
+                        }}
+                      />
+                      <CardHeader>
+                        <CardTitle className="line-clamp-1">{property.title}</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="flex items-center space-x-2 text-muted-foreground">
+                          <Home className="h-4 w-4" />
+                          <span>{property.property_type}</span>
+                        </div>
+                        <div className="flex items-center space-x-2 text-muted-foreground">
+                          <Euro className="h-4 w-4" />
+                          <span>{property.price.toLocaleString()} €</span>
+                        </div>
+                        {(property.bedrooms || property.bathrooms) && (
+                          <div className="flex space-x-4">
+                            {property.bedrooms && (
+                              <div className="flex items-center space-x-1">
+                                <BedDouble className="h-4 w-4" />
+                                <span>{property.bedrooms}</span>
+                              </div>
+                            )}
+                            {property.bathrooms && (
+                              <div className="flex items-center space-x-1">
+                                <Bath className="h-4 w-4" />
+                                <span>{property.bathrooms}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </CardContent>
+                      <CardFooter className="flex justify-between items-center">
+                        <div className="text-sm text-muted-foreground">
+                          {property.city}
+                        </div>
+                        <ArrowRight className="h-4 w-4" />
+                      </CardFooter>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         </div>
-
-        {/* Properties Grid */}
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((n) => (
-              <Card key={n} className="animate-pulse">
-                <div className="h-48 bg-gray-200 rounded-t-lg" />
-                <CardContent className="p-4">
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-4" />
-                  <div className="h-4 bg-gray-200 rounded w-1/2" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProperties?.map((property) => (
-              <Link 
-                key={property.id} 
-                to={`/properties/${property.id}`}
-                className="transition-transform hover:scale-105"
-              >
-                <Card className="overflow-hidden h-full">
-                  <div 
-                    className="h-48 bg-cover bg-center"
-                    style={{
-                      backgroundImage: property.photos?.length 
-                        ? `url(${property.photos[0]})` 
-                        : "url(/placeholder.svg)"
-                    }}
-                  />
-                  <CardHeader>
-                    <CardTitle className="line-clamp-1">{property.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center space-x-2 text-muted-foreground">
-                      <Home className="h-4 w-4" />
-                      <span>{property.property_type}</span>
-                    </div>
-                    <div className="flex items-center space-x-2 text-muted-foreground">
-                      <Euro className="h-4 w-4" />
-                      <span>{property.price.toLocaleString()} €</span>
-                    </div>
-                    {(property.bedrooms || property.bathrooms) && (
-                      <div className="flex space-x-4">
-                        {property.bedrooms && (
-                          <div className="flex items-center space-x-1">
-                            <BedDouble className="h-4 w-4" />
-                            <span>{property.bedrooms}</span>
-                          </div>
-                        )}
-                        {property.bathrooms && (
-                          <div className="flex items-center space-x-1">
-                            <Bath className="h-4 w-4" />
-                            <span>{property.bathrooms}</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-                  <CardFooter className="flex justify-between items-center">
-                    <div className="text-sm text-muted-foreground">
-                      {property.city}
-                    </div>
-                    <ArrowRight className="h-4 w-4" />
-                  </CardFooter>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
