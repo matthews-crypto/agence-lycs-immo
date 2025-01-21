@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -54,6 +55,7 @@ export function AddPropertyDialog() {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const { agency } = useAgencyContext();
+  const navigate = useNavigate();
 
   const form = useForm<PropertyFormValues>({
     resolver: zodResolver(propertySchema),
@@ -83,7 +85,6 @@ export function AddPropertyDialog() {
     }
 
     try {
-      // Create the property data object with all required fields
       const propertyData = {
         title: data.title,
         description: data.description,
@@ -103,7 +104,11 @@ export function AddPropertyDialog() {
         photos: [] as string[],
       };
 
-      const { error } = await supabase.from("properties").insert(propertyData);
+      const { data: newProperty, error } = await supabase
+        .from("properties")
+        .insert(propertyData)
+        .select()
+        .single();
 
       if (error) throw error;
 
@@ -111,8 +116,14 @@ export function AddPropertyDialog() {
         title: "Succès",
         description: "Le bien a été ajouté avec succès",
       });
+      
       setOpen(false);
       form.reset();
+      
+      // Redirection vers la page de gestion des images
+      if (newProperty) {
+        navigate(`/${agency.slug}/properties/${newProperty.id}/images`);
+      }
     } catch (error) {
       console.error("Error adding property:", error);
       toast({
