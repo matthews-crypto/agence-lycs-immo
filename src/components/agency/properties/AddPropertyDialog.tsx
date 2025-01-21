@@ -37,15 +37,15 @@ import { useAgencyContext } from "@/contexts/AgencyContext";
 const propertySchema = z.object({
   title: z.string().min(1, "Le titre est requis"),
   description: z.string().min(1, "La description est requise"),
-  price: z.string().min(1, "Le prix est requis").transform(Number),
+  price: z.coerce.number().min(1, "Le prix est requis"),
   property_type: z.string().min(1, "Le type de bien est requis"),
-  bedrooms: z.string().transform(Number).optional(),
-  bathrooms: z.string().transform(Number).optional(),
-  surface_area: z.string().transform(Number).optional(),
+  bedrooms: z.coerce.number().optional(),
+  bathrooms: z.coerce.number().optional(),
+  surface_area: z.coerce.number().optional(),
   address: z.string().min(1, "L'adresse est requise"),
   city: z.string().min(1, "La ville est requise"),
   postal_code: z.string().min(1, "Le code postal est requis"),
-  year_built: z.string().transform(Number).optional(),
+  year_built: z.coerce.number().optional(),
 });
 
 type PropertyFormValues = z.infer<typeof propertySchema>;
@@ -60,15 +60,15 @@ export function AddPropertyDialog() {
     defaultValues: {
       title: "",
       description: "",
-      price: "",
+      price: undefined,
       property_type: "",
-      bedrooms: "",
-      bathrooms: "",
-      surface_area: "",
+      bedrooms: undefined,
+      bathrooms: undefined,
+      surface_area: undefined,
       address: "",
       city: "",
       postal_code: "",
-      year_built: "",
+      year_built: undefined,
     },
   });
 
