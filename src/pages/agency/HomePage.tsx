@@ -1,14 +1,20 @@
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function AgencyHomePage() {
   const { agency } = useAgencyContext();
+  const { session } = useAuth();
   const navigate = useNavigate();
 
   const handleLogin = () => {
-    if (agency?.slug) {
-      navigate(`/${agency.slug}/auth`);
+    // If user is already logged in and is the agency owner, redirect to dashboard
+    if (session && agency?.user_id === session.user.id) {
+      navigate(`/${agency.slug}/agency/dashboard`);
+    } else {
+      // Otherwise, redirect to auth page
+      navigate(`/${agency?.slug}/auth`);
     }
   };
 
@@ -37,7 +43,7 @@ export default function AgencyHomePage() {
               color: agency?.secondary_color || '#000000'
             }}
           >
-            Se connecter
+            {session && agency?.user_id === session.user.id ? 'Accéder au tableau de bord' : 'Se connecter'}
           </Button>
         </div>
 
