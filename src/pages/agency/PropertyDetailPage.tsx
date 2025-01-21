@@ -18,7 +18,7 @@ import { fr } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AgencyPropertyDetailPage() {
-  const { propertyId, slug } = useParams();
+  const { propertyId, agencySlug } = useParams();
   const navigate = useNavigate();
   const { agency } = useAgencyContext();
 
@@ -63,7 +63,7 @@ export default function AgencyPropertyDetailPage() {
       <div className="mb-8">
         <Button
           variant="ghost"
-          onClick={() => navigate(`/${slug}/properties`)}
+          onClick={() => navigate(`/${agencySlug}/properties`)}
           className="mb-4"
           style={{ color: agency?.primary_color }}
         >
@@ -73,7 +73,7 @@ export default function AgencyPropertyDetailPage() {
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold mb-2">{property.title}</h1>
           <Button
-            onClick={() => navigate(`/${slug}/properties/${propertyId}/images`)}
+            onClick={() => navigate(`/${agencySlug}/properties/${propertyId}/images`)}
             style={{
               backgroundColor: agency?.primary_color,
               color: "white",
