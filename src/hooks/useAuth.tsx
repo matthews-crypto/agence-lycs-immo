@@ -9,53 +9,51 @@ export function useAuth() {
   useEffect(() => {
     console.log("Initializing auth hook...");
     
-    // Get initial session from localStorage if available
-    const savedSession = localStorage.getItem('supabase.auth.token');
-    if (savedSession) {
+    // Fonction pour récupérer et définir la session
+    const setServerSession = async () => {
       try {
-        const parsedSession = JSON.parse(savedSession);
-        setSession(parsedSession.currentSession);
-      } catch (error) {
-        console.error("Error parsing saved session:", error);
-      }
-    }
-    
-    // Get initial session from Supabase
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error) {
-        console.error("Error getting initial session:", error);
-      } else {
-        console.log("Initial session state:", session ? "Active" : "No session");
-        if (session) {
-          setSession(session);
-          // Save session to localStorage
-          localStorage.setItem('supabase.auth.token', JSON.stringify({
-            currentSession: session
-          }));
+        const { data: { session: serverSession }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error("Error getting server session:", error);
+          return;
         }
+        
+        if (serverSession) {
+          console.log("Server session found:", serverSession.user.email);
+          setSession(serverSession);
+        } else {
+          console.log("No server session found");
+          setSession(null);
+        }
+      } catch (error) {
+        console.error("Unexpected error getting session:", error);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
-    });
+    };
 
-    // Listen for auth changes
+    // Initialiser la session au chargement
+    setServerSession();
+
+    // Écouter les changements d'état d'authentification
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth state change in hook:", event);
-      if (session) {
-        setSession(session);
-        // Update session in localStorage
-        localStorage.setItem('supabase.auth.token', JSON.stringify({
-          currentSession: session
-        }));
-      } else {
+    } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+      console.log("Auth state change:", event, currentSession?.user?.email);
+      
+      if (event === 'SIGNED_IN') {
+        setSession(currentSession);
+        setIsLoading(false);
+      } else if (event === 'SIGNED_OUT') {
         setSession(null);
-        // Remove session from localStorage
-        localStorage.removeItem('supabase.auth.token');
+        setIsLoading(false);
+      } else if (event === 'TOKEN_REFRESHED') {
+        setSession(currentSession);
+        setIsLoading(false);
       }
-      setIsLoading(false);
     });
 
+    // Nettoyer la souscription
     return () => {
       console.log("Cleaning up auth hook subscription");
       subscription.unsubscribe();
