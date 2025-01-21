@@ -18,7 +18,7 @@ import { fr } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AgencyPropertyDetailPage() {
-  const { propertyId } = useParams();
+  const { propertyId, slug } = useParams();
   const navigate = useNavigate();
   const { agency } = useAgencyContext();
 
@@ -63,14 +63,25 @@ export default function AgencyPropertyDetailPage() {
       <div className="mb-8">
         <Button
           variant="ghost"
-          onClick={() => navigate(-1)}
+          onClick={() => navigate(`/${slug}/properties`)}
           className="mb-4"
           style={{ color: agency?.primary_color }}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Retour aux biens
         </Button>
-        <h1 className="text-3xl font-bold mb-2">{property.title}</h1>
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold mb-2">{property.title}</h1>
+          <Button
+            onClick={() => navigate(`/${slug}/properties/${propertyId}/images`)}
+            style={{
+              backgroundColor: agency?.primary_color,
+              color: "white",
+            }}
+          >
+            Gérer les images
+          </Button>
+        </div>
         <p className="text-muted-foreground text-lg">{property.city}</p>
       </div>
 
