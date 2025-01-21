@@ -49,7 +49,7 @@ export function AgencySidebar() {
         {
           title: "Tableau de bord",
           icon: LayoutDashboard,
-          url: "agency/dashboard",
+          url: `/${agency?.slug}/agency/dashboard`,
         },
       ],
     },
@@ -59,17 +59,17 @@ export function AgencySidebar() {
         {
           title: "Biens Immobiliers",
           icon: Home,
-          url: "agency/properties",
+          url: `/${agency?.slug}/agency/properties`,
         },
         {
           title: "Rendez-vous",
           icon: Calendar,
-          url: "agency/appointments",
+          url: `/${agency?.slug}/agency/appointments`,
         },
         {
           title: "Clients",
           icon: Users,
-          url: "agency/clients",
+          url: `/${agency?.slug}/agency/clients`,
         },
       ],
     },
@@ -79,17 +79,17 @@ export function AgencySidebar() {
         {
           title: "Analytics & Rapports",
           icon: ChartBar,
-          url: "agency/analytics",
+          url: `/${agency?.slug}/agency/analytics`,
         },
         {
           title: "Configuration",
           icon: Settings,
-          url: "agency/settings",
+          url: `/${agency?.slug}/agency/settings`,
         },
         {
           title: "Chat WhatsApp",
           icon: MessageSquare,
-          url: "agency/whatsapp",
+          url: `/${agency?.slug}/agency/whatsapp`,
         },
       ],
     },
@@ -111,7 +111,7 @@ export function AgencySidebar() {
                     <SidebarMenuButton
                       asChild
                       className="transition-colors"
-                      data-active={location.pathname.includes(item.url)}
+                      data-active={location.pathname === item.url}
                     >
                       <Link to={item.url}>
                         <item.icon className="h-4 w-4" />
