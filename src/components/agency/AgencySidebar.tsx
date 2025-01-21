@@ -96,7 +96,11 @@ export function AgencySidebar() {
   ]
 
   return (
-    <Sidebar variant="sidebar" className="border-r">
+    <Sidebar 
+      variant="sidebar" 
+      className="border-r"
+      style={{ backgroundColor: agency?.secondary_color || '#f3f4f6' }}
+    >
       <SidebarHeader className="p-4">
         <h2 className="text-lg font-semibold">Dashboard Agence</h2>
       </SidebarHeader>
