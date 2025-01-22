@@ -70,7 +70,7 @@ export default function AgencyHomePage() {
 
   // Filtrer les propriétés
   const filteredProperties = properties?.filter(property => {
-    const matchesCity = !selectedCity || property.city === selectedCity;
+    const matchesCity = !selectedCity || selectedCity === "all" || property.city === selectedCity;
     const matchesMinBudget = !minBudget || property.price >= parseInt(minBudget);
     const matchesMaxBudget = !maxBudget || property.price <= parseInt(maxBudget);
     return matchesCity && matchesMinBudget && matchesMaxBudget;
