@@ -12,7 +12,7 @@ import {
   CarouselPrevious,
   type CarouselApi,
 } from "@/components/ui/carousel";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { AuthDrawer } from "@/components/agency/AuthDrawer";
 import {
   Select,
@@ -166,11 +166,15 @@ export default function AgencyHomePage() {
         {/* Search Bar */}
         <div className="mt-8 max-w-4xl mx-auto">
           <div className="bg-white rounded-lg shadow-lg p-4 flex gap-4">
-            <Select onValueChange={setSelectedCity}>
+            <Select 
+              value={selectedCity} 
+              onValueChange={setSelectedCity}
+            >
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Ville" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="">Aucune</SelectItem>
                 {cities.map((city) => (
                   <SelectItem key={city} value={city}>
                     {city}
@@ -226,8 +230,8 @@ export default function AgencyHomePage() {
             setApi={setPropertiesApi}
           >
             <CarouselContent>
-              {(filteredProperties || []).map((property) => (
-                <CarouselItem key={property.id} className="md:basis-1/2 lg:basis-1/3">
+              {[...(filteredProperties || []), ...(filteredProperties || [])].map((property, index) => (
+                <CarouselItem key={`${property.id}-${index}`} className="md:basis-1/2 lg:basis-1/3">
                   <div 
                     className="relative group cursor-pointer"
                     onClick={() => navigate(`/${agency?.slug}/properties/${property.id}`)}

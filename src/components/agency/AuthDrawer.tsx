@@ -3,6 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { X } from "lucide-react";
+import { useAgencyContext } from "@/contexts/AgencyContext";
+import { useAgencyAuthStore } from "@/stores/useAgencyAuthStore";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 interface AuthDrawerProps {
   open: boolean;
@@ -11,6 +15,31 @@ interface AuthDrawerProps {
 
 export function AuthDrawer({ open, onOpenChange }: AuthDrawerProps) {
   const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const { agency } = useAgencyContext();
+  const { login, isLoading, error } = useAgencyAuthStore();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!agency?.slug) {
+      toast.error("Une erreur est survenue");
+      return;
+    }
+
+    try {
+      await login(email, password, agency.slug);
+      onOpenChange(false);
+      navigate(`/${agency.slug}/agency/dashboard`);
+      toast.success("Connexion réussie");
+    } catch (error) {
+      console.error("Login error:", error);
+      toast.error(error instanceof Error ? error.message : "Une erreur est survenue lors de la connexion");
+    }
+  };
 
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange}>
@@ -31,11 +60,13 @@ export function AuthDrawer({ open, onOpenChange }: AuthDrawerProps) {
               </Button>
             </div>
 
-            <form className="space-y-4 flex-1">
+            <form onSubmit={handleSubmit} className="space-y-4 flex-1">
               <div>
                 <Input
                   type="email"
                   placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full"
                 />
               </div>
@@ -43,6 +74,8 @@ export function AuthDrawer({ open, onOpenChange }: AuthDrawerProps) {
                 <Input
                   type="password"
                   placeholder="Mot de passe"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full"
                 />
               </div>
@@ -51,11 +84,20 @@ export function AuthDrawer({ open, onOpenChange }: AuthDrawerProps) {
                   <Input
                     type="password"
                     placeholder="Confirmez le mot de passe"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
                     className="w-full"
                   />
                 </div>
               )}
-              <Button className="w-full">
+              <Button 
+                type="submit"
+                className="w-full"
+                disabled={isLoading}
+                style={{
+                  backgroundColor: agency?.primary_color || '#000000',
+                }}
+              >
                 {isLogin ? "Se connecter" : "S'inscrire"}
               </Button>
             </form>
@@ -64,6 +106,9 @@ export function AuthDrawer({ open, onOpenChange }: AuthDrawerProps) {
               <Button 
                 variant="link" 
                 onClick={() => setIsLogin(!isLogin)}
+                style={{
+                  color: agency?.primary_color || '#000000',
+                }}
               >
                 {isLogin 
                   ? "Pas encore de compte ? Inscrivez-vous" 
