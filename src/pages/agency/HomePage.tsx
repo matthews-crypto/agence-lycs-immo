@@ -27,7 +27,7 @@ export default function AgencyHomePage() {
   const { agency } = useAgencyContext();
   const navigate = useNavigate();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [selectedCity, setSelectedCity] = useState<string>("");
+  const [selectedCity, setSelectedCity] = useState<string>("all");
   const [minBudget, setMinBudget] = useState<string>("");
   const [maxBudget, setMaxBudget] = useState<string>("");
   const [heroApi, setHeroApi] = useState<CarouselApi>();
@@ -70,7 +70,7 @@ export default function AgencyHomePage() {
 
   // Filtrer les propriétés
   const filteredProperties = properties?.filter(property => {
-    const matchesCity = !selectedCity || selectedCity === "all" || property.city === selectedCity;
+    const matchesCity = selectedCity === "all" || property.city === selectedCity;
     const matchesMinBudget = !minBudget || property.price >= parseInt(minBudget);
     const matchesMaxBudget = !maxBudget || property.price <= parseInt(maxBudget);
     return matchesCity && matchesMinBudget && matchesMaxBudget;
@@ -174,7 +174,7 @@ export default function AgencyHomePage() {
                 <SelectValue placeholder="Ville" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Aucune</SelectItem>
+                <SelectItem value="all">Toutes les villes</SelectItem>
                 {cities.map((city) => (
                   <SelectItem key={city} value={city}>
                     {city}
