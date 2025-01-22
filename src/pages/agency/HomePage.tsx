@@ -15,6 +15,9 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import useEmblaCarousel from 'embla-carousel-react';
+import Autoplay from 'embla-carousel-autoplay';
+import { useEffect } from "react";
 
 export default function AgencyHomePage() {
   const { agency } = useAgencyContext();
@@ -74,9 +77,14 @@ export default function AgencyHomePage() {
             opts={{
               align: "start",
               loop: true,
-              autoplay: true,
-              interval: 5000
             }}
+            plugins={[
+              Autoplay({
+                delay: 5000,
+                stopOnInteraction: false,
+                stopOnMouseEnter: true,
+              })
+            ]}
             className="w-full h-full"
           >
             <CarouselContent>
