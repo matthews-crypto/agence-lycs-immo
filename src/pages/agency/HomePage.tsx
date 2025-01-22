@@ -20,11 +20,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "sonner";
 
 export default function AgencyHomePage() {
   const { agency } = useAgencyContext();
   const navigate = useNavigate();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [selectedCity, setSelectedCity] = useState<string>("");
+  const [minBudget, setMinBudget] = useState<string>("");
+  const [maxBudget, setMaxBudget] = useState<string>("");
 
   const { data: properties, isLoading } = useQuery({
     queryKey: ["agency-properties", agency?.id],
@@ -42,8 +46,24 @@ export default function AgencyHomePage() {
     enabled: !!agency?.id,
   });
 
+  // Filtrer les propriétés
+  const filteredProperties = properties?.filter(property => {
+    const matchesCity = !selectedCity || property.city === selectedCity;
+    const matchesMinBudget = !minBudget || property.price >= parseInt(minBudget);
+    const matchesMaxBudget = !maxBudget || property.price <= parseInt(maxBudget);
+    return matchesCity && matchesMinBudget && matchesMaxBudget;
+  });
+
   // Get unique cities from properties
   const cities = [...new Set(properties?.map(p => p.city).filter(Boolean))];
+
+  const handleSearch = () => {
+    if (!selectedCity && !minBudget && !maxBudget) {
+      toast.warning("Veuillez sélectionner au moins un critère de recherche");
+      return;
+    }
+    toast.success("Recherche effectuée avec succès");
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -82,7 +102,16 @@ export default function AgencyHomePage() {
       {/* Hero Carousel */}
       <div className="container mx-auto px-4 mt-8">
         <div className="relative h-[40vh] max-w-5xl mx-auto bg-gray-100 rounded-lg overflow-hidden">
-          <Carousel className="h-full" opts={{ loop: true }}>
+          <Carousel 
+            className="h-full" 
+            opts={{ 
+              loop: true,
+              align: "start",
+              containScroll: false,
+              autoplay: true,
+              interval: 5000
+            }}
+          >
             <CarouselContent className="h-full">
               {properties?.slice(0, 3).map((property) => (
                 <CarouselItem key={property.id} className="h-full">
@@ -116,7 +145,7 @@ export default function AgencyHomePage() {
         {/* Search Bar */}
         <div className="mt-8 max-w-4xl mx-auto">
           <div className="bg-white rounded-lg shadow-lg p-4 flex gap-4">
-            <Select>
+            <Select onValueChange={setSelectedCity}>
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Ville" />
               </SelectTrigger>
@@ -134,11 +163,15 @@ export default function AgencyHomePage() {
                 type="number"
                 placeholder="Budget min"
                 className="flex-1 px-3 py-2 border rounded-md"
+                value={minBudget}
+                onChange={(e) => setMinBudget(e.target.value)}
               />
               <input
                 type="number"
                 placeholder="Budget max"
                 className="flex-1 px-3 py-2 border rounded-md"
+                value={maxBudget}
+                onChange={(e) => setMaxBudget(e.target.value)}
               />
             </div>
 
@@ -147,6 +180,7 @@ export default function AgencyHomePage() {
               style={{
                 backgroundColor: agency?.primary_color || '#000000',
               }}
+              onClick={handleSearch}
             >
               Rechercher
             </Button>
@@ -166,10 +200,13 @@ export default function AgencyHomePage() {
             opts={{
               align: "start",
               loop: true,
+              containScroll: false,
+              autoplay: true,
+              interval: 3000
             }}
           >
             <CarouselContent>
-              {properties?.map((property) => (
+              {(filteredProperties || []).map((property) => (
                 <CarouselItem key={property.id} className="md:basis-1/2 lg:basis-1/3">
                   <div 
                     className="relative group cursor-pointer"
