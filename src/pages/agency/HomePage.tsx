@@ -80,39 +80,41 @@ export default function AgencyHomePage() {
       </nav>
 
       {/* Hero Carousel */}
-      <div className="relative h-[60vh] bg-gray-100">
-        <Carousel className="h-full" opts={{ loop: true }}>
-          <CarouselContent className="h-full">
-            {properties?.slice(0, 3).map((property) => (
-              <CarouselItem key={property.id} className="h-full">
-                <div className="relative h-full">
-                  {property.photos?.[0] ? (
-                    <img
-                      src={property.photos[0]}
-                      alt={property.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                      <House className="w-12 h-12 text-gray-400" />
+      <div className="container mx-auto px-4 mt-8">
+        <div className="relative h-[40vh] max-w-5xl mx-auto bg-gray-100 rounded-lg overflow-hidden">
+          <Carousel className="h-full" opts={{ loop: true }}>
+            <CarouselContent className="h-full">
+              {properties?.slice(0, 3).map((property) => (
+                <CarouselItem key={property.id} className="h-full">
+                  <div className="relative h-full">
+                    {property.photos?.[0] ? (
+                      <img
+                        src={property.photos[0]}
+                        alt={property.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                        <House className="w-12 h-12 text-gray-400" />
+                      </div>
+                    )}
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-8">
+                      <h2 className="text-white text-2xl font-light">
+                        {property.title}
+                      </h2>
+                      <p className="text-white/80 mt-2">
+                        {property.city} - {property.property_type}, {property.bedrooms} chambres
+                      </p>
                     </div>
-                  )}
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-8">
-                    <h2 className="text-white text-2xl font-light">
-                      {property.title}
-                    </h2>
-                    <p className="text-white/80 mt-2">
-                      {property.city} - {property.property_type}, {property.bedrooms} chambres
-                    </p>
                   </div>
-                </div>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-        </Carousel>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+          </Carousel>
+        </div>
 
         {/* Search Bar */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-4xl px-4">
+        <div className="mt-8 max-w-4xl mx-auto">
           <div className="bg-white rounded-lg shadow-lg p-4 flex gap-4">
             <Select>
               <SelectTrigger className="w-[200px]">
@@ -153,7 +155,7 @@ export default function AgencyHomePage() {
       </div>
 
       {/* Properties Carousel */}
-      <div className="py-24 container mx-auto px-4">
+      <div className="py-32 container mx-auto px-4">
         <h2 className="text-3xl font-light mb-12 text-center">
           Notre sélection d'annonces immobilières
         </h2>
