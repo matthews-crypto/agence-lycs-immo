@@ -31,13 +31,17 @@ export function AuthDrawer({ open, onOpenChange }: AuthDrawerProps) {
     }
 
     try {
-      await login(email, password, agency.slug);
+      const result = await login(email, password, agency.slug);
+      if (result.error) {
+        toast.error("Login ou mot de passe incorrect");
+        return;
+      }
       onOpenChange(false);
       navigate(`/${agency.slug}/agency/dashboard`);
       toast.success("Connexion réussie");
     } catch (error) {
       console.error("Login error:", error);
-      toast.error("Échec de la connexion");
+      toast.error("Login ou mot de passe incorrect");
     }
   };
 
