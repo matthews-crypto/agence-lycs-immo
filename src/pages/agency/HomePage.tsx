@@ -49,13 +49,33 @@ export default function AgencyHomePage() {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Header with Logo/Agency Name */}
+      <div className="container mx-auto px-4 py-8">
+        {agency?.logo_url ? (
+          <img 
+            src={agency.logo_url} 
+            alt={agency.agency_name} 
+            className="h-16 object-contain"
+          />
+        ) : (
+          <h1 
+            className="text-3xl font-light"
+            style={{ color: agency?.primary_color || '#000000' }}
+          >
+            {agency?.agency_name}
+          </h1>
+        )}
+      </div>
+
       {/* Hero Carousel Section */}
       {properties && properties.length > 0 && (
-        <div className="w-full h-[80vh] relative mb-16">
+        <div className="w-full h-[60vh] relative mb-16">
           <Carousel
             opts={{
               align: "start",
               loop: true,
+              autoplay: true,
+              interval: 5000
             }}
             className="w-full h-full"
           >
@@ -76,8 +96,8 @@ export default function AgencyHomePage() {
                     )}
                     <div className="absolute inset-0 bg-black/30" />
                     <div className="absolute bottom-20 left-20 text-white">
-                      <h2 className="text-5xl font-light mb-4">{property.title}</h2>
-                      <p className="text-2xl font-light">
+                      <h2 className="text-4xl font-light mb-4">{property.title}</h2>
+                      <p className="text-xl font-light">
                         {property.price.toLocaleString('fr-FR')} €
                       </p>
                     </div>
@@ -94,14 +114,14 @@ export default function AgencyHomePage() {
       {/* Search Section */}
       <div className="container mx-auto px-4 mb-16">
         <div className="flex flex-col items-center gap-8 max-w-2xl mx-auto text-center">
-          <h1 className="text-4xl font-light">
+          <h1 className="text-3xl font-light">
             Trouvez votre bien d'exception
           </h1>
           <div className="w-full flex gap-4 items-center">
             <div className="flex-1 relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <Select>
-                <SelectTrigger className="w-full h-14 pl-12 text-left">
+                <SelectTrigger className="w-full h-12 pl-12 text-left">
                   <SelectValue placeholder="Sélectionnez une ville" />
                 </SelectTrigger>
                 <SelectContent>
@@ -114,7 +134,7 @@ export default function AgencyHomePage() {
               </Select>
             </div>
             <Button 
-              className="h-14 px-8"
+              className="h-12 px-8"
               style={{
                 backgroundColor: agency?.primary_color || '#000000',
                 color: '#ffffff'
