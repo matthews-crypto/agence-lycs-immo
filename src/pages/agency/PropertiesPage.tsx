@@ -14,6 +14,15 @@ export default function AgencyPropertiesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const { agency } = useAgencyContext();
 
+  const propertyTypeTranslations: { [key: string]: string } = {
+    APARTMENT: "Appartement",
+    HOUSE: "Maison",
+    LAND: "Terrain",
+    COMMERCIAL: "Local commercial",
+    OFFICE: "Bureau",
+    OTHER: "Autre",
+  };
+
   const { data: properties, isLoading } = useQuery({
     queryKey: ["properties", agency?.id],
     queryFn: async () => {
@@ -43,7 +52,7 @@ export default function AgencyPropertiesPage() {
             <div className="flex flex-col space-y-8">
               <div className="flex flex-col space-y-4">
                 <div className="flex justify-between items-center">
-                  <h1 className="text-4xl font-bold">Nos Biens Immobiliers</h1>
+                  <h1 className="text-4xl font-light">Nos biens immobiliers</h1>
                   <AddPropertyDialog />
                 </div>
                 <div className="relative">
@@ -93,10 +102,9 @@ export default function AgencyPropertiesPage() {
                         <CardContent className="space-y-4">
                           <div className="flex items-center space-x-2 text-muted-foreground">
                             <Home className="h-4 w-4" />
-                            <span>{property.property_type}</span>
+                            <span>{propertyTypeTranslations[property.property_type] || property.property_type}</span>
                           </div>
                           <div className="flex items-center space-x-2 text-muted-foreground">
-                            <Euro className="h-4 w-4" />
                             <span>{property.price.toLocaleString()} FCFA</span>
                           </div>
                           {(property.bedrooms || property.bathrooms) && (

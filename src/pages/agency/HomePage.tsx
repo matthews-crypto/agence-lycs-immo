@@ -1,18 +1,12 @@
-import { useAgencyContext } from "@/contexts/AgencyContext";
-import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { House, MapPin, User } from "lucide-react";
-import { 
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-  type CarouselApi,
-} from "@/components/ui/carousel";
-import { useState, useEffect } from "react";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { MapPin, User, BedDouble } from "lucide-react";
+import { useAgencyContext } from "@/contexts/AgencyContext";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import { AuthDrawer } from "@/components/agency/AuthDrawer";
 import {
   Select,
@@ -22,6 +16,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+
+const propertyTypeTranslations: { [key: string]: string } = {
+  APARTMENT: "Appartement",
+  HOUSE: "Maison",
+  LAND: "Terrain",
+  COMMERCIAL: "Local commercial",
+  OFFICE: "Bureau",
+  OTHER: "Autre",
+};
 
 export default function AgencyHomePage() {
   const { agency } = useAgencyContext();
@@ -30,8 +40,8 @@ export default function AgencyHomePage() {
   const [selectedCity, setSelectedCity] = useState<string>("all");
   const [minBudget, setMinBudget] = useState<string>("");
   const [maxBudget, setMaxBudget] = useState<string>("");
-  const [heroApi, setHeroApi] = useState<CarouselApi>();
-  const [propertiesApi, setPropertiesApi] = useState<CarouselApi>();
+  const [heroApi, setHeroApi] = useState<any>();
+  const [propertiesApi, setPropertiesApi] = useState<any>();
 
   useEffect(() => {
     if (!heroApi || !propertiesApi) return;
@@ -68,7 +78,6 @@ export default function AgencyHomePage() {
     enabled: !!agency?.id,
   });
 
-  // Filtrer les propriétés
   const filteredProperties = properties?.filter(property => {
     const matchesCity = selectedCity === "all" || property.city === selectedCity;
     const matchesMinBudget = !minBudget || property.price >= parseInt(minBudget);
@@ -76,7 +85,6 @@ export default function AgencyHomePage() {
     return matchesCity && matchesMinBudget && matchesMaxBudget;
   });
 
-  // Get unique cities from properties
   const cities = [...new Set(properties?.map(p => p.city).filter(Boolean))];
 
   const handleSearch = () => {
@@ -86,6 +94,9 @@ export default function AgencyHomePage() {
     }
     toast.success("Recherche effectuée avec succès");
   };
+
+  // Double the filtered properties array for infinite loop effect
+  const loopedProperties = [...(filteredProperties || []), ...(filteredProperties || [])];
 
   return (
     <div className="min-h-screen bg-white">
@@ -112,9 +123,10 @@ export default function AgencyHomePage() {
           <div className="flex-1 flex justify-end">
             <Button
               variant="ghost"
-              size="icon"
               onClick={() => setIsAuthOpen(true)}
+              className="flex items-center gap-2"
             >
+              <span>Compte</span>
               <User className="h-5 w-5" />
             </Button>
           </div>
@@ -129,7 +141,6 @@ export default function AgencyHomePage() {
             opts={{ 
               loop: true,
               align: "start",
-              containScroll: false,
             }}
             setApi={setHeroApi}
           >
@@ -145,7 +156,7 @@ export default function AgencyHomePage() {
                       />
                     ) : (
                       <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                        <House className="w-12 h-12 text-gray-400" />
+                        <BedDouble className="w-12 h-12 text-gray-400" />
                       </div>
                     )}
                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-8">
@@ -153,7 +164,7 @@ export default function AgencyHomePage() {
                         {property.title}
                       </h2>
                       <p className="text-white/80 mt-2">
-                        {property.city} - {property.property_type}, {property.bedrooms} chambres
+                        {property.city} - {propertyTypeTranslations[property.property_type] || property.property_type}
                       </p>
                     </div>
                   </div>
@@ -225,12 +236,11 @@ export default function AgencyHomePage() {
             opts={{
               align: "start",
               loop: true,
-              containScroll: false,
             }}
             setApi={setPropertiesApi}
           >
             <CarouselContent>
-              {[...(filteredProperties || []), ...(filteredProperties || [])].map((property, index) => (
+              {loopedProperties.map((property, index) => (
                 <CarouselItem key={`${property.id}-${index}`} className="md:basis-1/2 lg:basis-1/3">
                   <div 
                     className="relative group cursor-pointer"
@@ -245,7 +255,7 @@ export default function AgencyHomePage() {
                         />
                       ) : (
                         <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                          <House className="w-12 h-12 text-gray-400" />
+                          <BedDouble className="w-12 h-12 text-gray-400" />
                         </div>
                       )}
                     </div>
@@ -257,11 +267,17 @@ export default function AgencyHomePage() {
                       </div>
                       <div className="mt-2 flex justify-between items-center">
                         <p className="text-lg">
-                          {property.price.toLocaleString('fr-FR')} €
+                          {property.price.toLocaleString('fr-FR')} FCFA
                         </p>
-                        <p className="text-sm text-gray-600">
-                          {property.surface_area} m² • {property.bedrooms} ch.
-                        </p>
+                        <div className="flex items-center gap-1 text-gray-600">
+                          <span>{property.surface_area} m²</span>
+                          {property.bedrooms && (
+                            <div className="flex items-center gap-1 ml-2">
+                              <BedDouble className="w-4 h-4" />
+                              <span>{property.bedrooms}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
