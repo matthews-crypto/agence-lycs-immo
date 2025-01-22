@@ -15,9 +15,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import useEmblaCarousel from 'embla-carousel-react';
 import Autoplay from 'embla-carousel-autoplay';
-import { useEffect } from "react";
 
 export default function AgencyHomePage() {
   const { agency } = useAgencyContext();
