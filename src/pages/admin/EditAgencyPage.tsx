@@ -9,7 +9,7 @@ import { toast } from "sonner"
 import { AgencyBasicInfo } from "@/components/admin/agencies/create/AgencyBasicInfo"
 import { AgencyAddress } from "@/components/admin/agencies/create/AgencyAddress"
 import { AgencyCustomization } from "@/components/admin/agencies/create/AgencyCustomization"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -44,7 +44,7 @@ export default function EditAgencyPage() {
         .from("agencies")
         .select("*")
         .eq("id", id)
-        .maybeSingle()
+        .single()
 
       if (error) throw error
       return data
@@ -54,19 +54,38 @@ export default function EditAgencyPage() {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      agency_name: agency?.agency_name || "",
-      contact_email: agency?.contact_email || "",
-      contact_phone: agency?.contact_phone || "",
-      license_number: agency?.license_number || "",
-      slug: agency?.slug || "",
-      address: agency?.address || "",
-      city: agency?.city || "",
-      postal_code: agency?.postal_code || "",
-      logo_url: agency?.logo_url || "",
-      primary_color: agency?.primary_color || "#1a365d",
-      secondary_color: agency?.secondary_color || "#60a5fa",
+      agency_name: "",
+      contact_email: "",
+      contact_phone: "",
+      license_number: "",
+      slug: "",
+      address: "",
+      city: "",
+      postal_code: "",
+      logo_url: "",
+      primary_color: "#1a365d",
+      secondary_color: "#60a5fa",
     },
   })
+
+  // Mettre à jour les valeurs du formulaire quand les données sont chargées
+  useEffect(() => {
+    if (agency) {
+      form.reset({
+        agency_name: agency.agency_name || "",
+        contact_email: agency.contact_email || "",
+        contact_phone: agency.contact_phone || "",
+        license_number: agency.license_number || "",
+        slug: agency.slug || "",
+        address: agency.address || "",
+        city: agency.city || "",
+        postal_code: agency.postal_code || "",
+        logo_url: agency.logo_url || "",
+        primary_color: agency.primary_color || "#1a365d",
+        secondary_color: agency.secondary_color || "#60a5fa",
+      })
+    }
+  }, [agency, form])
 
   const onSubmit = async (data: FormValues) => {
     try {
