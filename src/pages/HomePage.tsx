@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { MapPin, BedDouble } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import {
   Select,
   SelectContent,
@@ -21,6 +22,7 @@ import {
 } from "@/components/ui/carousel";
 
 export default function HomePage() {
+  const navigate = useNavigate();
   const [selectedAgency, setSelectedAgency] = useState<string>("all");
   const [selectedCity, setSelectedCity] = useState<string>("all");
   const [minBudget, setMinBudget] = useState<string>("");
@@ -92,14 +94,18 @@ export default function HomePage() {
     toast.success("Recherche effectuée avec succès");
   };
 
+  const handlePropertyClick = (agencySlug: string) => {
+    navigate(`/${agencySlug}`);
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Navbar */}
       <nav className="border-b">
         <div className="container mx-auto py-4 px-4 flex justify-center items-center">
           <img 
-            src="/agence-ibou-logo.png" 
-            alt="Agence Ibou"
+            src="/lovable-uploads/684fe972-b658-43e2-b8cd-cd79ce781c45.png" 
+            alt="Lycs Immo"
             className="h-16 object-contain"
           />
         </div>
@@ -118,8 +124,12 @@ export default function HomePage() {
           >
             <CarouselContent className="h-full">
               {properties?.slice(0, 3).map((property) => (
-                <CarouselItem key={property.id} className="h-full">
-                  <div className="relative h-full">
+                <CarouselItem 
+                  key={property.id} 
+                  className="h-full"
+                  onClick={() => handlePropertyClick(property.agencies?.slug || '')}
+                >
+                  <div className="relative h-full cursor-pointer">
                     {property.photos?.[0] ? (
                       <img
                         src={property.photos[0]}
@@ -219,7 +229,11 @@ export default function HomePage() {
           <h2 className="text-2xl font-light mb-8">Résultats de votre recherche</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredProperties.map((property) => (
-              <div key={property.id} className="cursor-pointer">
+              <div 
+                key={property.id} 
+                className="cursor-pointer"
+                onClick={() => handlePropertyClick(property.agencies?.slug || '')}
+              >
                 <div className="aspect-[4/3] overflow-hidden rounded-lg">
                   {property.photos?.[0] ? (
                     <img
@@ -280,8 +294,14 @@ export default function HomePage() {
           >
             <CarouselContent>
               {loopedProperties.map((property, index) => (
-                <CarouselItem key={`${property.id}-${index}`} className="md:basis-1/2 lg:basis-1/3">
-                  <div className="relative group">
+                <CarouselItem 
+                  key={`${property.id}-${index}`} 
+                  className="md:basis-1/2 lg:basis-1/3"
+                >
+                  <div 
+                    className="relative group cursor-pointer"
+                    onClick={() => handlePropertyClick(property.agencies?.slug || '')}
+                  >
                     <div className="aspect-[4/3] overflow-hidden rounded-lg">
                       {property.photos?.[0] ? (
                         <img
