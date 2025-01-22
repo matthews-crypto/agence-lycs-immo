@@ -19,7 +19,7 @@ export function AuthDrawer({ open, onOpenChange }: AuthDrawerProps) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const { agency } = useAgencyContext();
-  const { login, isLoading, error } = useAgencyAuthStore();
+  const { login, isLoading } = useAgencyAuthStore();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -30,19 +30,15 @@ export function AuthDrawer({ open, onOpenChange }: AuthDrawerProps) {
       return;
     }
 
-    try {
-      const result = await login(email, password, agency.slug);
-      if (result.error) {
-        toast.error("Login ou mot de passe incorrect");
-        return;
-      }
-      onOpenChange(false);
-      navigate(`/${agency.slug}/agency/dashboard`);
-      toast.success("Connexion réussie");
-    } catch (error) {
-      console.error("Login error:", error);
+    const result = await login(email, password, agency.slug);
+    if (result.error) {
       toast.error("Login ou mot de passe incorrect");
+      return;
     }
+    
+    onOpenChange(false);
+    navigate(`/${agency.slug}/agency/dashboard`);
+    toast.success("Connexion réussie");
   };
 
   return (

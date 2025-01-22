@@ -5,7 +5,7 @@ interface AgencyAuthStore {
   isLoading: boolean;
   isAuthenticated: boolean;
   error: string | null;
-  login: (email: string, password: string, agencySlug: string) => Promise<void>;
+  login: (email: string, password: string, agencySlug: string) => Promise<{ error?: string }>;
   logout: () => Promise<void>;
 }
 
@@ -27,7 +27,7 @@ export const useAgencyAuthStore = create<AgencyAuthStore>((set) => ({
         .single();
 
       if (!agencies) {
-        throw new Error("Agency not found or email not associated with this agency");
+        return { error: "Agency not found or email not associated with this agency" };
       }
 
       const { error } = await supabase.auth.signInWithPassword({
@@ -35,14 +35,15 @@ export const useAgencyAuthStore = create<AgencyAuthStore>((set) => ({
         password,
       });
 
-      if (error) throw error;
+      if (error) return { error: error.message };
 
       set({ isAuthenticated: true });
+      return {};
     } catch (error) {
       console.error("Login error:", error);
-      set({ 
+      return { 
         error: error instanceof Error ? error.message : "An error occurred during login" 
-      });
+      };
     } finally {
       set({ isLoading: false });
     }
