@@ -1,17 +1,30 @@
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { House, MapPin } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { House, MapPin, User } from "lucide-react";
+import { 
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+import { useState } from "react";
+import { AuthDrawer } from "@/components/agency/AuthDrawer";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function AgencyHomePage() {
   const { agency } = useAgencyContext();
-  const { session } = useAuth();
   const navigate = useNavigate();
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
 
   const { data: properties, isLoading } = useQuery({
     queryKey: ["agency-properties", agency?.id],
@@ -29,114 +42,178 @@ export default function AgencyHomePage() {
     enabled: !!agency?.id,
   });
 
-  const handleLogin = () => {
-    if (session && agency?.user_id === session.user.id) {
-      navigate(`/${agency.slug}/agency/dashboard`);
-    } else {
-      navigate(`/${agency?.slug}/auth`);
-    }
-  };
+  // Get unique cities from properties
+  const cities = [...new Set(properties?.map(p => p.city).filter(Boolean))];
 
   return (
-    <div 
-      className="min-h-screen"
-      style={{
-        backgroundColor: agency?.primary_color || '#ffffff',
-        color: agency?.secondary_color || '#000000'
-      }}
-    >
-      <div className="container mx-auto py-8 px-4">
-        {/* Header Section */}
-        <div className="flex justify-between items-center mb-12">
-          <div className="flex items-center gap-4">
-            {agency?.logo_url && (
+    <div className="min-h-screen bg-white">
+      {/* Navbar */}
+      <nav className="border-b">
+        <div className="container mx-auto py-4 px-4 flex justify-between items-center">
+          <div className="flex-1" />
+          <div className="flex-1 flex justify-center">
+            {agency?.logo_url ? (
               <img 
                 src={agency.logo_url} 
-                alt={agency.agency_name} 
+                alt={agency.agency_name}
                 className="h-16 object-contain"
               />
-            )}
-            <h1 className="text-3xl font-light">
-              Nos biens d'exception
-            </h1>
-          </div>
-          <Button 
-            onClick={handleLogin}
-            variant="outline"
-            className="px-6"
-            style={{
-              borderColor: agency?.secondary_color || '#000000',
-              color: agency?.secondary_color || '#000000'
-            }}
-          >
-            {session && agency?.user_id === session.user.id ? 'Accéder au tableau de bord' : 'Se connecter'}
-          </Button>
-        </div>
-
-        {/* Properties Grid */}
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[1, 2, 3].map((i) => (
-              <Card key={i} className="overflow-hidden">
-                <Skeleton className="h-[300px] w-full" />
-                <CardContent className="p-6">
-                  <Skeleton className="h-6 w-3/4 mb-4" />
-                  <Skeleton className="h-4 w-1/2 mb-2" />
-                  <Skeleton className="h-4 w-1/4" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {properties?.map((property) => (
-              <Card 
-                key={property.id} 
-                className="overflow-hidden group cursor-pointer hover:shadow-xl transition-shadow duration-300"
-                onClick={() => navigate(`/${agency?.slug}/properties/${property.id}`)}
+            ) : (
+              <h1 
+                className="text-2xl font-light"
+                style={{ color: agency?.primary_color }}
               >
-                <div className="relative aspect-[4/3] overflow-hidden">
+                {agency?.agency_name}
+              </h1>
+            )}
+          </div>
+          <div className="flex-1 flex justify-end">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsAuthOpen(true)}
+            >
+              <User className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero Carousel */}
+      <div className="relative h-[60vh] bg-gray-100">
+        <Carousel className="h-full" opts={{ loop: true }}>
+          <CarouselContent className="h-full">
+            {properties?.slice(0, 3).map((property) => (
+              <CarouselItem key={property.id} className="h-full">
+                <div className="relative h-full">
                   {property.photos?.[0] ? (
                     <img
                       src={property.photos[0]}
                       alt={property.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      className="w-full h-full object-cover"
                     />
                   ) : (
                     <div className="w-full h-full bg-gray-200 flex items-center justify-center">
                       <House className="w-12 h-12 text-gray-400" />
                     </div>
                   )}
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6">
-                    <p className="text-white text-xl font-light">
-                      {property.price.toLocaleString('fr-FR')} €
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-8">
+                    <h2 className="text-white text-2xl font-light">
+                      {property.title}
+                    </h2>
+                    <p className="text-white/80 mt-2">
+                      {property.city} - {property.property_type}, {property.bedrooms} chambres
                     </p>
                   </div>
                 </div>
-                <CardContent className="p-6">
-                  <h3 className="text-xl font-light mb-3 line-clamp-1">
-                    {property.title}
-                  </h3>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <MapPin className="w-4 h-4" />
-                    <p className="text-sm">
-                      {property.city}
-                    </p>
-                  </div>
-                  <div className="mt-4 flex gap-4 text-sm text-gray-600">
-                    {property.surface_area && (
-                      <p>{property.surface_area} m²</p>
-                    )}
-                    {property.bedrooms && (
-                      <p>{property.bedrooms} ch.</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+              </CarouselItem>
             ))}
+          </CarouselContent>
+        </Carousel>
+
+        {/* Search Bar */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-4xl px-4">
+          <div className="bg-white rounded-lg shadow-lg p-4 flex gap-4">
+            <Select>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Ville" />
+              </SelectTrigger>
+              <SelectContent>
+                {cities.map((city) => (
+                  <SelectItem key={city} value={city}>
+                    {city}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <div className="flex gap-4 flex-1">
+              <input
+                type="number"
+                placeholder="Budget min"
+                className="flex-1 px-3 py-2 border rounded-md"
+              />
+              <input
+                type="number"
+                placeholder="Budget max"
+                className="flex-1 px-3 py-2 border rounded-md"
+              />
+            </div>
+
+            <Button 
+              className="px-8"
+              style={{
+                backgroundColor: agency?.primary_color || '#000000',
+              }}
+            >
+              Rechercher
+            </Button>
           </div>
-        )}
+        </div>
       </div>
+
+      {/* Properties Carousel */}
+      <div className="py-16 container mx-auto px-4">
+        <h2 className="text-3xl font-light mb-8 text-center">
+          Notre sélection d'annonces immobilières
+        </h2>
+        
+        <Carousel 
+          className="w-full" 
+          opts={{
+            align: "start",
+            loop: true,
+          }}
+        >
+          <CarouselContent>
+            {properties?.map((property) => (
+              <CarouselItem key={property.id} className="md:basis-1/2 lg:basis-1/3">
+                <div 
+                  className="relative group cursor-pointer"
+                  onClick={() => navigate(`/${agency?.slug}/properties/${property.id}`)}
+                >
+                  <div className="aspect-[4/3] overflow-hidden rounded-lg">
+                    {property.photos?.[0] ? (
+                      <img
+                        src={property.photos[0]}
+                        alt={property.title}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                        <House className="w-12 h-12 text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-4">
+                    <h3 className="text-xl font-light">{property.title}</h3>
+                    <div className="flex items-center gap-2 text-gray-600 mt-2">
+                      <MapPin className="w-4 h-4" />
+                      <p className="text-sm">{property.city}</p>
+                    </div>
+                    <div className="mt-2 flex justify-between items-center">
+                      <p className="text-lg">
+                        {property.price.toLocaleString('fr-FR')} €
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {property.surface_area} m² • {property.bedrooms} ch.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious />
+          <CarouselNext />
+        </Carousel>
+      </div>
+
+      {/* Auth Drawer */}
+      <AuthDrawer 
+        open={isAuthOpen} 
+        onOpenChange={setIsAuthOpen}
+      />
     </div>
   );
 }
