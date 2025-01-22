@@ -104,8 +104,8 @@ export default function AgencyHomePage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Navbar with agency primary color */}
-      <nav style={{ backgroundColor: agency?.primary_color || '#000000' }}>
+      {/* Navbar */}
+      <nav className="border-b">
         <div className="container mx-auto py-4 px-4 flex justify-between items-center">
           <div className="flex-1" />
           <div className="flex-1 flex justify-center">
@@ -113,11 +113,12 @@ export default function AgencyHomePage() {
               <img 
                 src={agency.logo_url} 
                 alt={agency.agency_name}
-                className="h-16 object-contain rounded-full" // Added rounded-full for circular logo
+                className="h-16 object-contain"
               />
             ) : (
               <h1 
-                className="text-2xl font-light text-white"
+                className="text-2xl font-light"
+                style={{ color: agency?.primary_color }}
               >
                 {agency?.agency_name}
               </h1>
@@ -127,7 +128,7 @@ export default function AgencyHomePage() {
             <Button
               variant="ghost"
               onClick={() => setIsAuthOpen(true)}
-              className="flex items-center gap-2 text-white hover:text-white/80"
+              className="flex items-center gap-2"
             >
               <span>Compte</span>
               <User className="h-5 w-5" />
