@@ -153,60 +153,62 @@ export default function AgencyHomePage() {
       </div>
 
       {/* Properties Carousel */}
-      <div className="py-16 container mx-auto px-4">
-        <h2 className="text-3xl font-light mb-8 text-center">
+      <div className="py-24 container mx-auto px-4">
+        <h2 className="text-3xl font-light mb-12 text-center">
           Notre sélection d'annonces immobilières
         </h2>
         
-        <Carousel 
-          className="w-full" 
-          opts={{
-            align: "start",
-            loop: true,
-          }}
-        >
-          <CarouselContent>
-            {properties?.map((property) => (
-              <CarouselItem key={property.id} className="md:basis-1/2 lg:basis-1/3">
-                <div 
-                  className="relative group cursor-pointer"
-                  onClick={() => navigate(`/${agency?.slug}/properties/${property.id}`)}
-                >
-                  <div className="aspect-[4/3] overflow-hidden rounded-lg">
-                    {property.photos?.[0] ? (
-                      <img
-                        src={property.photos[0]}
-                        alt={property.title}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                        <House className="w-12 h-12 text-gray-400" />
+        <div className="max-w-5xl mx-auto">
+          <Carousel 
+            className="w-full" 
+            opts={{
+              align: "start",
+              loop: true,
+            }}
+          >
+            <CarouselContent>
+              {properties?.map((property) => (
+                <CarouselItem key={property.id} className="md:basis-1/2 lg:basis-1/3">
+                  <div 
+                    className="relative group cursor-pointer"
+                    onClick={() => navigate(`/${agency?.slug}/properties/${property.id}`)}
+                  >
+                    <div className="aspect-[4/3] overflow-hidden rounded-lg">
+                      {property.photos?.[0] ? (
+                        <img
+                          src={property.photos[0]}
+                          alt={property.title}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                          <House className="w-12 h-12 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-4">
+                      <h3 className="text-xl font-light">{property.title}</h3>
+                      <div className="flex items-center gap-2 text-gray-600 mt-2">
+                        <MapPin className="w-4 h-4" />
+                        <p className="text-sm">{property.city}</p>
                       </div>
-                    )}
-                  </div>
-                  <div className="mt-4">
-                    <h3 className="text-xl font-light">{property.title}</h3>
-                    <div className="flex items-center gap-2 text-gray-600 mt-2">
-                      <MapPin className="w-4 h-4" />
-                      <p className="text-sm">{property.city}</p>
-                    </div>
-                    <div className="mt-2 flex justify-between items-center">
-                      <p className="text-lg">
-                        {property.price.toLocaleString('fr-FR')} €
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        {property.surface_area} m² • {property.bedrooms} ch.
-                      </p>
+                      <div className="mt-2 flex justify-between items-center">
+                        <p className="text-lg">
+                          {property.price.toLocaleString('fr-FR')} €
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {property.surface_area} m² • {property.bedrooms} ch.
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          <CarouselPrevious />
-          <CarouselNext />
-        </Carousel>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious />
+            <CarouselNext />
+          </Carousel>
+        </div>
       </div>
 
       {/* Auth Drawer */}
