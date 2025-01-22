@@ -101,12 +101,12 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Navbar */}
-      <nav className="border-b">
+      <nav className="border-b" style={{ backgroundColor: '#aa1ca0' }}>
         <div className="container mx-auto py-4 px-4 flex justify-center items-center">
           <img 
             src="/lovable-uploads/684fe972-b658-43e2-b8cd-cd79ce781c45.png" 
             alt="Lycs Immo"
-            className="h-16 object-contain"
+            className="h-16 object-contain rounded-full"
           />
         </div>
       </nav>

@@ -99,13 +99,12 @@ export default function AgencyHomePage() {
     setIsAuthOpen(true);
   };
 
-  // Double the properties array for infinite loop effect
   const loopedProperties = [...(properties || []), ...(properties || [])];
 
   return (
     <div className="min-h-screen bg-white">
       {/* Navbar */}
-      <nav className="border-b">
+      <nav className="border-b" style={{ backgroundColor: agency?.primary_color || '#000000' }}>
         <div className="container mx-auto py-4 px-4 flex justify-between items-center">
           <div className="flex-1" />
           <div className="flex-1 flex justify-center">
@@ -113,12 +112,11 @@ export default function AgencyHomePage() {
               <img 
                 src={agency.logo_url} 
                 alt={agency.agency_name}
-                className="h-16 object-contain"
+                className="h-16 object-contain rounded-full"
               />
             ) : (
               <h1 
-                className="text-2xl font-light"
-                style={{ color: agency?.primary_color }}
+                className="text-2xl font-light text-white"
               >
                 {agency?.agency_name}
               </h1>
@@ -128,7 +126,7 @@ export default function AgencyHomePage() {
             <Button
               variant="ghost"
               onClick={() => setIsAuthOpen(true)}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 text-white"
             >
               <span>Compte</span>
               <User className="h-5 w-5" />
@@ -150,7 +148,10 @@ export default function AgencyHomePage() {
           >
             <CarouselContent className="h-full">
               {properties?.slice(0, 3).map((property) => (
-                <CarouselItem key={property.id} className="h-full">
+                <CarouselItem 
+                  key={property.id} 
+                  className="h-full transition-opacity duration-500"
+                >
                   <div className="relative h-full">
                     {property.photos?.[0] ? (
                       <img
