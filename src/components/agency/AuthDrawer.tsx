@@ -37,6 +37,7 @@ export function AuthDrawer({ open, onOpenChange }: AuthDrawerProps) {
       toast.success("Connexion réussie");
     } catch (error) {
       console.error("Login error:", error);
+      navigate(`/${agency.slug}/auth`);
       toast.error(error instanceof Error ? error.message : "Une erreur est survenue lors de la connexion");
     }
   };
