@@ -10,8 +10,9 @@ import {
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
+  type CarouselApi,
 } from "@/components/ui/carousel";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { AuthDrawer } from "@/components/agency/AuthDrawer";
 import {
   Select,
@@ -29,6 +30,27 @@ export default function AgencyHomePage() {
   const [selectedCity, setSelectedCity] = useState<string>("");
   const [minBudget, setMinBudget] = useState<string>("");
   const [maxBudget, setMaxBudget] = useState<string>("");
+  const [heroApi, setHeroApi] = useState<CarouselApi>();
+  const [propertiesApi, setPropertiesApi] = useState<CarouselApi>();
+
+  useEffect(() => {
+    if (!heroApi || !propertiesApi) return;
+
+    const heroAutoplay = setInterval(() => {
+      if (heroApi.canScrollNext()) heroApi.scrollNext();
+      else heroApi.scrollTo(0);
+    }, 5000);
+
+    const propertiesAutoplay = setInterval(() => {
+      if (propertiesApi.canScrollNext()) propertiesApi.scrollNext();
+      else propertiesApi.scrollTo(0);
+    }, 3000);
+
+    return () => {
+      clearInterval(heroAutoplay);
+      clearInterval(propertiesAutoplay);
+    };
+  }, [heroApi, propertiesApi]);
 
   const { data: properties, isLoading } = useQuery({
     queryKey: ["agency-properties", agency?.id],
@@ -108,9 +130,8 @@ export default function AgencyHomePage() {
               loop: true,
               align: "start",
               containScroll: false,
-              autoplay: true,
-              interval: 5000
             }}
+            setApi={setHeroApi}
           >
             <CarouselContent className="h-full">
               {properties?.slice(0, 3).map((property) => (
@@ -201,9 +222,8 @@ export default function AgencyHomePage() {
               align: "start",
               loop: true,
               containScroll: false,
-              autoplay: true,
-              interval: 3000
             }}
+            setApi={setPropertiesApi}
           >
             <CarouselContent>
               {(filteredProperties || []).map((property) => (
