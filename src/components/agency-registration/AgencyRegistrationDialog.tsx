@@ -3,7 +3,6 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { Form } from "@/components/ui/form"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import { toast } from "sonner"
 import { AgencyBasicInfo } from "@/components/admin/agencies/create/AgencyBasicInfo"
 import { AgencyAddress } from "@/components/admin/agencies/create/AgencyAddress"
@@ -70,7 +69,23 @@ export function AgencyRegistrationDialog({ open, onOpenChange }: AgencyRegistrat
 
       const { error } = await supabase
         .from('demande_inscription')
-        .insert([data])
+        .insert({
+          agency_name: data.agency_name,
+          contact_email: data.contact_email,
+          contact_phone: data.contact_phone,
+          license_number: data.license_number,
+          slug: data.slug,
+          address: data.address,
+          city: data.city,
+          postal_code: data.postal_code,
+          admin_name: data.admin_name,
+          admin_email: data.admin_email,
+          admin_phone: data.admin_phone,
+          admin_license: data.admin_license,
+          logo_url: data.logo_url,
+          primary_color: data.primary_color,
+          secondary_color: data.secondary_color,
+        })
 
       if (error) {
         console.error("Insert error:", error)
