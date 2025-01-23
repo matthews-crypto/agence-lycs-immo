@@ -24,6 +24,10 @@ const formSchema = z.object({
   contact_phone: z.string().regex(/^(70|75|76|77|78)[0-9]{7}$/, "Format de téléphone sénégalais invalide (ex: 771234567)"),
   license_number: z.string().min(1, "Numéro de licence requis"),
   slug: z.string().min(2, "Slug invalide"),
+  password: z.string()
+    .min(8, "Le mot de passe doit contenir au moins 8 caractères")
+    .regex(/[A-Z]/, "Le mot de passe doit contenir au moins une majuscule")
+    .regex(/[0-9]/, "Le mot de passe doit contenir au moins un chiffre"),
   
   // Address
   address: z.string().min(1, "Adresse requise"),
@@ -85,6 +89,7 @@ export function AgencyRegistrationDialog({ open, onOpenChange }: AgencyRegistrat
           logo_url: data.logo_url,
           primary_color: data.primary_color,
           secondary_color: data.secondary_color,
+          password_hash: await hashPassword(data.password)
         })
 
       if (error) {
@@ -117,7 +122,7 @@ export function AgencyRegistrationDialog({ open, onOpenChange }: AgencyRegistrat
   const nextStep = async () => {
     const fields = [
       // Step 1 fields
-      ["agency_name", "contact_email", "contact_phone", "license_number", "slug"],
+      ["agency_name", "contact_email", "contact_phone", "license_number", "slug", "password"],
       // Step 2 fields
       ["address", "city", "postal_code"],
       // Step 3 fields
@@ -143,7 +148,7 @@ export function AgencyRegistrationDialog({ open, onOpenChange }: AgencyRegistrat
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold mb-4">Inscrire mon agence</DialogTitle>
           <div className="flex justify-between mb-8">
@@ -195,4 +200,14 @@ export function AgencyRegistrationDialog({ open, onOpenChange }: AgencyRegistrat
       </DialogContent>
     </Dialog>
   )
+}
+
+// Fonction utilitaire pour hasher le mot de passe
+async function hashPassword(password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
 }

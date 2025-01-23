@@ -60,7 +60,7 @@ export function AgencyBasicInfo() {
           <FormItem>
             <FormLabel>Téléphone *</FormLabel>
             <FormControl>
-              <Input placeholder="01 23 45 67 89" {...field} />
+              <Input placeholder="771234567" {...field} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -75,6 +75,24 @@ export function AgencyBasicInfo() {
             <FormLabel>Numéro de licence *</FormLabel>
             <FormControl>
               <Input placeholder="12345678" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={control}
+        name="password"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Mot de passe *</FormLabel>
+            <FormControl>
+              <Input 
+                type="password" 
+                placeholder="••••••••" 
+                {...field} 
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
