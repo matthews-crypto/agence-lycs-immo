@@ -30,6 +30,10 @@ export type Database = {
       agencies: {
         Row: {
           address: string | null
+          admin_email: string | null
+          admin_license: string | null
+          admin_name: string | null
+          admin_phone: string | null
           agency_name: string
           city: string | null
           contact_email: string | null
@@ -52,6 +56,10 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          admin_email?: string | null
+          admin_license?: string | null
+          admin_name?: string | null
+          admin_phone?: string | null
           agency_name: string
           city?: string | null
           contact_email?: string | null
@@ -74,6 +82,10 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          admin_email?: string | null
+          admin_license?: string | null
+          admin_name?: string | null
+          admin_phone?: string | null
           agency_name?: string
           city?: string | null
           contact_email?: string | null
@@ -240,6 +252,81 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      demande_inscription: {
+        Row: {
+          address: string | null
+          admin_email: string | null
+          admin_license: string | null
+          admin_name: string | null
+          admin_phone: string | null
+          agency_name: string
+          city: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          description: string | null
+          id: string
+          license_number: string | null
+          logo_url: string | null
+          postal_code: string | null
+          primary_color: string | null
+          secondary_color: string | null
+          settings: Json | null
+          slug: string
+          status: Database["public"]["Enums"]["registration_status"] | null
+          theme_config: Json | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          admin_email?: string | null
+          admin_license?: string | null
+          admin_name?: string | null
+          admin_phone?: string | null
+          agency_name: string
+          city?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          license_number?: string | null
+          logo_url?: string | null
+          postal_code?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          settings?: Json | null
+          slug: string
+          status?: Database["public"]["Enums"]["registration_status"] | null
+          theme_config?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          admin_email?: string | null
+          admin_license?: string | null
+          admin_name?: string | null
+          admin_phone?: string | null
+          agency_name?: string
+          city?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          license_number?: string | null
+          logo_url?: string | null
+          postal_code?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          settings?: Json | null
+          slug?: string
+          status?: Database["public"]["Enums"]["registration_status"] | null
+          theme_config?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       properties: {
         Row: {
@@ -476,6 +563,7 @@ export type Database = {
         | "SOLD"
         | "RENTED"
         | "ARCHIVED"
+      registration_status: "EN_ATTENTE" | "VALIDEE" | "REJETEE"
       theme_type: "LIGHT" | "DARK"
       user_role: "ADMIN" | "AGENCY" | "AGENT" | "CLIENT"
     }

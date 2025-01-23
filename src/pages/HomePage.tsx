@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { MapPin, BedDouble } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { AgencyRegistrationDialog } from "@/components/agency-registration/AgencyRegistrationDialog";
 import {
   Select,
   SelectContent,
@@ -29,6 +30,7 @@ export default function HomePage() {
   const [maxBudget, setMaxBudget] = useState<string>("");
   const [heroApi, setHeroApi] = useState<any>();
   const [propertiesApi, setPropertiesApi] = useState<any>();
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
 
   const { data: agencies } = useQuery({
     queryKey: ["agencies"],
@@ -102,12 +104,24 @@ export default function HomePage() {
     <div className="min-h-screen bg-white">
       {/* Navbar */}
       <nav className="border-b" style={{ backgroundColor: '#aa1ca0' }}>
-        <div className="container mx-auto py-4 px-4 flex justify-center items-center">
-          <img 
-            src="/lovable-uploads/684fe972-b658-43e2-b8cd-cd79ce781c45.png" 
-            alt="Lycs Immo"
-            className="h-16 object-contain rounded-full"
-          />
+        <div className="container mx-auto py-4 px-4 flex justify-between items-center">
+          <div className="flex-1" />
+          <div className="flex-1 flex justify-center">
+            <img 
+              src="/lovable-uploads/684fe972-b658-43e2-b8cd-cd79ce781c45.png" 
+              alt="Lycs Immo"
+              className="h-16 object-contain rounded-full"
+            />
+          </div>
+          <div className="flex-1 flex justify-end">
+            <Button 
+              variant="outline" 
+              className="text-white hover:text-white border-white hover:bg-white/20"
+              onClick={() => setIsRegistrationOpen(true)}
+            >
+              Inscrire mon agence
+            </Button>
+          </div>
         </div>
       </nav>
 
@@ -348,6 +362,12 @@ export default function HomePage() {
           </Carousel>
         </div>
       </div>
+
+      {/* Registration Dialog */}
+      <AgencyRegistrationDialog 
+        open={isRegistrationOpen} 
+        onOpenChange={setIsRegistrationOpen}
+      />
     </div>
   );
 }
