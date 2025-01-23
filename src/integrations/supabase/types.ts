@@ -269,6 +269,7 @@ export type Database = {
           id: string
           license_number: string | null
           logo_url: string | null
+          password_hash: string | null
           postal_code: string | null
           primary_color: string | null
           secondary_color: string | null
@@ -293,6 +294,7 @@ export type Database = {
           id?: string
           license_number?: string | null
           logo_url?: string | null
+          password_hash?: string | null
           postal_code?: string | null
           primary_color?: string | null
           secondary_color?: string | null
@@ -317,6 +319,7 @@ export type Database = {
           id?: string
           license_number?: string | null
           logo_url?: string | null
+          password_hash?: string | null
           postal_code?: string | null
           primary_color?: string | null
           secondary_color?: string | null

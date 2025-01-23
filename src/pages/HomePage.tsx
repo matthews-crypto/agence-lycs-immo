@@ -172,12 +172,12 @@ export default function HomePage() {
 
         {/* Search Bar */}
         <div className="mt-8 max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-4 flex gap-4">
+          <div className="bg-white rounded-lg shadow-lg p-4 flex flex-col md:flex-row gap-4">
             <Select 
               value={selectedAgency} 
               onValueChange={setSelectedAgency}
             >
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-full md:w-[200px]">
                 <SelectValue placeholder="Agence" />
               </SelectTrigger>
               <SelectContent>
@@ -194,7 +194,7 @@ export default function HomePage() {
               value={selectedCity} 
               onValueChange={setSelectedCity}
             >
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-full md:w-[200px]">
                 <SelectValue placeholder="Ville" />
               </SelectTrigger>
               <SelectContent>
@@ -207,7 +207,7 @@ export default function HomePage() {
               </SelectContent>
             </Select>
 
-            <div className="flex gap-4 flex-1">
+            <div className="flex flex-col md:flex-row gap-4 flex-1">
               <input
                 type="number"
                 placeholder="Budget min"
@@ -225,7 +225,7 @@ export default function HomePage() {
             </div>
 
             <Button 
-              className="px-8"
+              className="w-full md:w-auto px-8"
               style={{
                 backgroundColor: '#aa1ca0',
               }}
