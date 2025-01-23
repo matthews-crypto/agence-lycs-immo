@@ -115,8 +115,8 @@ export default function HomePage() {
           </div>
           <div className="flex-1 flex justify-end">
             <Button 
-              variant="outline" 
-              className="text-white hover:text-white border-white hover:bg-white/20"
+              variant="ghost" 
+              className="text-[#aa1ca0] bg-white hover:text-white hover:bg-[#aa1ca0]/20"
               onClick={() => setIsRegistrationOpen(true)}
             >
               Inscrire mon agence

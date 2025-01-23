@@ -186,8 +186,11 @@ export function AgencyRegistrationDialog({ open, onOpenChange }: AgencyRegistrat
               
               <Button 
                 type="button" 
-                onClick={nextStep} 
+                onClick={nextStep}
                 disabled={isSubmitting}
+                style={{
+                  backgroundColor: '#aa1ca0',
+                }}
               >
                 {currentStep === steps.length - 1 
                   ? (isSubmitting ? "Envoi en cours..." : "Envoyer la demande")
