@@ -10,6 +10,7 @@ import { AgencyCustomization } from "@/components/admin/agencies/create/AgencyCu
 import { AgencyAdminInfo } from "./AgencyAdminInfo"
 import { useState } from "react"
 import { supabase } from "@/integrations/supabase/client"
+import { Building, MapPin, User, Palette } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -56,7 +57,12 @@ interface AgencyRegistrationDialogProps {
 export function AgencyRegistrationDialog({ open, onOpenChange }: AgencyRegistrationDialogProps) {
   const [currentStep, setCurrentStep] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const steps = ["Informations", "Adresse", "Administrateur", "Personnalisation"]
+  const steps = [
+    { title: "Informations", icon: <Building className="w-5 h-5" /> },
+    { title: "Adresse", icon: <MapPin className="w-5 h-5" /> },
+    { title: "Administrateur", icon: <User className="w-5 h-5" /> },
+    { title: "Personnalisation", icon: <Palette className="w-5 h-5" /> }
+  ]
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -150,18 +156,24 @@ export function AgencyRegistrationDialog({ open, onOpenChange }: AgencyRegistrat
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold mb-4">Inscrire mon agence</DialogTitle>
+          <DialogTitle 
+            className="text-2xl font-bold mb-4"
+            style={{ color: '#aa1ca0' }}
+          >
+            Inscrire mon agence
+          </DialogTitle>
           <div className="flex justify-between mb-8">
             {steps.map((step, index) => (
               <div
-                key={step}
+                key={step.title}
                 className={`flex-1 text-center ${
                   index === currentStep
                     ? "text-primary font-bold"
                     : "text-muted-foreground"
                 }`}
               >
-                {step}
+                <span className="hidden md:inline">{step.title}</span>
+                <span className="md:hidden flex justify-center">{step.icon}</span>
               </div>
             ))}
           </div>
@@ -180,6 +192,7 @@ export function AgencyRegistrationDialog({ open, onOpenChange }: AgencyRegistrat
                 variant="outline"
                 onClick={prevStep}
                 disabled={currentStep === 0 || isSubmitting}
+                className="w-[120px] md:w-auto"
               >
                 Précédent
               </Button>
@@ -191,6 +204,7 @@ export function AgencyRegistrationDialog({ open, onOpenChange }: AgencyRegistrat
                 style={{
                   backgroundColor: '#aa1ca0',
                 }}
+                className="w-[120px] md:w-auto"
               >
                 {currentStep === steps.length - 1 
                   ? (isSubmitting ? "Envoi en cours..." : "Envoyer la demande")
