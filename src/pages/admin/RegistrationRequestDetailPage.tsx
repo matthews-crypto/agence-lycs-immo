@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
+import { useState } from "react"
+import { RejectionReasonDialog } from "@/components/admin/registration/RejectionReasonDialog"
 import {
   Card,
   CardContent,
@@ -15,6 +17,7 @@ export default function RegistrationRequestDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const [isRejectionDialogOpen, setIsRejectionDialogOpen] = useState(false)
 
   const { data: request, isLoading } = useQuery({
     queryKey: ['registration-request', id],
@@ -53,7 +56,8 @@ export default function RegistrationRequestDetailPage() {
           admin_email: request.admin_email,
           admin_phone: request.admin_phone,
           admin_license: request.admin_license,
-          password_hash: request.password_hash
+          password_hash: request.password_hash,
+          must_change_password: false // Set to false as requested
         }
       })
 
@@ -90,13 +94,30 @@ export default function RegistrationRequestDetailPage() {
   })
 
   const rejectRequest = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
+    mutationFn: async (reason: string) => {
+      if (!request) throw new Error('No request data')
+
+      // Update request status and rejection reason
+      const { error: updateError } = await supabase
         .from('demande_inscription')
-        .update({ status: 'REJETEE' })
+        .update({ 
+          status: 'REJETEE',
+          rejection_reason: reason
+        })
         .eq('id', id)
 
-      if (error) throw error
+      if (updateError) throw updateError
+
+      // Send rejection email
+      const { error: emailError } = await supabase.functions.invoke('send-rejection-email', {
+        body: {
+          agency_name: request.agency_name,
+          contact_email: request.contact_email,
+          rejection_reason: reason
+        }
+      })
+
+      if (emailError) throw emailError
     },
     onSuccess: () => {
       toast.success("Demande rejetée")
@@ -108,6 +129,11 @@ export default function RegistrationRequestDetailPage() {
       toast.error("Erreur lors du rejet de la demande")
     }
   })
+
+  const handleReject = (reason: string) => {
+    rejectRequest.mutate(reason)
+    setIsRejectionDialogOpen(false)
+  }
 
   if (isLoading) {
     return <div>Chargement...</div>
@@ -177,7 +203,7 @@ export default function RegistrationRequestDetailPage() {
               <div className="flex justify-end gap-4 pt-4">
                 <Button
                   variant="outline"
-                  onClick={() => rejectRequest.mutate()}
+                  onClick={() => setIsRejectionDialogOpen(true)}
                   disabled={rejectRequest.isPending}
                 >
                   Rejeter
@@ -193,6 +219,13 @@ export default function RegistrationRequestDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      <RejectionReasonDialog
+        open={isRejectionDialogOpen}
+        onOpenChange={setIsRejectionDialogOpen}
+        onConfirm={handleReject}
+        isSubmitting={rejectRequest.isPending}
+      />
     </div>
   )
 }

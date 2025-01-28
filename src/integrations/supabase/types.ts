@@ -272,6 +272,7 @@ export type Database = {
           password_hash: string | null
           postal_code: string | null
           primary_color: string | null
+          rejection_reason: string | null
           secondary_color: string | null
           settings: Json | null
           slug: string
@@ -297,6 +298,7 @@ export type Database = {
           password_hash?: string | null
           postal_code?: string | null
           primary_color?: string | null
+          rejection_reason?: string | null
           secondary_color?: string | null
           settings?: Json | null
           slug: string
@@ -322,6 +324,7 @@ export type Database = {
           password_hash?: string | null
           postal_code?: string | null
           primary_color?: string | null
+          rejection_reason?: string | null
           secondary_color?: string | null
           settings?: Json | null
           slug?: string
