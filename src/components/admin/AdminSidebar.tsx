@@ -1,4 +1,4 @@
-import { Building2, Home, LogOut, Settings, Users } from "lucide-react"
+import { Building2, Home, LogOut, Settings, Users, Bell } from "lucide-react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import {
   Sidebar,
@@ -14,6 +14,7 @@ import {
 import { useAdminAuthStore } from "@/stores/useAdminAuthStore"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
+import { RegistrationRequestsButton } from "@/components/admin/dashboard/RegistrationRequestsButton"
 
 const menuItems = [
   {
@@ -79,6 +80,13 @@ export function AdminSidebar() {
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Gestion</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <RegistrationRequestsButton />
           </SidebarGroupContent>
         </SidebarGroup>
         

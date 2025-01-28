@@ -1,40 +1,42 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import RootLayout from "@/layouts/RootLayout";
-import AdminLayout from "@/layouts/AdminLayout";
-import AgencyLayout from "@/layouts/AgencyLayout";
-import { AgencyProvider } from "@/contexts/AgencyContext";
-import { LoadingLayout } from "@/components/LoadingLayout";
+import { Toaster } from "@/components/ui/toaster"
+import { Toaster as Sonner } from "@/components/ui/sonner"
+import { TooltipProvider } from "@/components/ui/tooltip"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
+import RootLayout from "@/layouts/RootLayout"
+import AdminLayout from "@/layouts/AdminLayout"
+import AgencyLayout from "@/layouts/AgencyLayout"
+import { AgencyProvider } from "@/contexts/AgencyContext"
+import { LoadingLayout } from "@/components/LoadingLayout"
 
 // Pages
-import HomePage from "@/pages/HomePage";
-import AdminAuthPage from "@/pages/admin/AuthPage";
-import AdminDashboardPage from "@/pages/admin/DashboardPage";
-import AdminAgenciesPage from "@/pages/admin/AgenciesPage";
-import AdminSettingsPage from "@/pages/admin/SettingsPage";
-import CreateAgencyPage from "@/pages/admin/CreateAgencyPage";
-import EditAgencyPage from "@/pages/admin/EditAgencyPage";
-import AgencyAuthPage from "@/pages/agency/AuthPage";
-import AgencyHomePage from "@/pages/agency/HomePage";
-import AgencyPropertiesPage from "@/pages/agency/PropertiesPage";
-import AgencyPropertyDetailPage from "@/pages/agency/PropertyDetailPage";
-import PropertyImagesPage from "@/pages/agency/PropertyImagesPage";
-import AgencyRegisterPage from "@/pages/agency/RegisterPage";
-import AgencyDashboardPage from "@/pages/agency/DashboardPage";
-import AgencyAgentsPage from "@/pages/agency/AgentsPage";
-import AgentDashboardPage from "@/pages/agency/agent/DashboardPage";
-import AgentPropertiesPage from "@/pages/agency/agent/PropertiesPage";
-import AgentAppointmentsPage from "@/pages/agency/agent/AppointmentsPage";
-import ClientDashboardPage from "@/pages/agency/client/DashboardPage";
-import ClientFavoritesPage from "@/pages/agency/client/FavoritesPage";
-import ClientAppointmentsPage from "@/pages/agency/client/AppointmentsPage";
-import NotFoundPage from "@/pages/NotFoundPage";
-import UsersPage from "@/pages/admin/UsersPage";
+import HomePage from "@/pages/HomePage"
+import AdminAuthPage from "@/pages/admin/AuthPage"
+import AdminDashboardPage from "@/pages/admin/DashboardPage"
+import AdminAgenciesPage from "@/pages/admin/AgenciesPage"
+import AdminSettingsPage from "@/pages/admin/SettingsPage"
+import CreateAgencyPage from "@/pages/admin/CreateAgencyPage"
+import EditAgencyPage from "@/pages/admin/EditAgencyPage"
+import RegistrationRequestsPage from "@/pages/admin/RegistrationRequestsPage"
+import RegistrationRequestDetailPage from "@/pages/admin/RegistrationRequestDetailPage"
+import AgencyAuthPage from "@/pages/agency/AuthPage"
+import AgencyHomePage from "@/pages/agency/HomePage"
+import AgencyPropertiesPage from "@/pages/agency/PropertiesPage"
+import AgencyPropertyDetailPage from "@/pages/agency/PropertyDetailPage"
+import PropertyImagesPage from "@/pages/agency/PropertyImagesPage"
+import AgencyRegisterPage from "@/pages/agency/RegisterPage"
+import AgencyDashboardPage from "@/pages/agency/DashboardPage"
+import AgencyAgentsPage from "@/pages/agency/AgentsPage"
+import AgentDashboardPage from "@/pages/agency/agent/DashboardPage"
+import AgentPropertiesPage from "@/pages/agency/agent/PropertiesPage"
+import AgentAppointmentsPage from "@/pages/agency/agent/AppointmentsPage"
+import ClientDashboardPage from "@/pages/agency/client/DashboardPage"
+import ClientFavoritesPage from "@/pages/agency/client/FavoritesPage"
+import ClientAppointmentsPage from "@/pages/agency/client/AppointmentsPage"
+import NotFoundPage from "@/pages/NotFoundPage"
+import UsersPage from "@/pages/admin/UsersPage"
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient()
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -56,6 +58,8 @@ const App = () => (
               <Route path="agencies" element={<AdminAgenciesPage />} />
               <Route path="agencies/create" element={<CreateAgencyPage />} />
               <Route path="agencies/:id/edit" element={<EditAgencyPage />} />
+              <Route path="registration-requests" element={<RegistrationRequestsPage />} />
+              <Route path="registration-requests/:id" element={<RegistrationRequestDetailPage />} />
               <Route path="users" element={<UsersPage />} />
               <Route path="settings" element={<AdminSettingsPage />} />
             </Route>
@@ -142,6 +146,6 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
-);
+)
 
-export default App;
+export default App
