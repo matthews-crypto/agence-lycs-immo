@@ -45,10 +45,28 @@ export default function RegistrationRequestDetailPage() {
           logo_url: request.logo_url,
           primary_color: request.primary_color,
           secondary_color: request.secondary_color,
+          admin_name: request.admin_name,
+          admin_email: request.admin_email,
+          admin_phone: request.admin_phone,
+          admin_license: request.admin_license,
+          password_hash: request.password_hash
         }
       })
 
-      if (error) throw error
+      if (error) {
+        console.error('Error:', error)
+        if (error.message.includes('Email already exists')) {
+          toast.error("Cet email est déjà utilisé")
+          return
+        } else if (error.message.includes('License number already exists')) {
+          toast.error("Ce numéro de licence est déjà utilisé")
+          return
+        } else if (error.message.includes('Slug already exists')) {
+          toast.error("Ce slug est déjà utilisé")
+          return
+        }
+        throw error
+      }
 
       // Mettre à jour le statut de la demande
       const { error: updateError } = await supabase
@@ -77,9 +95,6 @@ export default function RegistrationRequestDetailPage() {
         .from('demande_inscription')
         .update({ status: 'REJETEE' })
         .eq('id', id)
-
-      if (error) throw error
-    },
     onSuccess: () => {
       toast.success("Demande rejetée")
       queryClient.invalidateQueries({ queryKey: ['registration-requests'] })

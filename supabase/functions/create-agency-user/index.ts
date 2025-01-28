@@ -17,6 +17,7 @@ interface CreateAgencyUserPayload {
   admin_email?: string
   admin_phone?: string
   admin_license?: string
+  password_hash?: string
 }
 
 Deno.serve(async (req) => {
@@ -88,11 +89,11 @@ Deno.serve(async (req) => {
     // Créer l'utilisateur avec l'API admin
     const { data: userData, error: userError } = await supabaseAdmin.auth.admin.createUser({
       email: payload.contact_email,
-      password: 'passer2025',
       email_confirm: true,
       user_metadata: {
         role: 'AGENCY'
-      }
+      },
+      password: 'passer2025' // Mot de passe par défaut
     })
 
     if (userError || !userData.user) {
