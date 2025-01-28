@@ -95,6 +95,9 @@ export default function RegistrationRequestDetailPage() {
         .from('demande_inscription')
         .update({ status: 'REJETEE' })
         .eq('id', id)
+
+      if (error) throw error
+    },
     onSuccess: () => {
       toast.success("Demande rejetée")
       queryClient.invalidateQueries({ queryKey: ['registration-requests'] })
