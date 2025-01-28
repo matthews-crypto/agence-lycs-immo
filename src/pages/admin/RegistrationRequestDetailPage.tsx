@@ -32,13 +32,17 @@ export default function RegistrationRequestDetailPage() {
 
   const approveRequest = useMutation({
     mutationFn: async () => {
-      const { data: result, error } = await supabase.functions.invoke('create-agency-user', {
+      if (!request) throw new Error('No request data')
+
+      console.log('Approving request with data:', request)
+
+      const { error } = await supabase.functions.invoke('create-agency-user', {
         body: {
-          email: request.contact_email,
           agency_name: request.agency_name,
-          agency_slug: request.slug,
-          license_number: request.license_number,
+          contact_email: request.contact_email,
           contact_phone: request.contact_phone,
+          license_number: request.license_number,
+          slug: request.slug,
           address: request.address,
           city: request.city,
           postal_code: request.postal_code,
@@ -54,39 +58,35 @@ export default function RegistrationRequestDetailPage() {
       })
 
       if (error) {
-        console.error('Error:', error)
-        if (error.message.includes('Email already exists')) {
-          toast.error("Cet email est déjà utilisé")
-          return
-        } else if (error.message.includes('License number already exists')) {
-          toast.error("Ce numéro de licence est déjà utilisé")
-          return
-        } else if (error.message.includes('Slug already exists')) {
-          toast.error("Ce slug est déjà utilisé")
-          return
-        }
+        console.error('Function error:', error)
         throw error
       }
 
-      // Mettre à jour le statut de la demande
+      // Update request status
       const { error: updateError } = await supabase
         .from('demande_inscription')
         .update({ status: 'VALIDEE' })
         .eq('id', id)
 
       if (updateError) throw updateError
-
-      return result
     },
     onSuccess: () => {
       toast.success("Agence créée avec succès")
       queryClient.invalidateQueries({ queryKey: ['registration-requests'] })
-      navigate('/admin/agencies')
+      navigate('/admin/registration-requests')
     },
     onError: (error) => {
       console.error('Error:', error)
-      toast.error("Erreur lors de la création de l'agence")
-    },
+      if (error.message?.includes('Email already exists')) {
+        toast.error("Cet email est déjà utilisé")
+      } else if (error.message?.includes('License number already exists')) {
+        toast.error("Ce numéro de licence est déjà utilisé")
+      } else if (error.message?.includes('Slug already exists')) {
+        toast.error("Ce slug est déjà utilisé")
+      } else {
+        toast.error("Erreur lors de la création de l'agence")
+      }
+    }
   })
 
   const rejectRequest = useMutation({
@@ -106,7 +106,7 @@ export default function RegistrationRequestDetailPage() {
     onError: (error) => {
       console.error('Error:', error)
       toast.error("Erreur lors du rejet de la demande")
-    },
+    }
   })
 
   if (isLoading) {
@@ -186,7 +186,7 @@ export default function RegistrationRequestDetailPage() {
                   onClick={() => approveRequest.mutate()}
                   disabled={approveRequest.isPending}
                 >
-                  Approuver
+                  {approveRequest.isPending ? "Approbation en cours..." : "Approuver"}
                 </Button>
               </div>
             )}
