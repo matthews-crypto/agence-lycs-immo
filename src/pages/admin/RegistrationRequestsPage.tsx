@@ -10,10 +10,13 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useNavigate } from "react-router-dom"
+import { Database } from "@/integrations/supabase/types"
+
+type RegistrationStatus = Database["public"]["Enums"]["registration_status"] | "all"
 
 export default function RegistrationRequestsPage() {
   const [search, setSearch] = useState("")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [statusFilter, setStatusFilter] = useState<RegistrationStatus>("all")
   const navigate = useNavigate()
 
   const { data: requests, isLoading } = useQuery({
@@ -58,7 +61,7 @@ export default function RegistrationRequestsPage() {
         
         <Select
           value={statusFilter}
-          onValueChange={setStatusFilter}
+          onValueChange={(value: RegistrationStatus) => setStatusFilter(value)}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filtrer par statut" />
