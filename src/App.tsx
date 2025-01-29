@@ -27,7 +27,6 @@ import PropertyImagesPage from "@/pages/agency/PropertyImagesPage"
 import AgencyRegisterPage from "@/pages/agency/RegisterPage"
 import AgencyDashboardPage from "@/pages/agency/DashboardPage"
 import AgencyAgentsPage from "@/pages/agency/AgentsPage"
-import AgencySettingsPage from "@/pages/agency/SettingsPage"
 import AgentDashboardPage from "@/pages/agency/agent/DashboardPage"
 import AgentPropertiesPage from "@/pages/agency/agent/PropertiesPage"
 import AgentAppointmentsPage from "@/pages/agency/agent/AppointmentsPage"
@@ -96,7 +95,6 @@ const App = () => (
                 />
                 <Route path="dashboard" element={<AgencyDashboardPage />} />
                 <Route path="agents" element={<AgencyAgentsPage />} />
-                <Route path="settings" element={<AgencySettingsPage />} />
                 <Route
                   path="properties"
                   element={<AgencyPropertiesPage />}
