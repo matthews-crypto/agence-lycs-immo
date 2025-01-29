@@ -7,9 +7,21 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { useEffect } from "react"
 
 export function AgencyBasicInfo() {
-  const { control } = useFormContext()
+  const { control, watch, setValue } = useFormContext()
+  const agencyName = watch("agency_name")
+
+  useEffect(() => {
+    if (agencyName) {
+      const slug = agencyName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "")
+      setValue("slug", slug)
+    }
+  }, [agencyName, setValue])
 
   return (
     <div className="space-y-4">
@@ -63,6 +75,38 @@ export function AgencyBasicInfo() {
             <FormLabel>Numéro de licence *</FormLabel>
             <FormControl>
               <Input placeholder="12345678" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={control}
+        name="password"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Mot de passe *</FormLabel>
+            <FormControl>
+              <Input 
+                type="password" 
+                placeholder="••••••••" 
+                {...field} 
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={control}
+        name="slug"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Slug</FormLabel>
+            <FormControl>
+              <Input {...field} />
             </FormControl>
             <FormMessage />
           </FormItem>
