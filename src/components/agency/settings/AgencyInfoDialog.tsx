@@ -1,3 +1,4 @@
+import { useEffect } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -7,9 +8,8 @@ import { toast } from "sonner"
 import { AgencyBasicInfo } from "@/components/admin/agencies/create/AgencyBasicInfo"
 import { AgencyAddress } from "@/components/admin/agencies/create/AgencyAddress"
 import { AgencyCustomization } from "@/components/admin/agencies/create/AgencyCustomization"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { supabase } from "@/integrations/supabase/client"
-import { useAgencyContext } from "@/contexts/AgencyContext"
 import { Building, MapPin, Palette } from "lucide-react"
 import {
   Dialog,
@@ -17,13 +17,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { useAgencyContext } from "@/contexts/AgencyContext"
 
 const formSchema = z.object({
   agency_name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
   contact_email: z.string().email("Email invalide"),
   contact_phone: z.string().regex(/^(70|75|76|77|78)[0-9]{7}$/, "Format de téléphone sénégalais invalide (ex: 771234567)"),
   license_number: z.string().min(1, "Numéro de licence requis"),
-  password: z.string().optional(),
+  slug: z.string().min(2, "Slug invalide"),
   address: z.string().min(1, "Adresse requise"),
   city: z.string().min(1, "Ville requise"),
   postal_code: z.string().regex(/^[0-9]{5}$/, "Code postal invalide"),
@@ -34,12 +35,12 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>
 
-interface AgencySettingsDialogProps {
+interface AgencyInfoDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-export function AgencySettingsDialog({ open, onOpenChange }: AgencySettingsDialogProps) {
+export function AgencyInfoDialog({ open, onOpenChange }: AgencyInfoDialogProps) {
   const [currentStep, setCurrentStep] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { agency, refetch } = useAgencyContext()
@@ -53,19 +54,12 @@ export function AgencySettingsDialog({ open, onOpenChange }: AgencySettingsDialo
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      agency_name: agency?.agency_name || "",
-      contact_email: agency?.contact_email || "",
-      contact_phone: agency?.contact_phone || "",
-      license_number: agency?.license_number || "",
-      address: agency?.address || "",
-      city: agency?.city || "",
-      postal_code: agency?.postal_code || "",
-      logo_url: agency?.logo_url || "",
-      primary_color: agency?.primary_color || "#1a365d",
-      secondary_color: agency?.secondary_color || "#60a5fa",
+      primary_color: "#1a365d",
+      secondary_color: "#60a5fa",
     },
   })
 
+  // Mettre à jour les valeurs du formulaire avec les données de l'agence
   useEffect(() => {
     if (agency) {
       form.reset({
@@ -73,6 +67,7 @@ export function AgencySettingsDialog({ open, onOpenChange }: AgencySettingsDialo
         contact_email: agency.contact_email || "",
         contact_phone: agency.contact_phone || "",
         license_number: agency.license_number || "",
+        slug: agency.slug || "",
         address: agency.address || "",
         city: agency.city || "",
         postal_code: agency.postal_code || "",
@@ -86,14 +81,16 @@ export function AgencySettingsDialog({ open, onOpenChange }: AgencySettingsDialo
   const onSubmit = async (data: FormValues) => {
     try {
       setIsSubmitting(true)
-      
-      const { error } = await supabase
-        .from('agencies')
+      console.log("Submitting data:", data)
+
+      const { error: updateError } = await supabase
+        .from("agencies")
         .update({
           agency_name: data.agency_name,
           contact_email: data.contact_email,
           contact_phone: data.contact_phone,
           license_number: data.license_number,
+          slug: data.slug,
           address: data.address,
           city: data.city,
           postal_code: data.postal_code,
@@ -101,19 +98,21 @@ export function AgencySettingsDialog({ open, onOpenChange }: AgencySettingsDialo
           primary_color: data.primary_color,
           secondary_color: data.secondary_color,
         })
-        .eq('id', agency?.id)
+        .eq("id", agency?.id)
 
-      if (error) {
-        console.error("Update error:", error)
-        if (error.message.includes('agencies_contact_email_key')) {
-          toast.error("Cet email est déjà utilisé")
+      if (updateError) {
+        console.error("Update error:", updateError)
+        if (updateError.message.includes("duplicate key")) {
+          if (updateError.message.includes("agencies_contact_email_key")) {
+            toast.error("Cet email est déjà utilisé")
+          } else if (updateError.message.includes("agencies_license_number_key")) {
+            toast.error("Ce numéro de licence est déjà utilisé")
+          } else if (updateError.message.includes("agencies_slug_key")) {
+            toast.error("Ce slug est déjà utilisé")
+          }
           return
         }
-        if (error.message.includes('agencies_license_number_key')) {
-          toast.error("Ce numéro de licence est déjà utilisé")
-          return
-        }
-        throw error
+        throw updateError
       }
 
       await refetch()
@@ -122,7 +121,7 @@ export function AgencySettingsDialog({ open, onOpenChange }: AgencySettingsDialo
       setCurrentStep(0)
     } catch (error) {
       console.error("Error:", error)
-      toast.error("Erreur lors de la mise à jour")
+      toast.error("Erreur lors de la mise à jour des informations")
     } finally {
       setIsSubmitting(false)
     }
@@ -130,7 +129,7 @@ export function AgencySettingsDialog({ open, onOpenChange }: AgencySettingsDialo
 
   const nextStep = async () => {
     const fields = [
-      ["agency_name", "contact_email", "contact_phone", "license_number"],
+      ["agency_name", "contact_email", "contact_phone", "license_number", "slug"],
       ["address", "city", "postal_code"],
       ["primary_color", "secondary_color"],
     ][currentStep]
@@ -150,8 +149,24 @@ export function AgencySettingsDialog({ open, onOpenChange }: AgencySettingsDialo
     setCurrentStep(prev => Math.max(prev - 1, 0))
   }
 
-  const handleStepClick = (index: number) => {
-    setCurrentStep(index)
+  const handleCancel = () => {
+    onOpenChange(false)
+    setCurrentStep(0)
+    if (agency) {
+      form.reset({
+        agency_name: agency.agency_name || "",
+        contact_email: agency.contact_email || "",
+        contact_phone: agency.contact_phone || "",
+        license_number: agency.license_number || "",
+        slug: agency.slug || "",
+        address: agency.address || "",
+        city: agency.city || "",
+        postal_code: agency.postal_code || "",
+        logo_url: agency.logo_url || "",
+        primary_color: agency.primary_color || "#1a365d",
+        secondary_color: agency.secondary_color || "#60a5fa",
+      })
+    }
   }
 
   return (
@@ -165,15 +180,15 @@ export function AgencySettingsDialog({ open, onOpenChange }: AgencySettingsDialo
             {steps.map((step, index) => (
               <button
                 key={step.title}
-                onClick={() => handleStepClick(index)}
-                className={`flex-1 text-center p-2 transition-colors hover:text-primary ${
+                onClick={() => setCurrentStep(index)}
+                className={`flex items-center gap-2 flex-1 justify-center py-2 px-4 transition-colors hover:text-primary ${
                   index === currentStep
                     ? "text-primary font-bold"
                     : "text-muted-foreground"
                 }`}
               >
+                {step.icon}
                 <span className="hidden md:inline">{step.title}</span>
-                <span className="md:hidden flex justify-center">{step.icon}</span>
               </button>
             ))}
           </div>
@@ -186,7 +201,7 @@ export function AgencySettingsDialog({ open, onOpenChange }: AgencySettingsDialo
             {currentStep === 2 && <AgencyCustomization />}
 
             <div className="flex justify-between pt-4">
-              <div className="space-x-2">
+              <div className="flex gap-2">
                 <Button
                   type="button"
                   variant="outline"
@@ -198,7 +213,7 @@ export function AgencySettingsDialog({ open, onOpenChange }: AgencySettingsDialo
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => onOpenChange(false)}
+                  onClick={handleCancel}
                 >
                   Annuler
                 </Button>
