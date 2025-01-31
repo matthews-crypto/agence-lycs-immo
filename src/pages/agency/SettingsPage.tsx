@@ -3,9 +3,11 @@ import { AgencyInfoDialog } from "@/components/agency/settings/AgencyInfoDialog"
 import { useState } from "react"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { AgencySidebar } from "@/components/agency/AgencySidebar"
+import { useAgencyContext } from "@/contexts/AgencyContext"
 
 export default function AgencySettingsPage() {
   const [showAgencyInfoDialog, setShowAgencyInfoDialog] = useState(false)
+  const { agency } = useAgencyContext()
 
   return (
     <SidebarProvider>
@@ -23,6 +25,7 @@ export default function AgencySettingsPage() {
                 </p>
                 <Button 
                   onClick={() => setShowAgencyInfoDialog(true)}
+                  style={{ backgroundColor: agency?.primary_color }}
                 >
                   Informations agence
                 </Button>
