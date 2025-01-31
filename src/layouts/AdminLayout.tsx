@@ -12,34 +12,33 @@ export default function AdminLayout() {
   const location = useLocation()
 
   useEffect(() => {
+    let mounted = true
     let inactivityTimeout: NodeJS.Timeout
 
     const resetInactivityTimer = () => {
-      // Effacer le timeout existant
       if (inactivityTimeout) {
         clearTimeout(inactivityTimeout)
       }
 
-      // Définir un nouveau timeout (8 heures)
       inactivityTimeout = setTimeout(async () => {
         console.log("Session expirée après 8 heures d'inactivité")
-        await supabase.auth.signOut()
-        setAuthenticated(false)
-        toast.info("Session expirée. Veuillez vous reconnecter.")
-      }, 8 * 60 * 60 * 1000) // 8 heures en millisecondes
+        if (mounted) {
+          await supabase.auth.signOut()
+          setAuthenticated(false)
+          toast.info("Session expirée. Veuillez vous reconnecter.")
+        }
+      }, 8 * 60 * 60 * 1000)
     }
 
-    // Ajouter les écouteurs d'événements pour réinitialiser le timer
     const events = ['mousedown', 'keydown', 'mousemove', 'wheel']
     events.forEach(event => {
       document.addEventListener(event, resetInactivityTimer)
     })
 
-    // Démarrer le timer initial
-    resetInactivityTimer()
-
     const checkAdminStatus = async () => {
       try {
+        if (!mounted) return
+
         console.log("Checking admin session status...")
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
         
@@ -58,7 +57,7 @@ export default function AdminLayout() {
         console.log("Session found, checking admin status for user:", session.user.id)
 
         const { data: isAdmin, error: adminCheckError } = await supabase
-          .rpc('is_admin', { user_id: session.user.id });
+          .rpc('is_admin', { user_id: session.user.id })
 
         if (adminCheckError) {
           console.error("Admin check error:", adminCheckError)
@@ -66,48 +65,64 @@ export default function AdminLayout() {
           return
         }
 
-        const isAdminUser = !!isAdmin
-        console.log("Admin status check result:", isAdminUser)
-        setAuthenticated(isAdminUser)
+        if (mounted) {
+          const isAdminUser = !!isAdmin
+          console.log("Admin status check result:", isAdminUser)
+          setAuthenticated(isAdminUser)
+        }
       } catch (error) {
         console.error("Session check error:", error)
-        setAuthenticated(false)
+        if (mounted) {
+          setAuthenticated(false)
+        }
       }
     }
 
+    // Initial check
     checkAdminStatus()
 
+    // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state change event:", event)
       
       if (!session) {
         console.log("No session in auth state change")
-        setAuthenticated(false)
+        if (mounted) {
+          setAuthenticated(false)
+        }
         return
       }
 
       const { data: isAdmin, error: adminCheckError } = await supabase
-        .rpc('is_admin', { user_id: session.user.id });
+        .rpc('is_admin', { user_id: session.user.id })
 
       if (adminCheckError) {
         console.error("Admin check error in auth state change:", adminCheckError)
-        setAuthenticated(false)
+        if (mounted) {
+          setAuthenticated(false)
+        }
         return
       }
 
-      const isAdminUser = !!isAdmin
-      console.log("Setting admin status on auth state change:", isAdminUser)
-      setAuthenticated(isAdminUser)
+      if (mounted) {
+        const isAdminUser = !!isAdmin
+        console.log("Setting admin status on auth state change:", isAdminUser)
+        setAuthenticated(isAdminUser)
+      }
     })
 
-    // Cleanup function
+    // Start inactivity timer
+    resetInactivityTimer()
+
     return () => {
+      mounted = false
       console.log("Cleaning up auth state change subscription")
       subscription.unsubscribe()
-      // Nettoyer le timer et les écouteurs d'événements
+      
       if (inactivityTimeout) {
         clearTimeout(inactivityTimeout)
       }
+      
       events.forEach(event => {
         document.removeEventListener(event, resetInactivityTimer)
       })
