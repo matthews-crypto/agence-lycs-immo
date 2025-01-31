@@ -208,6 +208,7 @@ export function AgencyInfoDialog({ open, onOpenChange }: AgencyInfoDialogProps) 
                 type="button" 
                 onClick={nextStep}
                 disabled={isSubmitting}
+                style={{ backgroundColor: agency?.primary_color }}
               >
                 {currentStep === steps.length - 1 
                   ? (isSubmitting ? "Mise à jour en cours..." : "Mettre à jour")
