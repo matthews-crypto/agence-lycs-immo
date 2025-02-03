@@ -5,7 +5,7 @@ import { useEffect } from "react"
 import slugify from "slugify"
 
 interface AgencyBasicInfoProps {
-  showPassword?: boolean;
+  showPassword?: boolean
 }
 
 export function AgencyBasicInfo({ showPassword = false }: AgencyBasicInfoProps) {
