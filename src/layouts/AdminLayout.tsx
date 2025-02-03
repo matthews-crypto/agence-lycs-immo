@@ -17,6 +17,7 @@ export default function AdminLayout() {
 
 
   useEffect(() => {
+    let mounted = true
     let inactivityTimeout: NodeJS.Timeout
 
     const resetInactivityTimer = () => {
@@ -24,26 +25,27 @@ export default function AdminLayout() {
         clearTimeout(inactivityTimeout)
       }
 
-      // Définir un nouveau timeout (8 heures)
       inactivityTimeout = setTimeout(async () => {
         console.log("Session expirée après 8 heures d'inactivité")
-        await supabase.auth.signOut()
-        setAuthenticated(false)
-        toast.info("Session expirée. Veuillez vous reconnecter.")
-      }, 8 * 60 * 60 * 1000) // 8 heures en millisecondes
+        if (mounted) {
+          await supabase.auth.signOut()
+          setAuthenticated(false)
+          toast.info("Session expirée. Veuillez vous reconnecter.")
+        }
+      }, 8 * 60 * 60 * 1000)
     }
 
-    // Ajouter les écouteurs d'événements pour réinitialiser le timer
     const events = ['mousedown', 'keydown', 'mousemove', 'wheel']
     events.forEach(event => {
       document.addEventListener(event, resetInactivityTimer)
     })
 
-    // Démarrer le timer initial
     resetInactivityTimer();
-
+        
     const checkAdminStatus = async () => {
       try {
+        if (!mounted) return
+
         console.log("Checking admin session status...")
         const { data: { user }, error: sessionError } = await supabase.auth.getUser()
 
@@ -70,17 +72,22 @@ export default function AdminLayout() {
           return
         }
 
-        const isAdminUser = !!isAdmin
-        console.log("Admin status check result:", isAdminUser)
-        setAuthenticated(isAdminUser)
+        if (mounted) {
+          const isAdminUser = !!isAdmin
+          console.log("Admin status check result:", isAdminUser)
+          setAuthenticated(isAdminUser)
+        }
       } catch (error) {
         console.error("Session check error:", error)
-        setAuthenticated(false)
+        if (mounted) {
+          setAuthenticated(false)
+        }
       }
     }
 
     checkAdminStatus();
 
+    // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("events and session",event, session);
       if (event === 'SIGNED_OUT') {
@@ -98,14 +105,18 @@ export default function AdminLayout() {
       }
     })
 
-    // Cleanup function
+    // Start inactivity timer
+    resetInactivityTimer()
+
     return () => {
+      mounted = false
       console.log("Cleaning up auth state change subscription")
       subscription.unsubscribe()
-      // Nettoyer le timer et les écouteurs d'événements
+      
       if (inactivityTimeout) {
         clearTimeout(inactivityTimeout)
       }
+      
       events.forEach(event => {
         document.removeEventListener(event, resetInactivityTimer)
       })
