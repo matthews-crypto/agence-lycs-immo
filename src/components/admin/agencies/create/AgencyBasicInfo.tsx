@@ -4,7 +4,11 @@ import { useFormContext } from "react-hook-form"
 import { useEffect } from "react"
 import slugify from "slugify"
 
-export function AgencyBasicInfo() {
+interface AgencyBasicInfoProps {
+  showPassword?: boolean;
+}
+
+export function AgencyBasicInfo({ showPassword = false }: AgencyBasicInfoProps) {
   const { watch, setValue } = useFormContext()
   const agencyName = watch("agency_name")
 
@@ -72,22 +76,24 @@ export function AgencyBasicInfo() {
         )}
       />
 
-      <FormField
-        name="password"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Mot de passe</FormLabel>
-            <FormControl>
-              <Input 
-                {...field} 
-                type="password" 
-                placeholder="Entrez votre mot de passe" 
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      {showPassword && (
+        <FormField
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Mot de passe</FormLabel>
+              <FormControl>
+                <Input 
+                  {...field} 
+                  type="password" 
+                  placeholder="Entrez votre mot de passe" 
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
 
       <FormField
         name="slug"
