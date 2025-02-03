@@ -1,4 +1,4 @@
-import { useFormContext } from "react-hook-form"
+import { useFormContext, useWatch } from "react-hook-form"
 import {
   FormControl,
   FormField,
@@ -8,9 +8,26 @@ import {
   FormDescription,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { useEffect } from "react"
 
 export function AgencyBasicInfo() {
-  const { control } = useFormContext()
+  const { control, setValue } = useFormContext()
+  
+  // Observer le champ agency_name pour mettre à jour automatiquement le slug
+  const agencyName = useWatch({
+    control,
+    name: "agency_name",
+  })
+
+  useEffect(() => {
+    if (agencyName) {
+      const slug = agencyName
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '');
+      setValue("slug", slug);
+    }
+  }, [agencyName, setValue]);
 
   return (
     <div className="space-y-4">
@@ -93,6 +110,27 @@ export function AgencyBasicInfo() {
             <FormControl>
               <Input placeholder="12345678" {...field} />
             </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={control}
+        name="password"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Mot de passe *</FormLabel>
+            <FormControl>
+              <Input 
+                type="password" 
+                placeholder="••••••••" 
+                {...field} 
+              />
+            </FormControl>
+            <FormDescription>
+              Minimum 8 caractères, une majuscule et un chiffre
+            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
