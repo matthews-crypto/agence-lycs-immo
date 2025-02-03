@@ -10,7 +10,10 @@ export function AgencyBasicInfo() {
 
   useEffect(() => {
     if (agencyName) {
-      const slug = slugify(agencyName, { lower: true, strict: true })
+      const slug = slugify(agencyName, {
+        lower: true,
+        strict: true
+      })
       setValue("slug", slug)
     }
   }, [agencyName, setValue])
@@ -63,6 +66,23 @@ export function AgencyBasicInfo() {
             <FormLabel>Numéro de licence</FormLabel>
             <FormControl>
               <Input {...field} placeholder="Entrez le numéro de licence" />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        name="password"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Mot de passe</FormLabel>
+            <FormControl>
+              <Input 
+                {...field} 
+                type="password" 
+                placeholder="Entrez votre mot de passe" 
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
