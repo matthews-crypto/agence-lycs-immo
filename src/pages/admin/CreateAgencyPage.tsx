@@ -14,16 +14,17 @@ import { supabase } from "@/integrations/supabase/client"
 
 const formSchema = z.object({
   // Basic Info
-  agency_name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
-  contact_email: z.string().email("Email invalide"),
-  contact_phone: z.string().regex(/^(70|75|76|77|78)[0-9]{7}$/, "Format de téléphone sénégalais invalide (ex: 771234567)"),
-  license_number: z.string().min(1, "Numéro de licence requis"),
-  slug: z.string().min(2, "Slug invalide"),
+  agency_name: z.string().min(2, "Le nom doit contenir au moins 2 caractères").nonempty("Ce champ est obligatoire"),
+  contact_email: z.string().email("Email invalide").nonempty("Ce champ est obligatoire"),
+  contact_phone: z.string().regex(/^(70|75|76|77|78)[0-9]{7}$/, "Format de téléphone sénégalais invalide (ex: 771234567)").nonempty("Ce champ est obligatoire"),
+  license_number: z.string().min(1, "Ce champ est obligatoire"),
+  slug: z.string().min(2, "Ce champ est obligatoire"),
+  password: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères").nonempty("Ce champ est obligatoire"),
   
   // Address
-  address: z.string().min(1, "Adresse requise"),
-  city: z.string().min(1, "Ville requise"),
-  postal_code: z.string().regex(/^[0-9]{5}$/, "Code postal invalide"),
+  address: z.string().min(1, "Ce champ est obligatoire"),
+  city: z.string().min(1, "Ce champ est obligatoire"),
+  postal_code: z.string().regex(/^[0-9]{5}$/, "Code postal invalide").nonempty("Ce champ est obligatoire"),
   
   // Customization
   logo_url: z.string().optional(),
