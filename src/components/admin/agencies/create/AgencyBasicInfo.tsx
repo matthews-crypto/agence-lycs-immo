@@ -114,27 +114,6 @@ export function AgencyBasicInfo() {
           </FormItem>
         )}
       />
-
-      <FormField
-        control={control}
-        name="password"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Mot de passe *</FormLabel>
-            <FormControl>
-              <Input 
-                type="password" 
-                placeholder="••••••••" 
-                {...field} 
-              />
-            </FormControl>
-            <FormDescription>
-              Minimum 8 caractères, une majuscule et un chiffre
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
     </div>
   )
 }
