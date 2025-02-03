@@ -7,9 +7,10 @@ import { toast } from "sonner"
 import { AgencyBasicInfo } from "@/components/admin/agencies/create/AgencyBasicInfo"
 import { AgencyAddress } from "@/components/admin/agencies/create/AgencyAddress"
 import { AgencyCustomization } from "@/components/admin/agencies/create/AgencyCustomization"
+import { AgencyAdminInfo } from "@/components/agency-registration/AgencyAdminInfo"
 import { useState } from "react"
 import { supabase } from "@/integrations/supabase/client"
-import { Building, MapPin, Palette } from "lucide-react"
+import { Building, MapPin, Palette, User } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -34,6 +35,12 @@ const formSchema = z.object({
   logo_url: z.string().optional(),
   primary_color: z.string(),
   secondary_color: z.string(),
+
+  // Admin Info
+  admin_name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
+  admin_email: z.string().email("Email invalide"),
+  admin_phone: z.string().regex(/^(70|75|76|77|78)[0-9]{7}$/, "Format de téléphone sénégalais invalide (ex: 771234567)"),
+  admin_license: z.string().min(1, "Matricule agent requis"),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -51,7 +58,8 @@ export function AgencyInfoDialog({ open, onOpenChange }: AgencyInfoDialogProps) 
   const steps = [
     { title: "Informations", icon: <Building className="w-5 h-5" /> },
     { title: "Adresse", icon: <MapPin className="w-5 h-5" /> },
-    { title: "Personnalisation", icon: <Palette className="w-5 h-5" /> }
+    { title: "Personnalisation", icon: <Palette className="w-5 h-5" /> },
+    { title: "Admin", icon: <User className="w-5 h-5" /> }
   ]
 
   const form = useForm<FormValues>({
@@ -67,6 +75,10 @@ export function AgencyInfoDialog({ open, onOpenChange }: AgencyInfoDialogProps) 
       logo_url: agency?.logo_url || "",
       primary_color: agency?.primary_color || "#1a365d",
       secondary_color: agency?.secondary_color || "#60a5fa",
+      admin_name: agency?.admin_name || "",
+      admin_email: agency?.admin_email || "",
+      admin_phone: agency?.admin_phone || "",
+      admin_license: agency?.admin_license || "",
     },
   })
 
@@ -88,6 +100,10 @@ export function AgencyInfoDialog({ open, onOpenChange }: AgencyInfoDialogProps) 
           logo_url: data.logo_url,
           primary_color: data.primary_color,
           secondary_color: data.secondary_color,
+          admin_name: data.admin_name,
+          admin_email: data.admin_email,
+          admin_phone: data.admin_phone,
+          admin_license: data.admin_license,
         })
         .eq('id', agency?.id)
 
@@ -116,6 +132,8 @@ export function AgencyInfoDialog({ open, onOpenChange }: AgencyInfoDialogProps) 
       ["address", "city", "postal_code"],
       // Step 3 fields
       ["primary_color", "secondary_color"],
+      // Step 4 fields
+      ["admin_name", "admin_email", "admin_phone", "admin_license"],
     ][currentStep]
 
     const isValid = await form.trigger(fields as Array<keyof FormValues>)
@@ -165,6 +183,7 @@ export function AgencyInfoDialog({ open, onOpenChange }: AgencyInfoDialogProps) 
             {currentStep === 0 && <AgencyBasicInfo />}
             {currentStep === 1 && <AgencyAddress />}
             {currentStep === 2 && <AgencyCustomization />}
+            {currentStep === 3 && <AgencyAdminInfo />}
 
             <div className="flex justify-between pt-4">
               <div className="flex gap-2">
@@ -189,6 +208,7 @@ export function AgencyInfoDialog({ open, onOpenChange }: AgencyInfoDialogProps) 
                 type="button" 
                 onClick={nextStep}
                 disabled={isSubmitting}
+                style={{ backgroundColor: agency?.primary_color }}
               >
                 {currentStep === steps.length - 1 
                   ? (isSubmitting ? "Mise à jour en cours..." : "Mettre à jour")
