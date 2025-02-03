@@ -19,6 +19,7 @@ const formSchema = z.object({
   contact_phone: z.string().regex(/^(70|75|76|77|78)[0-9]{7}$/, "Format de téléphone sénégalais invalide (ex: 771234567)").nonempty("Ce champ est obligatoire"),
   license_number: z.string().min(1, "Ce champ est obligatoire"),
   slug: z.string().min(2, "Ce champ est obligatoire"),
+  password: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères").nonempty("Ce champ est obligatoire"),
   
   // Address
   address: z.string().min(1, "Ce champ est obligatoire"),
@@ -132,7 +133,7 @@ export default function CreateAgencyPage() {
 
         <Form {...form}>
           <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
-            {currentStep === 0 && <AgencyBasicInfo showPassword={false} />}
+            {currentStep === 0 && <AgencyBasicInfo />}
             {currentStep === 1 && <AgencyAddress />}
             {currentStep === 2 && <AgencyCustomization />}
 
