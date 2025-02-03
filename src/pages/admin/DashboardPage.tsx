@@ -10,7 +10,7 @@ export default function AdminDashboardPage() {
           Tableau de bord administrateur
         </h1>
         <p className="text-muted-foreground">
-          Gérez vos agences et suivez les performances globales
+          Gérez vos agences et suivez les performances globales de votre agence
         </p>
       </div>
 
