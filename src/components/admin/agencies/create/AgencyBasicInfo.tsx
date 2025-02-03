@@ -29,20 +29,6 @@ export function AgencyBasicInfo() {
 
       <FormField
         control={control}
-        name="slug"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Identifiant unique *</FormLabel>
-            <FormControl>
-              <Input placeholder="mon-agence" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={control}
         name="contact_email"
         render={({ field }) => (
           <FormItem>
