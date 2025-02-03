@@ -1,44 +1,29 @@
-import { useFormContext, useWatch } from "react-hook-form"
-import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-  FormDescription,
-} from "@/components/ui/form"
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { useFormContext } from "react-hook-form"
 import { useEffect } from "react"
+import slugify from "slugify"
 
 export function AgencyBasicInfo() {
-  const { control, setValue } = useFormContext()
-  
-  // Observer le champ agency_name pour mettre à jour automatiquement le slug
-  const agencyName = useWatch({
-    control,
-    name: "agency_name",
-  })
+  const { watch, setValue } = useFormContext()
+  const agencyName = watch("agency_name")
 
   useEffect(() => {
     if (agencyName) {
-      const slug = agencyName
-        .toLowerCase()
-        .replace(/\s+/g, '-')
-        .replace(/[^a-z0-9-]/g, '');
-      setValue("slug", slug);
+      const slug = slugify(agencyName, { lower: true, strict: true })
+      setValue("slug", slug)
     }
-  }, [agencyName, setValue]);
+  }, [agencyName, setValue])
 
   return (
     <div className="space-y-4">
       <FormField
-        control={control}
         name="agency_name"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Nom de l'agence *</FormLabel>
+            <FormLabel>Nom de l'agence</FormLabel>
             <FormControl>
-              <Input placeholder="Mon Agence Immobilière" {...field} />
+              <Input {...field} placeholder="Entrez le nom de l'agence" />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -46,41 +31,12 @@ export function AgencyBasicInfo() {
       />
 
       <FormField
-        control={control}
-        name="slug"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Identifiant unique *</FormLabel>
-            <FormControl>
-              <Input 
-                placeholder="mon-agence" 
-                {...field} 
-                onChange={(e) => {
-                  // Convertir en slug valide : lowercase, remplacer espaces par tirets, enlever caractères spéciaux
-                  const value = e.target.value
-                    .toLowerCase()
-                    .replace(/\s+/g, '-')
-                    .replace(/[^a-z0-9-]/g, '');
-                  field.onChange(value);
-                }}
-              />
-            </FormControl>
-            <FormDescription>
-              Cet identifiant sera utilisé dans l'URL de votre agence (ex: monsite.com/mon-agence)
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={control}
         name="contact_email"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Email professionnel *</FormLabel>
+            <FormLabel>Email de contact</FormLabel>
             <FormControl>
-              <Input type="email" placeholder="contact@monagence.fr" {...field} />
+              <Input {...field} type="email" placeholder="contact@agence.com" />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -88,13 +44,12 @@ export function AgencyBasicInfo() {
       />
 
       <FormField
-        control={control}
         name="contact_phone"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Téléphone *</FormLabel>
+            <FormLabel>Téléphone de contact</FormLabel>
             <FormControl>
-              <Input placeholder="771234567" {...field} />
+              <Input {...field} placeholder="771234567" />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -102,13 +57,25 @@ export function AgencyBasicInfo() {
       />
 
       <FormField
-        control={control}
         name="license_number"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Numéro de licence *</FormLabel>
+            <FormLabel>Numéro de licence</FormLabel>
             <FormControl>
-              <Input placeholder="12345678" {...field} />
+              <Input {...field} placeholder="Entrez le numéro de licence" />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        name="slug"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Slug</FormLabel>
+            <FormControl>
+              <Input {...field} placeholder="slug-de-lagence" />
             </FormControl>
             <FormMessage />
           </FormItem>
