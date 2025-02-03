@@ -46,7 +46,7 @@ export function AdminSidebar() {
 
   const handleLogout = async () => {
     try {
-      await logout()
+      await logout();
       navigate("/admin/auth")
       toast.success("Déconnexion réussie")
     } catch (error) {

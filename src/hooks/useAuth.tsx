@@ -17,7 +17,7 @@ export function useAuth() {
         toast.error("Error getting session");
       } else {
         console.log("Initial session state:", session ? "Active" : "No session");
-        if (!session) {
+        if (!session) {``
           // Clear any stale session data
           supabase.auth.signOut().catch(console.error);
         }

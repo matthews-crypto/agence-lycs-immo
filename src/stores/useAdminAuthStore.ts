@@ -50,8 +50,7 @@ export const useAdminAuthStore = create<AdminAuthState>((set) => ({
       }
 
       // Utiliser la fonction rpc is_admin pour vérifier le statut d'administrateur
-      const { data: isAdmin, error: adminCheckError } = await supabase
-        .rpc('is_admin', { user_id: signInData.user.id });
+      const { data: isAdmin, error: adminCheckError } = await supabase.rpc('is_admin', { user_id: signInData.user.id });
 
       if (adminCheckError) {
         console.error("Admin check error:", adminCheckError);

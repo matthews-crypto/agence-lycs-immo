@@ -6,16 +6,20 @@ import { useEffect } from "react"
 import { supabase } from "@/integrations/supabase/client"
 import { LoadingLayout } from "@/components/LoadingLayout"
 import { toast } from "sonner"
+import * as React from "react";
+
+const SessionContext = React.createContext(null)
 
 export default function AdminLayout() {
   const { isAuthenticated, setAuthenticated } = useAdminAuthStore()
   const location = useLocation()
+  const [session, setSession] = React.useState(null)
+
 
   useEffect(() => {
     let inactivityTimeout: NodeJS.Timeout
 
     const resetInactivityTimer = () => {
-      // Effacer le timeout existant
       if (inactivityTimeout) {
         clearTimeout(inactivityTimeout)
       }
@@ -36,29 +40,29 @@ export default function AdminLayout() {
     })
 
     // Démarrer le timer initial
-    resetInactivityTimer()
+    resetInactivityTimer();
 
     const checkAdminStatus = async () => {
       try {
         console.log("Checking admin session status...")
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-        
+        const { data: { user }, error: sessionError } = await supabase.auth.getUser()
+
+        console.log('user',user)
         if (sessionError) {
           console.error("Session error:", sessionError)
           setAuthenticated(false)
           return
         }
 
-        if (!session) {
+        if (!user) {
           console.log("No active session found")
           setAuthenticated(false)
           return
         }
 
-        console.log("Session found, checking admin status for user:", session.user.id)
+        console.log("Session found, checking admin status for user:", user.id)
 
-        const { data: isAdmin, error: adminCheckError } = await supabase
-          .rpc('is_admin', { user_id: session.user.id });
+        const { data: isAdmin, error: adminCheckError } = await supabase.rpc('is_admin', { user_id: user.id });
 
         if (adminCheckError) {
           console.error("Admin check error:", adminCheckError)
@@ -75,29 +79,23 @@ export default function AdminLayout() {
       }
     }
 
-    checkAdminStatus()
+    checkAdminStatus();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state change event:", event)
-      
+      console.log("events and session",event, session);
+      if (event === 'SIGNED_OUT') {
+        setSession(null);
+        console.log("Sesion kill successfully")
+      }else if (session) {
+        console.log("Session restored successfully")
+        setSession(session)
+      }
+
       if (!session) {
         console.log("No session in auth state change")
         setAuthenticated(false)
         return
       }
-
-      const { data: isAdmin, error: adminCheckError } = await supabase
-        .rpc('is_admin', { user_id: session.user.id });
-
-      if (adminCheckError) {
-        console.error("Admin check error in auth state change:", adminCheckError)
-        setAuthenticated(false)
-        return
-      }
-
-      const isAdminUser = !!isAdmin
-      console.log("Setting admin status on auth state change:", isAdminUser)
-      setAuthenticated(isAdminUser)
     })
 
     // Cleanup function
@@ -120,13 +118,15 @@ export default function AdminLayout() {
   }
 
   return (
-    <SidebarProvider defaultOpen={true}>
-      <div className="flex min-h-screen w-full bg-background">
-        <AdminSidebar />
-        <main className="flex-1 overflow-x-hidden">
-          <Outlet />
-        </main>
-      </div>
-    </SidebarProvider>
+      <SessionContext.Provider value={session}>
+        <SidebarProvider defaultOpen={true}>
+          <div className="flex min-h-screen w-full bg-background">
+            <AdminSidebar />
+            <main className="flex-1 overflow-x-hidden">
+              <Outlet />
+            </main>
+          </div>
+        </SidebarProvider>
+      </SessionContext.Provider>
   )
 }
