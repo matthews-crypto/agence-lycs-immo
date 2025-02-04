@@ -1,120 +1,165 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { useNavigate } from "react-router-dom"
-import { toast } from "sonner"
 import { z } from "zod"
-import { Button } from "@/components/ui/button"
 import { Form } from "@/components/ui/form"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { toast } from "sonner"
 import { AgencyBasicInfo } from "@/components/admin/agencies/create/AgencyBasicInfo"
 import { AgencyAddress } from "@/components/admin/agencies/create/AgencyAddress"
 import { AgencyCustomization } from "@/components/admin/agencies/create/AgencyCustomization"
+import { useState } from "react"
 import { supabase } from "@/integrations/supabase/client"
 
 const formSchema = z.object({
-  agency_name: z.string().min(2, "Le nom de l'agence doit contenir au moins 2 caractères"),
+  // Basic Info
+  agency_name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
   contact_email: z.string().email("Email invalide"),
-  contact_phone: z.string().min(9, "Le numéro de téléphone doit contenir au moins 9 chiffres"),
-  license_number: z.string().min(3, "Le numéro de licence doit contenir au moins 3 caractères"),
-  slug: z.string(),
-  address: z.string().min(5, "L'adresse doit contenir au moins 5 caractères"),
-  city: z.string().min(2, "La ville doit contenir au moins 2 caractères"),
-  postal_code: z.string().min(4, "Le code postal doit contenir au moins 4 caractères"),
+  contact_phone: z.string().regex(/^(70|75|76|77|78)[0-9]{7}$/, "Format de téléphone sénégalais invalide (ex: 771234567)"),
+  license_number: z.string().min(1, "Numéro de licence requis"),
+  slug: z.string().min(2, "Slug invalide"),
+  
+  // Address
+  address: z.string().min(1, "Adresse requise"),
+  city: z.string().min(1, "Ville requise"),
+  postal_code: z.string().regex(/^[0-9]{5}$/, "Code postal invalide"),
+  
+  // Customization
   logo_url: z.string().optional(),
-  primary_color: z.string().default("#000000"),
-  secondary_color: z.string().default("#ffffff"),
+  primary_color: z.string(),
+  secondary_color: z.string(),
 })
 
+type FormValues = z.infer<typeof formSchema>
+
 export default function CreateAgencyPage() {
+  const [currentStep, setCurrentStep] = useState(0)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const navigate = useNavigate()
-  const form = useForm<z.infer<typeof formSchema>>({
+  const steps = ["Informations", "Adresse", "Personnalisation"]
+
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      primary_color: "#000000",
-      secondary_color: "#ffffff",
+      primary_color: "#1a365d",
+      secondary_color: "#60a5fa",
     },
   })
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (data: FormValues) => {
     try {
-      const { error } = await supabase.from("agencies").insert({
-        agency_name: values.agency_name,
-        contact_email: values.contact_email,
-        contact_phone: values.contact_phone,
-        license_number: values.license_number,
-        slug: values.slug,
-        address: values.address,
-        city: values.city,
-        postal_code: values.postal_code,
-        logo_url: values.logo_url,
-        primary_color: values.primary_color,
-        secondary_color: values.secondary_color,
-      })
-      
-      if (error) throw error
+      setIsSubmitting(true)
+      console.log("Submitting data:", data)
 
+      const { data: result, error } = await supabase.functions.invoke('create-agency-user', {
+        body: data
+      })
+
+      if (error) {
+        console.error("Function error:", error)
+        if (error.message.includes('Email already exists')) {
+          toast.error("Cet email est déjà utilisé")
+          return
+        } else if (error.message.includes('License number already exists')) {
+          toast.error("Ce numéro de licence est déjà utilisé")
+          return
+        } else if (error.message.includes('Slug already exists')) {
+          toast.error("Ce slug est déjà utilisé")
+          return
+        } else {
+          toast.error("Erreur lors de la création de l'agence")
+          return
+        }
+      }
+
+      console.log("Agency created successfully:", result)
       toast.success("Agence créée avec succès")
       navigate("/admin/agencies")
     } catch (error) {
       console.error("Error:", error)
       toast.error("Erreur lors de la création de l'agence")
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
+  const nextStep = async () => {
+    const fields = [
+      // Step 1 fields
+      ["agency_name", "contact_email", "contact_phone", "license_number", "slug"],
+      // Step 2 fields
+      ["address", "city", "postal_code"],
+      // Step 3 fields
+      ["primary_color", "secondary_color"],
+    ][currentStep]
+
+    const isValid = await form.trigger(fields as Array<keyof FormValues>)
+    
+    if (isValid) {
+      if (currentStep === steps.length - 1) {
+        await form.handleSubmit(onSubmit)()
+      } else {
+        setCurrentStep(prev => Math.min(prev + 1, steps.length - 1))
+      }
+    }
+  }
+
+  const prevStep = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 0))
+  }
+
   return (
-    <div className="container py-10">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Créer une nouvelle agence</h1>
-        <p className="text-muted-foreground">
-          Remplissez le formulaire ci-dessous pour créer une nouvelle agence
-        </p>
-      </div>
-
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          <div className="grid gap-8">
-            <div className="space-y-4">
-              <div>
-                <h2 className="text-lg font-semibold">Informations</h2>
-                <p className="text-sm text-muted-foreground">
-                  Informations de base de l'agence
-                </p>
+    <div className="container mx-auto py-8">
+      <Card className="max-w-2xl mx-auto p-6">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold mb-4">Créer une nouvelle agence</h1>
+          <div className="flex justify-between mb-8">
+            {steps.map((step, index) => (
+              <div
+                key={step}
+                className={`flex-1 text-center ${
+                  index === currentStep
+                    ? "text-primary font-bold"
+                    : "text-muted-foreground"
+                }`}
+              >
+                {step}
               </div>
-              <AgencyBasicInfo showPassword={false} />
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <h2 className="text-lg font-semibold">Adresse</h2>
-                <p className="text-sm text-muted-foreground">
-                  Adresse physique de l'agence
-                </p>
-              </div>
-              <AgencyAddress />
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <h2 className="text-lg font-semibold">Personnalisation</h2>
-                <p className="text-sm text-muted-foreground">
-                  Personnalisez l'apparence de l'agence
-                </p>
-              </div>
-              <AgencyCustomization />
-            </div>
+            ))}
           </div>
+        </div>
 
-          <div className="flex justify-end gap-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate("/admin/agencies")}
-            >
-              Annuler
-            </Button>
-            <Button type="submit">Créer l'agence</Button>
-          </div>
-        </form>
-      </Form>
+        <Form {...form}>
+          <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
+            {currentStep === 0 && <AgencyBasicInfo />}
+            {currentStep === 1 && <AgencyAddress />}
+            {currentStep === 2 && <AgencyCustomization />}
+
+            <div className="flex justify-between pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={prevStep}
+                disabled={currentStep === 0 || isSubmitting}
+              >
+                Précédent
+              </Button>
+              
+              <Button 
+                type="button" 
+                onClick={nextStep} 
+                disabled={isSubmitting}
+              >
+                {currentStep === steps.length - 1 
+                  ? (isSubmitting ? "Création en cours..." : "Créer l'agence")
+                  : "Suivant"
+                }
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </Card>
     </div>
   )
 }
