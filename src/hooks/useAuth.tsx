@@ -2,12 +2,10 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
 import { toast } from "sonner";
-import { useAdminAuthStore } from "@/stores/useAdminAuthStore";
 
 export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { init: initAdminAuth } = useAdminAuthStore();
 
   useEffect(() => {
     console.log("Initializing auth hook...");
@@ -19,11 +17,12 @@ export function useAuth() {
         toast.error("Error getting session");
       } else {
         console.log("Initial session state:", session ? "Active" : "No session");
-        setSession(session);
-        if (session) {
-          initAdminAuth();
+        if (!session) {
+          // Clear any stale session data
+          supabase.auth.signOut().catch(console.error);
         }
       }
+      setSession(session);
       setIsLoading(false);
     });
 
@@ -38,13 +37,11 @@ export function useAuth() {
       }
       
       if (event === 'SIGNED_OUT') {
+        // Clear any local session data
         setSession(null);
-      } else {
-        setSession(session);
-        if (session) {
-          initAdminAuth();
-        }
       }
+
+      setSession(session);
       setIsLoading(false);
     });
 
@@ -52,7 +49,7 @@ export function useAuth() {
       console.log("Cleaning up auth hook subscription");
       subscription.unsubscribe();
     };
-  }, [initAdminAuth]);
+  }, []);
 
   return { session, isLoading };
 }

@@ -16,18 +16,18 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { LoadingLayout } from "@/components/LoadingLayout";
+import { supabase } from "@/integrations/supabase/client";
 
 const formSchema = z.object({
-  email: z.string().email("Email invalide"),
-  password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
 export default function AdminAuthPage() {
   const navigate = useNavigate();
-  const { login, init, isLoading, isAuthenticated, error } = useAdminAuthStore();
+  const { login, isLoading, isAuthenticated, error } = useAdminAuthStore();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -38,8 +38,20 @@ export default function AdminAuthPage() {
   });
 
   useEffect(() => {
-    init();
-  }, [init]);
+    // Check if user is already authenticated
+    const checkSession = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (session) {
+        console.log("Session found:", session);
+        navigate("/admin/dashboard");
+      }
+      if (error) {
+        console.error("Session check error:", error);
+      }
+    };
+    
+    checkSession();
+  }, [navigate]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -49,15 +61,12 @@ export default function AdminAuthPage() {
 
   const onSubmit = async (values: FormValues) => {
     try {
+      console.log("Attempting login with:", values.email);
       await login(values.email, values.password);
     } catch (error) {
       console.error("Login error:", error);
     }
   };
-
-  if (isLoading) {
-    return <LoadingLayout />;
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -65,7 +74,7 @@ export default function AdminAuthPage() {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold">Admin Login</CardTitle>
           <CardDescription>
-            Entrez vos identifiants pour accéder au tableau de bord
+            Enter your credentials to access the admin dashboard
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -117,7 +126,7 @@ export default function AdminAuthPage() {
                 className="w-full"
                 disabled={isLoading}
               >
-                {isLoading ? "Connexion..." : "Se connecter"}
+                {isLoading ? "Logging in..." : "Login"}
               </Button>
             </form>
           </Form>
