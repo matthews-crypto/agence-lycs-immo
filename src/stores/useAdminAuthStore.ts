@@ -10,6 +10,7 @@ interface AdminAuthState {
   init: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  setAuthenticated: (value: boolean) => void;
 }
 
 export const useAdminAuthStore = create<AdminAuthState>((set) => ({
@@ -114,5 +115,9 @@ export const useAdminAuthStore = create<AdminAuthState>((set) => ({
     } finally {
       set({ isLoading: false });
     }
+  },
+
+  setAuthenticated: (value: boolean) => {
+    set({ isAuthenticated: value });
   },
 }));
