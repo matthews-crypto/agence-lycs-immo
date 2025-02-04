@@ -8,7 +8,7 @@ import { LoadingLayout } from "@/components/LoadingLayout"
 import { toast } from "sonner"
 
 export default function AdminLayout() {
-  const { isAuthenticated, setAuthenticated } = useAdminAuthStore()
+  const { isAuthenticated, isLoading, init } = useAdminAuthStore()
   const location = useLocation()
 
   useEffect(() => {
@@ -24,7 +24,6 @@ export default function AdminLayout() {
       inactivityTimeout = setTimeout(async () => {
         console.log("Session expirée après 8 heures d'inactivité")
         await supabase.auth.signOut()
-        setAuthenticated(false)
         toast.info("Session expirée. Veuillez vous reconnecter.")
       }, 8 * 60 * 60 * 1000) // 8 heures en millisecondes
     }
@@ -38,51 +37,14 @@ export default function AdminLayout() {
     // Démarrer le timer initial
     resetInactivityTimer()
 
-    const checkAdminStatus = async () => {
-      try {
-        console.log("Checking admin session status...")
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-        
-        if (sessionError) {
-          console.error("Session error:", sessionError)
-          setAuthenticated(false)
-          return
-        }
-
-        if (!session) {
-          console.log("No active session found")
-          setAuthenticated(false)
-          return
-        }
-
-        console.log("Session found, checking admin status for user:", session.user.id)
-
-        const { data: isAdmin, error: adminCheckError } = await supabase
-          .rpc('is_admin', { user_id: session.user.id });
-
-        if (adminCheckError) {
-          console.error("Admin check error:", adminCheckError)
-          setAuthenticated(false)
-          return
-        }
-
-        const isAdminUser = !!isAdmin
-        console.log("Admin status check result:", isAdminUser)
-        setAuthenticated(isAdminUser)
-      } catch (error) {
-        console.error("Session check error:", error)
-        setAuthenticated(false)
-      }
-    }
-
-    checkAdminStatus()
+    // Initialize authentication
+    init()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state change event:", event)
       
       if (!session) {
         console.log("No session in auth state change")
-        setAuthenticated(false)
         return
       }
 
@@ -91,13 +53,8 @@ export default function AdminLayout() {
 
       if (adminCheckError) {
         console.error("Admin check error in auth state change:", adminCheckError)
-        setAuthenticated(false)
         return
       }
-
-      const isAdminUser = !!isAdmin
-      console.log("Setting admin status on auth state change:", isAdminUser)
-      setAuthenticated(isAdminUser)
     })
 
     // Cleanup function
@@ -112,7 +69,11 @@ export default function AdminLayout() {
         document.removeEventListener(event, resetInactivityTimer)
       })
     }
-  }, [setAuthenticated])
+  }, [init])
+
+  if (isLoading) {
+    return <LoadingLayout />
+  }
 
   if (!isAuthenticated) {
     console.log("User not authenticated, redirecting to auth page")
