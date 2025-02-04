@@ -1,33 +1,15 @@
-import { useFormContext, useWatch } from "react-hook-form"
+import { useFormContext } from "react-hook-form"
 import {
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { useEffect } from "react"
 
 export function AgencyBasicInfo() {
-  const { control, setValue } = useFormContext()
-  
-  // Observer le champ agency_name pour mettre à jour automatiquement le slug
-  const agencyName = useWatch({
-    control,
-    name: "agency_name",
-  })
-
-  useEffect(() => {
-    if (agencyName) {
-      const slug = agencyName
-        .toLowerCase()
-        .replace(/\s+/g, '-')
-        .replace(/[^a-z0-9-]/g, '');
-      setValue("slug", slug);
-    }
-  }, [agencyName, setValue]);
+  const { control } = useFormContext()
 
   return (
     <div className="space-y-4">
@@ -40,34 +22,6 @@ export function AgencyBasicInfo() {
             <FormControl>
               <Input placeholder="Mon Agence Immobilière" {...field} />
             </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={control}
-        name="slug"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Identifiant unique *</FormLabel>
-            <FormControl>
-              <Input 
-                placeholder="mon-agence" 
-                {...field} 
-                onChange={(e) => {
-                  // Convertir en slug valide : lowercase, remplacer espaces par tirets, enlever caractères spéciaux
-                  const value = e.target.value
-                    .toLowerCase()
-                    .replace(/\s+/g, '-')
-                    .replace(/[^a-z0-9-]/g, '');
-                  field.onChange(value);
-                }}
-              />
-            </FormControl>
-            <FormDescription>
-              Cet identifiant sera utilisé dans l'URL de votre agence (ex: monsite.com/mon-agence)
-            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -110,27 +64,6 @@ export function AgencyBasicInfo() {
             <FormControl>
               <Input placeholder="12345678" {...field} />
             </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={control}
-        name="password"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Mot de passe *</FormLabel>
-            <FormControl>
-              <Input 
-                type="password" 
-                placeholder="••••••••" 
-                {...field} 
-              />
-            </FormControl>
-            <FormDescription>
-              Minimum 8 caractères, une majuscule et un chiffre
-            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
