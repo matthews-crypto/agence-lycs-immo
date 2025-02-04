@@ -19,20 +19,26 @@ export const useAdminAuthStore = create<AdminAuthState>((set) => ({
 
   init: async () => {
     try {
+      console.log("Initializing admin auth...");
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session?.user) {
-        // Vérifier si l'utilisateur est admin
+        console.log("Session found, checking admin status for:", session.user.id);
         const { data: isAdmin, error: adminCheckError } = await supabase
           .rpc('is_admin', { user_id: session.user.id });
 
-        if (adminCheckError) throw adminCheckError;
+        if (adminCheckError) {
+          console.error("Admin check error:", adminCheckError);
+          throw adminCheckError;
+        }
         
+        console.log("Admin status:", isAdmin);
         set({ 
-          isAuthenticated: isAdmin === true,
+          isAuthenticated: !!isAdmin,
           isLoading: false 
         });
       } else {
+        console.log("No session found");
         set({ 
           isAuthenticated: false,
           isLoading: false 
