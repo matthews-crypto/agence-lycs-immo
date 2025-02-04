@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/dialog"
 
 const formSchema = z.object({
-  // Basic Info
   agency_name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
   contact_email: z.string().email("Email invalide"),
   contact_phone: z.string().regex(/^(70|75|76|77|78)[0-9]{7}$/, "Format de téléphone sénégalais invalide (ex: 771234567)"),
@@ -30,18 +29,15 @@ const formSchema = z.object({
     .regex(/[A-Z]/, "Le mot de passe doit contenir au moins une majuscule")
     .regex(/[0-9]/, "Le mot de passe doit contenir au moins un chiffre"),
   
-  // Address
   address: z.string().min(1, "Adresse requise"),
   city: z.string().min(1, "Ville requise"),
   postal_code: z.string().regex(/^[0-9]{5}$/, "Code postal invalide"),
   
-  // Admin Info
   admin_name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
   admin_email: z.string().email("Email invalide"),
   admin_phone: z.string().regex(/^(70|75|76|77|78)[0-9]{7}$/, "Format de téléphone sénégalais invalide (ex: 771234567)"),
   admin_license: z.string().min(1, "Matricule agent requis"),
   
-  // Customization
   logo_url: z.string().optional(),
   primary_color: z.string(),
   secondary_color: z.string(),
@@ -127,13 +123,9 @@ export function AgencyRegistrationDialog({ open, onOpenChange }: AgencyRegistrat
 
   const nextStep = async () => {
     const fields = [
-      // Step 1 fields
       ["agency_name", "contact_email", "contact_phone", "license_number", "slug", "password"],
-      // Step 2 fields
       ["address", "city", "postal_code"],
-      // Step 3 fields
       ["admin_name", "admin_email", "admin_phone", "admin_license"],
-      // Step 4 fields
       ["primary_color", "secondary_color"],
     ][currentStep]
 
@@ -181,7 +173,7 @@ export function AgencyRegistrationDialog({ open, onOpenChange }: AgencyRegistrat
 
         <Form {...form}>
           <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
-            {currentStep === 0 && <AgencyBasicInfo />}
+            {currentStep === 0 && <AgencyBasicInfo isPublicRegistration={true} />}
             {currentStep === 1 && <AgencyAddress />}
             {currentStep === 2 && <AgencyAdminInfo />}
             {currentStep === 3 && <AgencyCustomization />}
