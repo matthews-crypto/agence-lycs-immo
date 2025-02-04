@@ -90,7 +90,17 @@ export function AgencyRegistrationDialog({
 
       // Create agency
       const { error: agencyError } = await supabase.from("agencies").insert({
-        ...values,
+        agency_name: values.agency_name,
+        contact_email: values.contact_email,
+        contact_phone: values.contact_phone,
+        license_number: values.license_number,
+        slug: values.slug,
+        address: values.address,
+        city: values.city,
+        postal_code: values.postal_code,
+        logo_url: values.logo_url,
+        primary_color: values.primary_color,
+        secondary_color: values.secondary_color,
         user_id: authData.user?.id,
         is_active: false,
       })
