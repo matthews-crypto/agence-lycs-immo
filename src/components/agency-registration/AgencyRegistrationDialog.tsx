@@ -181,7 +181,7 @@ export function AgencyRegistrationDialog({ open, onOpenChange }: AgencyRegistrat
 
         <Form {...form}>
           <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
-            {currentStep === 0 && <AgencyBasicInfo />}
+            {currentStep === 0 && <AgencyBasicInfo isPublicRegistration={true} />}
             {currentStep === 1 && <AgencyAddress />}
             {currentStep === 2 && <AgencyAdminInfo />}
             {currentStep === 3 && <AgencyCustomization />}
