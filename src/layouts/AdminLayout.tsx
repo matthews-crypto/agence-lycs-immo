@@ -35,7 +35,7 @@ export default function AdminLayout() {
     resetInactivityTimer();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
-      if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+      if (event === 'SIGNED_OUT') {
         await checkAuth();
       }
     });
