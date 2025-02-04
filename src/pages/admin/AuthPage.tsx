@@ -49,6 +49,15 @@ export default function AdminAuthPage() {
     init();
   }, [checkAuth, navigate, location]);
 
+  // Add this new useEffect to handle redirection after successful login
+  useEffect(() => {
+    if (isAuthenticated) {
+      console.log("User authenticated, redirecting to dashboard");
+      const from = location.state?.from?.pathname || "/admin/dashboard";
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, navigate, location]);
+
   const onSubmit = async (values: FormValues) => {
     try {
       await login(values.email, values.password);
