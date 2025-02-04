@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -16,17 +16,19 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { LoadingLayout } from "@/components/LoadingLayout";
 
 const formSchema = z.object({
   email: z.string().email("Email invalide"),
-  password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères"),
+  password: z.string().min(6, "Mot de passe trop court"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
 export default function AdminAuthPage() {
   const navigate = useNavigate();
-  const { login, init, isLoading, isAuthenticated, error } = useAdminAuthStore();
+  const location = useLocation();
+  const { login, checkAuth, isLoading, isAuthenticated, error } = useAdminAuthStore();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -37,14 +39,15 @@ export default function AdminAuthPage() {
   });
 
   useEffect(() => {
+    const init = async () => {
+      const isAdmin = await checkAuth();
+      if (isAdmin) {
+        const from = location.state?.from?.pathname || "/admin/dashboard";
+        navigate(from, { replace: true });
+      }
+    };
     init();
-  }, [init]);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate("/admin/dashboard");
-    }
-  }, [isAuthenticated, navigate]);
+  }, [checkAuth, navigate, location]);
 
   const onSubmit = async (values: FormValues) => {
     try {
@@ -54,9 +57,7 @@ export default function AdminAuthPage() {
     }
   };
 
-  if (isLoading) {
-    return <div>Chargement...</div>;
-  }
+  if (isLoading) return <LoadingLayout />;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -98,7 +99,7 @@ export default function AdminAuthPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>Mot de passe</FormLabel>
                     <FormControl>
                       <Input
                         type="password"

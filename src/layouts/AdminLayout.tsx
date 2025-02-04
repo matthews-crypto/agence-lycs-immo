@@ -1,83 +1,62 @@
-import { Navigate, Outlet, useLocation } from "react-router-dom"
-import { useAdminAuthStore } from "@/stores/useAdminAuthStore"
-import { AdminSidebar } from "@/components/admin/AdminSidebar"
-import { SidebarProvider } from "@/components/ui/sidebar"
-import { useEffect } from "react"
-import { supabase } from "@/integrations/supabase/client"
-import { LoadingLayout } from "@/components/LoadingLayout"
-import { toast } from "sonner"
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useAdminAuthStore } from "@/stores/useAdminAuthStore";
+import { AdminSidebar } from "@/components/admin/AdminSidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { useEffect, useCallback, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { LoadingLayout } from "@/components/LoadingLayout";
+import { toast } from "sonner";
+
+const INACTIVITY_TIMEOUT = 8 * 60 * 60 * 1000;
 
 export default function AdminLayout() {
-  const { isAuthenticated, isLoading, init } = useAdminAuthStore()
-  const location = useLocation()
+  const { isAuthenticated, isLoading, checkAuth } = useAdminAuthStore();
+  const location = useLocation();
+  const inactivityTimeoutRef = useRef<NodeJS.Timeout>();
+
+  const resetInactivityTimer = useCallback(() => {
+    if (inactivityTimeoutRef.current) {
+      clearTimeout(inactivityTimeoutRef.current);
+    }
+
+    inactivityTimeoutRef.current = setTimeout(async () => {
+      await supabase.auth.signOut();
+      toast.info("Session expirée. Veuillez vous reconnecter.");
+    }, INACTIVITY_TIMEOUT);
+  }, []);
 
   useEffect(() => {
-    let inactivityTimeout: NodeJS.Timeout
-
-    const resetInactivityTimer = () => {
-      // Effacer le timeout existant
-      if (inactivityTimeout) {
-        clearTimeout(inactivityTimeout)
-      }
-
-      // Définir un nouveau timeout (8 heures)
-      inactivityTimeout = setTimeout(async () => {
-        console.log("Session expirée après 8 heures d'inactivité")
-        await supabase.auth.signOut()
-        toast.info("Session expirée. Veuillez vous reconnecter.")
-      }, 8 * 60 * 60 * 1000) // 8 heures en millisecondes
-    }
-
-    // Ajouter les écouteurs d'événements pour réinitialiser le timer
-    const events = ['mousedown', 'keydown', 'mousemove', 'wheel']
+    const events = ['mousedown', 'keydown', 'mousemove', 'wheel'];
     events.forEach(event => {
-      document.addEventListener(event, resetInactivityTimer)
-    })
+      document.addEventListener(event, resetInactivityTimer);
+    });
 
-    // Démarrer le timer initial
-    resetInactivityTimer()
+    checkAuth();
+    resetInactivityTimer();
 
-    // Initialize authentication
-    init()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state change event:", event)
-      
-      if (!session) {
-        console.log("No session in auth state change")
-        return
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
+      if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+        await checkAuth();
       }
+    });
 
-      const { data: isAdmin, error: adminCheckError } = await supabase
-        .rpc('is_admin', { user_id: session.user.id });
-
-      if (adminCheckError) {
-        console.error("Admin check error in auth state change:", adminCheckError)
-        return
-      }
-    })
-
-    // Cleanup function
     return () => {
-      console.log("Cleaning up auth state change subscription")
-      subscription.unsubscribe()
-      // Nettoyer le timer et les écouteurs d'événements
-      if (inactivityTimeout) {
-        clearTimeout(inactivityTimeout)
+      subscription.unsubscribe();
+      if (inactivityTimeoutRef.current) {
+        clearTimeout(inactivityTimeoutRef.current);
       }
       events.forEach(event => {
-        document.removeEventListener(event, resetInactivityTimer)
-      })
-    }
-  }, [init])
+        document.removeEventListener(event, resetInactivityTimer);
+      });
+    };
+  }, [checkAuth, resetInactivityTimer]);
 
   if (isLoading) {
-    return <LoadingLayout />
+    return <LoadingLayout />;
   }
 
   if (!isAuthenticated) {
-    console.log("User not authenticated, redirecting to auth page")
-    return <Navigate to="/admin/auth" state={{ from: location }} replace />
+    return <Navigate to="/admin/auth" state={{ from: location }} replace />;
   }
 
   return (
@@ -89,5 +68,5 @@ export default function AdminLayout() {
         </main>
       </div>
     </SidebarProvider>
-  )
+  );
 }
