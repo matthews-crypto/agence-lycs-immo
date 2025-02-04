@@ -1,230 +1,157 @@
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Form } from "@/components/ui/form"
 import { Button } from "@/components/ui/button"
-import { toast } from "sonner"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
+import { useState } from "react"
 import { AgencyBasicInfo } from "@/components/admin/agencies/create/AgencyBasicInfo"
 import { AgencyAddress } from "@/components/admin/agencies/create/AgencyAddress"
 import { AgencyCustomization } from "@/components/admin/agencies/create/AgencyCustomization"
-import { AgencyAdminInfo } from "./AgencyAdminInfo"
-import { useState } from "react"
 import { supabase } from "@/integrations/supabase/client"
-import { Building, MapPin, User, Palette } from "lucide-react"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { toast } from "sonner"
 
 const formSchema = z.object({
-  // Basic Info
-  agency_name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
+  agency_name: z.string().min(2, "Le nom de l'agence doit contenir au moins 2 caractères"),
   contact_email: z.string().email("Email invalide"),
-  contact_phone: z.string().regex(/^(70|75|76|77|78)[0-9]{7}$/, "Format de téléphone sénégalais invalide (ex: 771234567)"),
-  license_number: z.string().min(1, "Numéro de licence requis"),
-  slug: z.string().min(2, "Slug invalide"),
-  password: z.string()
-    .min(8, "Le mot de passe doit contenir au moins 8 caractères")
-    .regex(/[A-Z]/, "Le mot de passe doit contenir au moins une majuscule")
-    .regex(/[0-9]/, "Le mot de passe doit contenir au moins un chiffre"),
-  
-  // Address
-  address: z.string().min(1, "Adresse requise"),
-  city: z.string().min(1, "Ville requise"),
-  postal_code: z.string().regex(/^[0-9]{5}$/, "Code postal invalide"),
-  
-  // Admin Info
-  admin_name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
-  admin_email: z.string().email("Email invalide"),
-  admin_phone: z.string().regex(/^(70|75|76|77|78)[0-9]{7}$/, "Format de téléphone sénégalais invalide (ex: 771234567)"),
-  admin_license: z.string().min(1, "Matricule agent requis"),
-  
-  // Customization
+  contact_phone: z.string().min(9, "Le numéro de téléphone doit contenir au moins 9 chiffres"),
+  license_number: z.string().min(3, "Le numéro de licence doit contenir au moins 3 caractères"),
+  password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères"),
+  slug: z.string(),
+  address: z.string().min(5, "L'adresse doit contenir au moins 5 caractères"),
+  city: z.string().min(2, "La ville doit contenir au moins 2 caractères"),
+  postal_code: z.string().min(4, "Le code postal doit contenir au moins 4 caractères"),
   logo_url: z.string().optional(),
-  primary_color: z.string(),
-  secondary_color: z.string(),
+  primary_color: z.string().default("#000000"),
+  secondary_color: z.string().default("#ffffff"),
 })
-
-type FormValues = z.infer<typeof formSchema>
 
 interface AgencyRegistrationDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-export function AgencyRegistrationDialog({ open, onOpenChange }: AgencyRegistrationDialogProps) {
-  const [currentStep, setCurrentStep] = useState(0)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const steps = [
-    { title: "Informations", icon: <Building className="w-5 h-5" /> },
-    { title: "Adresse", icon: <MapPin className="w-5 h-5" /> },
-    { title: "Administrateur", icon: <User className="w-5 h-5" /> },
-    { title: "Personnalisation", icon: <Palette className="w-5 h-5" /> }
-  ]
+export function AgencyRegistrationDialog({
+  open,
+  onOpenChange,
+}: AgencyRegistrationDialogProps) {
+  const [step, setStep] = useState(0)
+  const [isLoading, setIsLoading] = useState(false)
 
-  const form = useForm<FormValues>({
+  const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      primary_color: "#1a365d",
-      secondary_color: "#60a5fa",
+      primary_color: "#000000",
+      secondary_color: "#ffffff",
     },
   })
 
-  const onSubmit = async (data: FormValues) => {
-    try {
-      setIsSubmitting(true)
-      console.log("Submitting data:", data)
+  const steps = [
+    {
+      title: "Informations de base",
+      description: "Informations de base de l'agence",
+      component: <AgencyBasicInfo showPassword={true} />,
+    },
+    {
+      title: "Adresse",
+      description: "Adresse physique de l'agence",
+      component: <AgencyAddress />,
+    },
+    {
+      title: "Personnalisation",
+      description: "Personnalisez l'apparence de l'agence",
+      component: <AgencyCustomization />,
+    },
+  ]
 
-      const { error } = await supabase
-        .from('demande_inscription')
-        .insert({
-          agency_name: data.agency_name,
-          contact_email: data.contact_email,
-          contact_phone: data.contact_phone,
-          license_number: data.license_number,
-          slug: data.slug,
-          address: data.address,
-          city: data.city,
-          postal_code: data.postal_code,
-          admin_name: data.admin_name,
-          admin_email: data.admin_email,
-          admin_phone: data.admin_phone,
-          admin_license: data.admin_license,
-          logo_url: data.logo_url,
-          primary_color: data.primary_color,
-          secondary_color: data.secondary_color,
-          password_hash: await hashPassword(data.password)
-        })
-
-      if (error) {
-        console.error("Insert error:", error)
-        if (error.message.includes('duplicate key')) {
-          if (error.message.includes('slug')) {
-            toast.error("Ce slug est déjà utilisé")
-          } else if (error.message.includes('license_number')) {
-            toast.error("Ce numéro de licence est déjà utilisé")
-          } else {
-            toast.error("Une erreur est survenue")
-          }
-          return
-        }
-        throw error
-      }
-
-      toast.success("Demande d'inscription envoyée avec succès")
-      onOpenChange(false)
-      form.reset()
-      setCurrentStep(0)
-    } catch (error) {
-      console.error("Error:", error)
-      toast.error("Erreur lors de l'envoi de la demande")
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const nextStep = async () => {
-    const fields = [
-      // Step 1 fields
-      ["agency_name", "contact_email", "contact_phone", "license_number", "slug", "password"],
-      // Step 2 fields
-      ["address", "city", "postal_code"],
-      // Step 3 fields
-      ["admin_name", "admin_email", "admin_phone", "admin_license"],
-      // Step 4 fields
-      ["primary_color", "secondary_color"],
-    ][currentStep]
-
-    const isValid = await form.trigger(fields as Array<keyof FormValues>)
-    
-    if (isValid) {
-      if (currentStep === steps.length - 1) {
-        await form.handleSubmit(onSubmit)()
-      } else {
-        setCurrentStep(prev => Math.min(prev + 1, steps.length - 1))
-      }
+  const nextStep = () => {
+    if (step < steps.length - 1) {
+      setStep(step + 1)
     }
   }
 
   const prevStep = () => {
-    setCurrentStep(prev => Math.max(prev - 1, 0))
+    if (step > 0) {
+      setStep(step - 1)
+    }
+  }
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    try {
+      setIsLoading(true)
+
+      // Create auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: values.contact_email,
+        password: values.password,
+      })
+
+      if (authError) throw authError
+
+      // Create agency
+      const { error: agencyError } = await supabase.from("agencies").insert({
+        ...values,
+        user_id: authData.user?.id,
+        is_active: false,
+      })
+
+      if (agencyError) throw agencyError
+
+      toast.success(
+        "Votre demande d'inscription a été envoyée avec succès. Nous vous contacterons prochainement."
+      )
+      onOpenChange(false)
+    } catch (error) {
+      console.error("Error:", error)
+      toast.error("Erreur lors de l'inscription")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle 
-            className="text-2xl font-bold mb-4"
-            style={{ color: '#aa1ca0' }}
-          >
-            Inscrire mon agence
-          </DialogTitle>
-          <div className="flex justify-between mb-8">
-            {steps.map((step, index) => (
-              <div
-                key={step.title}
-                className={`flex-1 text-center ${
-                  index === currentStep
-                    ? "text-primary font-bold"
-                    : "text-muted-foreground"
-                }`}
-              >
-                <span className="hidden md:inline">{step.title}</span>
-                <span className="md:hidden flex justify-center">{step.icon}</span>
-              </div>
-            ))}
-          </div>
+          <DialogTitle>Inscrire mon agence</DialogTitle>
+          <DialogDescription>
+            Remplissez le formulaire ci-dessous pour inscrire votre agence
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
-            {currentStep === 0 && <AgencyBasicInfo />}
-            {currentStep === 1 && <AgencyAddress />}
-            {currentStep === 2 && <AgencyAdminInfo />}
-            {currentStep === 3 && <AgencyCustomization />}
-
-            <div className="flex justify-between pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={prevStep}
-                disabled={currentStep === 0 || isSubmitting}
-                className="w-[120px] md:w-auto"
-              >
-                Précédent
-              </Button>
-              
-              <Button 
-                type="button" 
-                onClick={nextStep}
-                disabled={isSubmitting}
-                style={{
-                  backgroundColor: '#aa1ca0',
-                }}
-                className="w-[120px] md:w-auto"
-              >
-                {currentStep === steps.length - 1 
-                  ? (isSubmitting ? "Envoi en cours..." : "Envoyer la demande")
-                  : "Suivant"
-                }
-              </Button>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <div className="grid gap-8">
+              <div className="space-y-4">
+                <div>
+                  <h2 className="text-lg font-semibold">{steps[step].title}</h2>
+                  <p className="text-sm text-muted-foreground">
+                    {steps[step].description}
+                  </p>
+                </div>
+                {steps[step].component}
+              </div>
             </div>
+
+            <DialogFooter className="gap-4 sm:gap-0">
+              {step > 0 && (
+                <Button type="button" variant="outline" onClick={prevStep}>
+                  Précédent
+                </Button>
+              )}
+              {step < steps.length - 1 ? (
+                <Button type="button" onClick={nextStep}>
+                  Suivant
+                </Button>
+              ) : (
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? "Inscription en cours..." : "S'inscrire"}
+                </Button>
+              )}
+            </DialogFooter>
           </form>
         </Form>
       </DialogContent>
     </Dialog>
   )
-}
-
-// Fonction utilitaire pour hasher le mot de passe
-async function hashPassword(password: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hash = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(hash))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
 }
