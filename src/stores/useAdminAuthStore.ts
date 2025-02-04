@@ -22,22 +22,31 @@ export const useAdminAuthStore = create<AdminAuthState>()(
 
       checkAuth: async () => {
         try {
+          console.log("Checking auth...");
           const { data: { session } } = await supabase.auth.getSession();
           
           if (!session?.user) {
+            console.log("No session found");
             set({ isAuthenticated: false, isLoading: false });
             return false;
           }
 
+          console.log("Session found, checking admin status...");
           const { data: isAdmin, error: adminCheckError } = await supabase
             .rpc('is_admin', { user_id: session.user.id });
 
-          if (adminCheckError) throw adminCheckError;
+          if (adminCheckError) {
+            console.error("Admin check error:", adminCheckError);
+            throw adminCheckError;
+          }
 
-          const isAuthenticated = !!isAdmin;
-          set({ isAuthenticated, isLoading: false });
-          return isAuthenticated;
+          console.log("Admin status:", isAdmin);
+          set({ 
+            isAuthenticated: Boolean(isAdmin),
+            isLoading: false 
+          });
 
+          return Boolean(isAdmin);
         } catch (error) {
           console.error("Auth check error:", error);
           set({ 
@@ -52,21 +61,24 @@ export const useAdminAuthStore = create<AdminAuthState>()(
       login: async (email: string, password: string) => {
         set({ isLoading: true, error: null });
         try {
-          const { data: { user }, error: signInError } = 
-            await supabase.auth.signInWithPassword({ email, password });
+          console.log("Attempting login...");
+          const { data, error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
 
           if (signInError) throw signInError;
-          if (!user) throw new Error("Aucun utilisateur trouvé");
+          if (!data.user) throw new Error("No user data");
 
           const isAdmin = await get().checkAuth();
-          if (!isAdmin) throw new Error("Accès non autorisé");
+          if (!isAdmin) throw new Error("Not admin");
 
+          console.log("Login successful");
           toast.success("Connexion réussie");
         } catch (error) {
+          console.error("Login error:", error);
           let message = "Erreur de connexion";
-          if (error instanceof Error) {
-            message = error.message;
-          }
+          if (error instanceof Error) message = error.message;
           set({ error: message, isAuthenticated: false });
           toast.error(message);
           throw error;
@@ -77,6 +89,7 @@ export const useAdminAuthStore = create<AdminAuthState>()(
 
       logout: async () => {
         try {
+          console.log("Logging out...");
           await supabase.auth.signOut();
           set({ isAuthenticated: false });
           toast.success("Déconnexion réussie");
