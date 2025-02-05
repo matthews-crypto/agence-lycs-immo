@@ -37,7 +37,8 @@ const formSchema = z.object({
   secondary_color: z.string(),
 
   // Admin Info
-  admin_name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
+  first_name: z.string().min(2, "Le prénom doit contenir au moins 2 caractères"),
+  last_name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
   admin_email: z.string().email("Email invalide"),
   admin_phone: z.string().regex(/^(70|75|76|77|78)[0-9]{7}$/, "Format de téléphone sénégalais invalide (ex: 771234567)"),
   admin_license: z.string().min(1, "Matricule agent requis"),
@@ -75,7 +76,8 @@ export function AgencyInfoDialog({ open, onOpenChange }: AgencyInfoDialogProps) 
       logo_url: agency?.logo_url || "",
       primary_color: agency?.primary_color || "#1a365d",
       secondary_color: agency?.secondary_color || "#60a5fa",
-      admin_name: agency?.admin_name || "",
+      first_name: agency?.admin_name?.split(' ')[0] || "",
+      last_name: agency?.admin_name?.split(' ')[1] || "",
       admin_email: agency?.admin_email || "",
       admin_phone: agency?.admin_phone || "",
       admin_license: agency?.admin_license || "",
@@ -100,7 +102,7 @@ export function AgencyInfoDialog({ open, onOpenChange }: AgencyInfoDialogProps) 
           logo_url: data.logo_url,
           primary_color: data.primary_color,
           secondary_color: data.secondary_color,
-          admin_name: data.admin_name,
+          admin_name: `${data.first_name} ${data.last_name}`,
           admin_email: data.admin_email,
           admin_phone: data.admin_phone,
           admin_license: data.admin_license,
@@ -133,7 +135,7 @@ export function AgencyInfoDialog({ open, onOpenChange }: AgencyInfoDialogProps) 
       // Step 3 fields
       ["primary_color", "secondary_color"],
       // Step 4 fields
-      ["admin_name", "admin_email", "admin_phone", "admin_license"],
+      ["first_name", "last_name", "admin_email", "admin_phone", "admin_license"],
     ][currentStep]
 
     const isValid = await form.trigger(fields as Array<keyof FormValues>)
