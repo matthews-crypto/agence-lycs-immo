@@ -22,23 +22,32 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 
+const propertyTypes = [
+  { value: "APARTMENT", label: "Appartement" },
+  { value: "HOUSE", label: "Maison" },
+  { value: "LAND", label: "Terrain" },
+  { value: "COMMERCIAL", label: "Local commercial" },
+  { value: "OFFICE", label: "Bureau" },
+  { value: "OTHER", label: "Autre" },
+];
+
 export default function HomePage() {
   const navigate = useNavigate();
-  const [selectedAgency, setSelectedAgency] = useState<string>("all");
+  const [selectedRegion, setSelectedRegion] = useState<string>("all");
   const [selectedCity, setSelectedCity] = useState<string>("all");
+  const [selectedType, setSelectedType] = useState<string>("all");
   const [minBudget, setMinBudget] = useState<string>("");
   const [maxBudget, setMaxBudget] = useState<string>("");
   const [heroApi, setHeroApi] = useState<any>();
   const [propertiesApi, setPropertiesApi] = useState<any>();
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
 
-  const { data: agencies } = useQuery({
-    queryKey: ["agencies"],
+  const { data: regions } = useQuery({
+    queryKey: ["regions"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("agencies")
-        .select("*")
-        .eq("is_active", true);
+        .from("region")
+        .select("*");
 
       if (error) throw error;
       return data;
@@ -78,18 +87,19 @@ export default function HomePage() {
   }, [heroApi, propertiesApi]);
 
   const filteredProperties = properties?.filter(property => {
-    const matchesAgency = selectedAgency === "all" || property.agency_id === selectedAgency;
+    const matchesRegion = selectedRegion === "all" || property.region_id === parseInt(selectedRegion);
     const matchesCity = selectedCity === "all" || property.city === selectedCity;
+    const matchesType = selectedType === "all" || property.property_type === selectedType;
     const matchesMinBudget = !minBudget || property.price >= parseInt(minBudget);
     const matchesMaxBudget = !maxBudget || property.price <= parseInt(maxBudget);
-    return matchesAgency && matchesCity && matchesMinBudget && matchesMaxBudget;
+    return matchesRegion && matchesCity && matchesType && matchesMinBudget && matchesMaxBudget;
   });
 
   const cities = [...new Set(properties?.map(p => p.city).filter(Boolean))];
   const loopedProperties = [...(properties || []), ...(properties || [])];
 
   const handleSearch = () => {
-    if (!selectedCity && !minBudget && !maxBudget && selectedAgency === "all") {
+    if (!selectedCity && !minBudget && !maxBudget && selectedRegion === "all" && selectedType === "all") {
       toast.warning("Veuillez sélectionner au moins un critère de recherche");
       return;
     }
@@ -174,17 +184,17 @@ export default function HomePage() {
         <div className="mt-8 max-w-4xl mx-auto">
           <div className="bg-white rounded-lg shadow-lg p-4 flex flex-col md:flex-row gap-4">
             <Select 
-              value={selectedAgency} 
-              onValueChange={setSelectedAgency}
+              value={selectedRegion} 
+              onValueChange={setSelectedRegion}
             >
-              <SelectTrigger className="w-full md:w-[200px]">
-                <SelectValue placeholder="Agence" />
+              <SelectTrigger className="w-full md:w-[200px] text-base font-medium">
+                <SelectValue placeholder="Région" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Toutes les agences</SelectItem>
-                {agencies?.map((agency) => (
-                  <SelectItem key={agency.id} value={agency.id}>
-                    {agency.agency_name}
+                <SelectItem value="all" className="text-base">Toutes les régions</SelectItem>
+                {regions?.map((region) => (
+                  <SelectItem key={region.id} value={region.id.toString()} className="text-base">
+                    {region.nom}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -194,14 +204,31 @@ export default function HomePage() {
               value={selectedCity} 
               onValueChange={setSelectedCity}
             >
-              <SelectTrigger className="w-full md:w-[200px]">
+              <SelectTrigger className="w-full md:w-[200px] text-base font-medium">
                 <SelectValue placeholder="Ville" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Toutes les villes</SelectItem>
+                <SelectItem value="all" className="text-base">Toutes les villes</SelectItem>
                 {cities.map((city) => (
-                  <SelectItem key={city} value={city}>
+                  <SelectItem key={city} value={city} className="text-base">
                     {city}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select 
+              value={selectedType} 
+              onValueChange={setSelectedType}
+            >
+              <SelectTrigger className="w-full md:w-[200px] text-base font-medium">
+                <SelectValue placeholder="Type de bien" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-base">Tous les types</SelectItem>
+                {propertyTypes.map((type) => (
+                  <SelectItem key={type.value} value={type.value} className="text-base">
+                    {type.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -211,14 +238,14 @@ export default function HomePage() {
               <input
                 type="number"
                 placeholder="Budget min"
-                className="flex-1 px-3 py-2 border rounded-md"
+                className="flex-1 px-3 py-2 border rounded-md text-base font-medium"
                 value={minBudget}
                 onChange={(e) => setMinBudget(e.target.value)}
               />
               <input
                 type="number"
                 placeholder="Budget max"
-                className="flex-1 px-3 py-2 border rounded-md"
+                className="flex-1 px-3 py-2 border rounded-md text-base font-medium"
                 value={maxBudget}
                 onChange={(e) => setMaxBudget(e.target.value)}
               />
@@ -238,7 +265,7 @@ export default function HomePage() {
       </div>
 
       {/* Filtered Properties */}
-      {filteredProperties && filteredProperties.length > 0 && (selectedCity !== "all" || minBudget || maxBudget || selectedAgency !== "all") && (
+      {filteredProperties && filteredProperties.length > 0 && (selectedCity !== "all" || minBudget || maxBudget || selectedRegion !== "all" || selectedType !== "all") && (
         <div className="container mx-auto px-4 mt-16">
           <h2 className="text-2xl font-light mb-8">Résultats de votre recherche</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
