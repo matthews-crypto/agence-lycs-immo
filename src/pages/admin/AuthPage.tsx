@@ -16,7 +16,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { supabase } from "@/integrations/supabase/client";
 
 const formSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -27,7 +26,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 export default function AdminAuthPage() {
   const navigate = useNavigate();
-  const { login, isLoading, isAuthenticated, error } = useAdminAuthStore();
+  const { login, isLoading, isAuthenticated, error, checkAndUpdateSession } = useAdminAuthStore();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -38,20 +37,9 @@ export default function AdminAuthPage() {
   });
 
   useEffect(() => {
-    // Check if user is already authenticated
-    const checkSession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (session) {
-        console.log("Session found:", session);
-        navigate("/admin/dashboard");
-      }
-      if (error) {
-        console.error("Session check error:", error);
-      }
-    };
-    
-    checkSession();
-  }, [navigate]);
+    // Vérifier la session au chargement
+    checkAndUpdateSession();
+  }, [checkAndUpdateSession]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -61,7 +49,6 @@ export default function AdminAuthPage() {
 
   const onSubmit = async (values: FormValues) => {
     try {
-      console.log("Attempting login with:", values.email);
       await login(values.email, values.password);
     } catch (error) {
       console.error("Login error:", error);
