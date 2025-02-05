@@ -31,6 +31,8 @@ export type Database = {
         Row: {
           address: string | null
           admin_email: string | null
+          admin_first_name: string | null
+          admin_last_name: string | null
           admin_license: string | null
           admin_name: string | null
           admin_phone: string | null
@@ -57,6 +59,8 @@ export type Database = {
         Insert: {
           address?: string | null
           admin_email?: string | null
+          admin_first_name?: string | null
+          admin_last_name?: string | null
           admin_license?: string | null
           admin_name?: string | null
           admin_phone?: string | null
@@ -83,6 +87,8 @@ export type Database = {
         Update: {
           address?: string | null
           admin_email?: string | null
+          admin_first_name?: string | null
+          admin_last_name?: string | null
           admin_license?: string | null
           admin_name?: string | null
           admin_phone?: string | null
@@ -257,8 +263,6 @@ export type Database = {
         Row: {
           address: string | null
           admin_email: string | null
-          admin_first_name: string | null
-          admin_last_name: string | null
           admin_license: string | null
           admin_name: string | null
           admin_phone: string | null
@@ -285,8 +289,6 @@ export type Database = {
         Insert: {
           address?: string | null
           admin_email?: string | null
-          admin_first_name?: string | null
-          admin_last_name?: string | null
           admin_license?: string | null
           admin_name?: string | null
           admin_phone?: string | null
@@ -313,8 +315,6 @@ export type Database = {
         Update: {
           address?: string | null
           admin_email?: string | null
-          admin_first_name?: string | null
-          admin_last_name?: string | null
           admin_license?: string | null
           admin_name?: string | null
           admin_phone?: string | null
@@ -664,10 +664,10 @@ export type Tables<
         PublicSchema["Views"])
     ? (PublicSchema["Tables"] &
         PublicSchema["Views"])[PublicTableNameOrOptions] extends {
-      Row: infer R
-    }
-    ? R
-    : never
+        Row: infer R
+      }
+      ? R
+      : never
     : never
 
 export type TablesInsert<
@@ -685,10 +685,10 @@ export type TablesInsert<
     : never
   : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
     ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
-      Insert: infer I
-    }
-    ? I
-    : never
+        Insert: infer I
+      }
+      ? I
+      : never
     : never
 
 export type TablesUpdate<
@@ -706,10 +706,10 @@ export type TablesUpdate<
     : never
   : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
     ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
-      Update: infer U
-    }
-    ? U
-    : never
+        Update: infer U
+      }
+      ? U
+      : never
     : never
 
 export type Enums<
