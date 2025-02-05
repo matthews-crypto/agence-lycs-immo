@@ -191,7 +191,7 @@ export default function HomePage() {
                 <SelectValue placeholder="Région" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all" className="text-base">Toutes les régions</SelectItem>
+                <SelectItem value="all" className="text-base">Régions</SelectItem>
                 {regions?.map((region) => (
                   <SelectItem key={region.id} value={region.id.toString()} className="text-base">
                     {region.nom}
@@ -208,7 +208,7 @@ export default function HomePage() {
                 <SelectValue placeholder="Ville" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all" className="text-base">Toutes les villes</SelectItem>
+                <SelectItem value="all" className="text-base">Villes</SelectItem>
                 {cities.map((city) => (
                   <SelectItem key={city} value={city} className="text-base">
                     {city}
@@ -225,7 +225,7 @@ export default function HomePage() {
                 <SelectValue placeholder="Type de bien" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all" className="text-base">Tous les types</SelectItem>
+                <SelectItem value="all" className="text-base">Types</SelectItem>
                 {propertyTypes.map((type) => (
                   <SelectItem key={type.value} value={type.value} className="text-base">
                     {type.label}
