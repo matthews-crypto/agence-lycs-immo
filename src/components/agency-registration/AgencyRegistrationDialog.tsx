@@ -87,8 +87,7 @@ export function AgencyRegistrationDialog({ open, onOpenChange }: AgencyRegistrat
           admin_license: data.admin_license,
           logo_url: data.logo_url,
           primary_color: data.primary_color,
-          secondary_color: data.secondary_color,
-          password_hash: await hashPassword(data.password)
+          secondary_color: data.secondary_color
         })
 
       if (error) {
@@ -217,3 +216,4 @@ async function hashPassword(password: string): Promise<string> {
     .map(b => b.toString(16).padStart(2, '0'))
     .join('');
 }
+
