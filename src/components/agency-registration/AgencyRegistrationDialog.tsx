@@ -22,18 +22,15 @@ const formSchema = z.object({
   agency_name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
   contact_email: z.string().email("Email invalide"),
   contact_phone: z.string().regex(/^(70|75|76|77|78)[0-9]{7}$/, "Format de téléphone sénégalais invalide (ex: 771234567)"),
-  license_number: z.string().min(1, "Numéro de licence requis"),
+  license_number: z.string().min(1, "NINEA ou RCC requis"),
   slug: z.string().min(2, "Slug invalide"),
-  password: z.string()
-    .min(8, "Le mot de passe doit contenir au moins 8 caractères")
-    .regex(/[A-Z]/, "Le mot de passe doit contenir au moins une majuscule")
-    .regex(/[0-9]/, "Le mot de passe doit contenir au moins un chiffre"),
   
   address: z.string().min(1, "Adresse requise"),
   city: z.string().min(1, "Ville requise"),
   postal_code: z.string().regex(/^[0-9]{5}$/, "Code postal invalide"),
   
-  admin_name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
+  first_name: z.string().min(2, "Le prénom doit contenir au moins 2 caractères"),
+  last_name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
   admin_email: z.string().email("Email invalide"),
   admin_phone: z.string().regex(/^(70|75|76|77|78)[0-9]{7}$/, "Format de téléphone sénégalais invalide (ex: 771234567)"),
   admin_license: z.string().min(1, "Matricule agent requis"),
@@ -84,7 +81,7 @@ export function AgencyRegistrationDialog({ open, onOpenChange }: AgencyRegistrat
           address: data.address,
           city: data.city,
           postal_code: data.postal_code,
-          admin_name: data.admin_name,
+          admin_name: `${data.first_name} ${data.last_name}`,
           admin_email: data.admin_email,
           admin_phone: data.admin_phone,
           admin_license: data.admin_license,
@@ -123,9 +120,9 @@ export function AgencyRegistrationDialog({ open, onOpenChange }: AgencyRegistrat
 
   const nextStep = async () => {
     const fields = [
-      ["agency_name", "contact_email", "contact_phone", "license_number", "slug", "password"],
+      ["agency_name", "contact_email", "contact_phone", "license_number", "slug", "first_name", "last_name"],
       ["address", "city", "postal_code"],
-      ["admin_name", "admin_email", "admin_phone", "admin_license"],
+      ["admin_email", "admin_phone", "admin_license"],
       ["primary_color", "secondary_color"],
     ][currentStep]
 

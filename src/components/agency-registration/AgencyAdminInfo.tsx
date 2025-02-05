@@ -15,12 +15,26 @@ export function AgencyAdminInfo() {
     <div className="space-y-4">
       <FormField
         control={control}
-        name="admin_name"
+        name="first_name"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Nom administrateur *</FormLabel>
+            <FormLabel>Prénom *</FormLabel>
             <FormControl>
-              <Input placeholder="John Doe" {...field} />
+              <Input placeholder="John" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={control}
+        name="last_name"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Nom *</FormLabel>
+            <FormControl>
+              <Input placeholder="Doe" {...field} />
             </FormControl>
             <FormMessage />
           </FormItem>

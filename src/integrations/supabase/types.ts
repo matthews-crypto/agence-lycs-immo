@@ -620,13 +620,13 @@ export type Database = {
       }
     }
     Enums: {
-      appointment_status: "SCHEDULED" | "COMPLETED" | "CANCELLED"
+      appointment_status: "RESERVEE" | "ACHETEE" | "ANNULEE"
       property_status:
-        | "AVAILABLE"
-        | "UNDER_OPTION"
-        | "SOLD"
-        | "RENTED"
-        | "ARCHIVED"
+        | "DISPONIBLE"
+        | "VENDUE"
+        | "ARCHIVEE"
+        | "OCCUPEE"
+        | "RESERVEE"
       registration_status: "EN_ATTENTE" | "VALIDEE" | "REJETEE"
       theme_type: "LIGHT" | "DARK"
       user_role: "ADMIN" | "AGENCY" | "AGENT" | "CLIENT"
