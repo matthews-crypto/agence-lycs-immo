@@ -119,9 +119,9 @@ export function AgencyRegistrationDialog({ open, onOpenChange }: AgencyRegistrat
 
   const nextStep = async () => {
     const fields = [
-      ["agency_name", "contact_email", "contact_phone", "license_number", "slug", "first_name", "last_name"],
+      ["agency_name", "contact_email", "contact_phone", "license_number", "slug"],
       ["address", "city", "postal_code"],
-      ["admin_email", "admin_phone", "admin_license"],
+      ["first_name", "last_name", "admin_email", "admin_phone", "admin_license"],
       ["primary_color", "secondary_color"],
     ][currentStep]
 
@@ -206,14 +206,3 @@ export function AgencyRegistrationDialog({ open, onOpenChange }: AgencyRegistrat
     </Dialog>
   )
 }
-
-// Fonction utilitaire pour hasher le mot de passe
-async function hashPassword(password: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hash = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(hash))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-}
-
