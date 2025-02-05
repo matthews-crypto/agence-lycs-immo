@@ -4,9 +4,10 @@ import { AdminSidebar } from "@/components/admin/AdminSidebar"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { useEffect } from "react"
 import { supabase } from "@/integrations/supabase/client"
+import { LoadingLayout } from "@/components/LoadingLayout"
 
 export default function AdminLayout() {
-  const { isAuthenticated, checkAndUpdateSession, setupInactivityTimeout } = useAdminAuthStore()
+  const { isAuthenticated, isSessionLoading, checkAndUpdateSession, setupInactivityTimeout } = useAdminAuthStore()
   const location = useLocation()
 
   useEffect(() => {
@@ -35,6 +36,12 @@ export default function AdminLayout() {
     }
   }, [checkAndUpdateSession, setupInactivityTimeout]);
 
+  // Afficher le loader pendant la vérification de la session
+  if (isSessionLoading) {
+    return <LoadingLayout />;
+  }
+
+  // Rediriger vers la page de connexion si non authentifié
   if (!isAuthenticated) {
     console.log("User not authenticated, redirecting to auth page");
     return <Navigate to="/admin/auth" state={{ from: location }} replace />

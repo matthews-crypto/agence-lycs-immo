@@ -5,6 +5,7 @@ import { AuthError } from "@supabase/supabase-js";
 
 interface AdminAuthState {
   isLoading: boolean;
+  isSessionLoading: boolean;
   isAuthenticated: boolean;
   error: string | null;
   setAuthenticated: (value: boolean) => void;
@@ -18,6 +19,7 @@ const INACTIVITY_TIMEOUT = 8 * 60 * 60 * 1000; // 8 heures
 
 export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
   isLoading: false,
+  isSessionLoading: true, // Initialement true car on charge la session
   isAuthenticated: false,
   error: null,
 
@@ -33,13 +35,13 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
       
       if (sessionError) {
         console.error("Session error:", sessionError);
-        set({ isAuthenticated: false });
+        set({ isAuthenticated: false, isSessionLoading: false });
         return false;
       }
 
       if (!session) {
         console.log("No active session found");
-        set({ isAuthenticated: false });
+        set({ isAuthenticated: false, isSessionLoading: false });
         return false;
       }
 
@@ -49,17 +51,17 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
 
       if (adminCheckError) {
         console.error("Admin check error:", adminCheckError);
-        set({ isAuthenticated: false });
+        set({ isAuthenticated: false, isSessionLoading: false });
         return false;
       }
 
       const isAdminUser = !!isAdmin;
       console.log("Admin status check result:", isAdminUser);
-      set({ isAuthenticated: isAdminUser });
+      set({ isAuthenticated: isAdminUser, isSessionLoading: false });
       return isAdminUser;
     } catch (error) {
       console.error("Session check error:", error);
-      set({ isAuthenticated: false });
+      set({ isAuthenticated: false, isSessionLoading: false });
       return false;
     }
   },
