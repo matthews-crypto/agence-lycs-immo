@@ -66,9 +66,22 @@ const PropertyMap = ({ latitude, longitude, className = "" }: PropertyMapProps) 
         this.openPopup();
       });
 
-      // Optional: Hide popup when mouse leaves
+      // Optional: Hide popup when mouse leaves only if not clicked
+      let isClicked = false;
+
+      markerRef.current.on('click', function(e) {
+        isClicked = !isClicked;
+        if (isClicked) {
+          this.openPopup();
+        } else {
+          this.closePopup();
+        }
+      });
+
       markerRef.current.on('mouseout', function(e) {
-        this.closePopup();
+        if (!isClicked) {
+          this.closePopup();
+        }
       });
     }
 
