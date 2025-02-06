@@ -2,11 +2,10 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { MapPin, User, BedDouble } from "lucide-react";
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { AuthDrawer } from "@/components/agency/AuthDrawer";
 import {
   Select,
@@ -24,22 +23,23 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 
-const propertyTypeTranslations: { [key: string]: string } = {
-  APARTMENT: "Appartement",
-  HOUSE: "Maison",
-  LAND: "Terrain",
-  COMMERCIAL: "Local commercial",
-  OFFICE: "Bureau",
-  OTHER: "Autre",
-};
+const propertyTypes = [
+  { value: "APARTMENT", label: "Appartement" },
+  { value: "HOUSE", label: "Maison" },
+  { value: "LAND", label: "Terrain" },
+  { value: "COMMERCIAL", label: "Local commercial" },
+  { value: "OFFICE", label: "Bureau" },
+  { value: "OTHER", label: "Autre" },
+];
 
 export default function AgencyHomePage() {
   const { agency } = useAgencyContext();
   const navigate = useNavigate();
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [selectedCity, setSelectedCity] = useState<string>("all");
+  const [selectedType, setSelectedType] = useState<string>("all");
   const [minBudget, setMinBudget] = useState<string>("");
   const [maxBudget, setMaxBudget] = useState<string>("");
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [heroApi, setHeroApi] = useState<any>();
   const [propertiesApi, setPropertiesApi] = useState<any>();
 
@@ -80,15 +80,16 @@ export default function AgencyHomePage() {
 
   const filteredProperties = properties?.filter(property => {
     const matchesCity = selectedCity === "all" || property.city === selectedCity;
+    const matchesType = selectedType === "all" || property.property_type === selectedType;
     const matchesMinBudget = !minBudget || property.price >= parseInt(minBudget);
     const matchesMaxBudget = !maxBudget || property.price <= parseInt(maxBudget);
-    return matchesCity && matchesMinBudget && matchesMaxBudget;
+    return matchesCity && matchesType && matchesMinBudget && matchesMaxBudget;
   });
 
   const cities = [...new Set(properties?.map(p => p.city).filter(Boolean))];
 
   const handleSearch = () => {
-    if (!selectedCity && !minBudget && !maxBudget) {
+    if (!selectedCity && !minBudget && !maxBudget && selectedType === "all") {
       toast.warning("Veuillez sélectionner au moins un critère de recherche");
       return;
     }
@@ -151,7 +152,7 @@ export default function AgencyHomePage() {
               {properties?.slice(0, 3).map((property) => (
                 <CarouselItem 
                   key={property.id} 
-                  className="h-full transition-opacity duration-500"
+                  className="h-full"
                 >
                   <div className="relative h-full">
                     {property.photos?.[0] ? (
@@ -170,7 +171,7 @@ export default function AgencyHomePage() {
                         {property.title}
                       </h2>
                       <p className="text-white/80 mt-2">
-                        {property.city} - {propertyTypeTranslations[property.property_type] || property.property_type}
+                        {property.city}
                       </p>
                     </div>
                   </div>
@@ -182,43 +183,60 @@ export default function AgencyHomePage() {
 
         {/* Search Bar */}
         <div className="mt-8 max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-4 flex gap-4">
+          <div className="bg-white rounded-lg shadow-lg p-4 flex flex-col md:flex-row gap-4">
             <Select 
               value={selectedCity} 
               onValueChange={setSelectedCity}
             >
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-full md:w-[200px] text-base font-medium">
                 <SelectValue placeholder="Ville" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Toutes les villes</SelectItem>
+                <SelectItem value="all" className="text-base">Villes</SelectItem>
                 {cities.map((city) => (
-                  <SelectItem key={city} value={city}>
+                  <SelectItem key={city} value={city} className="text-base">
                     {city}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
-            <div className="flex gap-4 flex-1">
+            <Select 
+              value={selectedType} 
+              onValueChange={setSelectedType}
+            >
+              <SelectTrigger className="w-full md:w-[200px] text-base font-medium">
+                <SelectValue placeholder="Type de bien" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-base">Types</SelectItem>
+                {propertyTypes.map((type) => (
+                  <SelectItem key={type.value} value={type.value} className="text-base">
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <div className="flex flex-col md:flex-row gap-4 flex-1">
               <input
                 type="number"
                 placeholder="Budget min"
-                className="flex-1 px-3 py-2 border rounded-md"
+                className="flex-1 px-3 py-2 border rounded-md text-base font-medium"
                 value={minBudget}
                 onChange={(e) => setMinBudget(e.target.value)}
               />
               <input
                 type="number"
                 placeholder="Budget max"
-                className="flex-1 px-3 py-2 border rounded-md"
+                className="flex-1 px-3 py-2 border rounded-md text-base font-medium"
                 value={maxBudget}
                 onChange={(e) => setMaxBudget(e.target.value)}
               />
             </div>
 
             <Button 
-              className="px-8"
+              className="w-full md:w-auto px-8"
               style={{
                 backgroundColor: agency?.primary_color || '#000000',
               }}
@@ -231,13 +249,13 @@ export default function AgencyHomePage() {
       </div>
 
       {/* Filtered Properties */}
-      {filteredProperties && filteredProperties.length > 0 && (selectedCity !== "all" || minBudget || maxBudget) && (
+      {filteredProperties && filteredProperties.length > 0 && (selectedCity !== "all" || minBudget || maxBudget || selectedType !== "all") && (
         <div className="container mx-auto px-4 mt-16">
           <h2 className="text-2xl font-light mb-8">Résultats de votre recherche</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredProperties.map((property) => (
               <div 
-                key={property.id}
+                key={property.id} 
                 className="cursor-pointer"
                 onClick={() => handlePropertyClick(property.id)}
               >
