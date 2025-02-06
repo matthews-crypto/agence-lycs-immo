@@ -11,9 +11,21 @@ interface PropertyMapProps {
 
 const PropertyMap = ({ latitude, longitude, className = "" }: PropertyMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
+  const markerRef = useRef<L.Marker | null>(null);
 
   useEffect(() => {
     if (!latitude || !longitude) return;
+
+    // Fix for the marker icon not showing
+    const defaultIcon = L.icon({
+      iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+      iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+      shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    });
 
     // Initialize map if it doesn't exist
     if (!mapRef.current) {
@@ -23,8 +35,41 @@ const PropertyMap = ({ latitude, longitude, className = "" }: PropertyMapProps) 
         attribution: '© OpenStreetMap contributors'
       }).addTo(mapRef.current);
 
-      // Add marker
-      L.marker([latitude, longitude]).addTo(mapRef.current);
+      // Add marker with custom popup
+      markerRef.current = L.marker([latitude, longitude], { icon: defaultIcon })
+        .addTo(mapRef.current)
+        .bindPopup(`
+          <div style="text-align: center;">
+            <a 
+              href="https://www.google.com/maps?q=${latitude},${longitude}" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style="
+                display: inline-block;
+                padding: 8px 16px;
+                background-color: #0066FF;
+                color: white;
+                text-decoration: none;
+                border-radius: 4px;
+                margin: 8px 0;
+              "
+            >
+              Voir sur Google Maps
+            </a>
+          </div>
+        `, {
+          closeButton: false
+        });
+
+      // Show popup on hover
+      markerRef.current.on('mouseover', function(e) {
+        this.openPopup();
+      });
+
+      // Optional: Hide popup when mouse leaves
+      markerRef.current.on('mouseout', function(e) {
+        this.closePopup();
+      });
     }
 
     // Cleanup
@@ -32,6 +77,10 @@ const PropertyMap = ({ latitude, longitude, className = "" }: PropertyMapProps) 
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
+      }
+      if (markerRef.current) {
+        markerRef.current.remove();
+        markerRef.current = null;
       }
     };
   }, [latitude, longitude]);
