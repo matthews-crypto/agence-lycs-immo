@@ -87,7 +87,7 @@ export default function HomePage() {
   }, [heroApi, propertiesApi]);
 
   const filteredProperties = properties?.filter(property => {
-    const matchesRegion = selectedRegion === "all" || property.region_id === parseInt(selectedRegion);
+    const matchesRegion = selectedRegion === "all" || property.region === selectedRegion;
     const matchesCity = selectedCity === "all" || property.city === selectedCity;
     const matchesType = selectedType === "all" || property.property_type === selectedType;
     const matchesMinBudget = !minBudget || property.price >= parseInt(minBudget);

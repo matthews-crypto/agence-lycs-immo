@@ -40,14 +40,14 @@ export default function PublicPropertyDetailPage() {
 
   // Fetch similar properties
   const { data: similarProperties } = useQuery({
-    queryKey: ["similar-properties", property?.property_type, property?.region_id],
+    queryKey: ["similar-properties", property?.property_type, property?.region],
     enabled: !!property,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("properties")
         .select("*")
         .eq("property_type", property?.property_type)
-        .eq("region_id", property?.region_id)
+        .eq("region", property?.region)
         .neq("id", propertyId)
         .limit(4);
 
