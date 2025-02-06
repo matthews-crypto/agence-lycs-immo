@@ -235,13 +235,13 @@ export default function PublicPropertyDetailPage() {
                   <div className="p-4">
                     <h3 className="font-bold text-lg mb-2">{prop.title}</h3>
                     <div className="flex justify-between items-center text-gray-600 mb-2">
-                      <span>{prop.price.toLocaleString()} €</span>
+                      <span>{prop.price.toLocaleString()} FCFA</span>
                       <span>•</span>
                       <span>{prop.bedrooms} Pièces</span>
                       <span>•</span>
                       <span>{prop.surface_area} m²</span>
                     </div>
-                    <p className="text-blue-600">{prop.region}</p>
+                    <p style={{ color: property.agencies?.primary_color }}>{prop.region}</p>
                   </div>
                 </div>
               ))}
