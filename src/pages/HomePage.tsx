@@ -294,7 +294,7 @@ export default function HomePage() {
       {/* Properties Carousel */}
       <div className="py-32 container mx-auto px-4">
         <h2 className="text-3xl font-light mb-12 text-center">
-          Notre sélection d'annonces immobilières
+          Notre sélection d'annonces immobilière
         </h2>
         
         <div className="max-w-5xl mx-auto">
