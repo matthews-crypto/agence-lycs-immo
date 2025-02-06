@@ -95,8 +95,8 @@ export default function AgencyHomePage() {
     toast.success("Recherche effectuée avec succès");
   };
 
-  const handlePropertyClick = () => {
-    setIsAuthOpen(true);
+  const handlePropertyClick = (propertyId: string) => {
+    navigate(`properties/${propertyId}/public`);
   };
 
   const loopedProperties = [...(properties || []), ...(properties || [])];
@@ -238,7 +238,7 @@ export default function AgencyHomePage() {
               <div 
                 key={property.id}
                 className="cursor-pointer"
-                onClick={handlePropertyClick}
+                onClick={() => handlePropertyClick(property.id)}
               >
                 <div className="aspect-[4/3] overflow-hidden rounded-lg">
                   {property.photos?.[0] ? (
@@ -297,10 +297,13 @@ export default function AgencyHomePage() {
           >
             <CarouselContent>
               {loopedProperties.map((property, index) => (
-                <CarouselItem key={`${property.id}-${index}`} className="md:basis-1/2 lg:basis-1/3">
+                <CarouselItem 
+                  key={`${property.id}-${index}`} 
+                  className="md:basis-1/2 lg:basis-1/3"
+                >
                   <div 
                     className="relative group cursor-pointer"
-                    onClick={handlePropertyClick}
+                    onClick={() => handlePropertyClick(property.id)}
                   >
                     <div className="aspect-[4/3] overflow-hidden rounded-lg">
                       {property.photos?.[0] ? (
