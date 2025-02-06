@@ -1,8 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
-import { toast } from "sonner";
 
 type Agency = Tables<"agencies">;
 
@@ -17,7 +16,6 @@ const AgencyContext = createContext<AgencyContextType | undefined>(undefined);
 
 export function AgencyProvider({ children }: { children: React.ReactNode }) {
   const { agencySlug } = useParams();
-  const navigate = useNavigate();
   const [agency, setAgency] = useState<Agency | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -25,32 +23,16 @@ export function AgencyProvider({ children }: { children: React.ReactNode }) {
   const fetchAgency = async () => {
     try {
       setIsLoading(true);
-      setError(null);
-
-      if (!agencySlug) {
-        throw new Error("No agency slug provided");
-      }
-
-      const { data, error: supabaseError } = await supabase
+      const { data, error } = await supabase
         .from("agencies")
         .select("*")
         .eq("slug", agencySlug)
-        .maybeSingle();
+        .single();
 
-      if (supabaseError) {
-        throw supabaseError;
-      }
-
-      if (!data) {
-        throw new Error("Agency not found");
-      }
-
+      if (error) throw error;
       setAgency(data);
     } catch (err) {
-      console.error("Error fetching agency:", err);
       setError(err instanceof Error ? err : new Error("Failed to fetch agency"));
-      toast.error("Impossible de charger les informations de l'agence");
-      navigate("/404");
     } finally {
       setIsLoading(false);
     }
