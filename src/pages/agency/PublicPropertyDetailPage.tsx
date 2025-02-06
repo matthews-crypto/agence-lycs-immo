@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 
 export default function PublicPropertyDetailPage() {
   const navigate = useNavigate();
@@ -89,7 +90,7 @@ export default function PublicPropertyDetailPage() {
       <div className="container mx-auto px-4 py-8">
         {/* Image Carousel */}
         <div className="mb-8">
-          <Carousel className="w-full max-w-4xl mx-auto">
+          <Carousel className="w-full max-w-5xl mx-auto">
             <CarouselContent>
               {property.photos?.map((photo: string, index: number) => (
                 <CarouselItem key={index}>
@@ -98,7 +99,7 @@ export default function PublicPropertyDetailPage() {
                       <img
                         src={photo}
                         alt={`Property ${index + 1}`}
-                        className="w-full h-[500px] object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                        className="w-full h-[600px] object-cover rounded-xl cursor-pointer hover:opacity-90 transition-opacity shadow-lg"
                         onClick={() => setSelectedImage(photo)}
                       />
                     </DialogTrigger>
@@ -119,61 +120,70 @@ export default function PublicPropertyDetailPage() {
         </div>
 
         {/* Property Details */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12 max-w-5xl mx-auto">
           <div className="space-y-6">
             <h1 className="text-4xl font-bold text-primary">{property.title}</h1>
-            <p className="text-2xl font-semibold">{property.price.toLocaleString()} FCFA</p>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="secondary" className="text-lg">
+                {property.price.toLocaleString()} FCFA
+              </Badge>
+              <Badge variant="outline" className="text-lg">
+                {property.property_type}
+              </Badge>
+            </div>
             
             <div className="space-y-2">
+              <p className="text-lg text-muted-foreground">
+                {property.region && `${property.region}, `}{property.city}
+              </p>
               <p className="text-muted-foreground">{property.address}</p>
-              <p className="text-muted-foreground">{property.city}</p>
             </div>
 
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div className="p-4 bg-accent rounded-lg">
-                <p className="font-semibold">{property.bedrooms}</p>
-                <p className="text-sm text-muted-foreground">Chambres</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 bg-accent rounded-lg text-center">
+                <p className="font-semibold text-xl">{property.bedrooms}</p>
+                <p className="text-sm text-muted-foreground">Pièces</p>
               </div>
-              <div className="p-4 bg-accent rounded-lg">
-                <p className="font-semibold">{property.bathrooms}</p>
-                <p className="text-sm text-muted-foreground">Salles de bain</p>
-              </div>
-              <div className="p-4 bg-accent rounded-lg">
-                <p className="font-semibold">{property.surface_area} m²</p>
+              <div className="p-4 bg-accent rounded-lg text-center">
+                <p className="font-semibold text-xl">{property.surface_area} m²</p>
                 <p className="text-sm text-muted-foreground">Surface</p>
               </div>
             </div>
           </div>
 
           <div className="space-y-6">
-            <h2 className="text-2xl font-semibold">Description</h2>
-            <p className="text-muted-foreground">{property.description}</p>
-
-            <div>
-              <h3 className="text-xl font-semibold mb-4">Caractéristiques</h3>
-              <ul className="grid grid-cols-2 gap-2">
-                {property.amenities?.map((amenity: string, index: number) => (
-                  <li key={index} className="flex items-center text-muted-foreground">
-                    <span className="w-2 h-2 bg-primary rounded-full mr-2" />
-                    {amenity}
-                  </li>
-                ))}
-              </ul>
+            <div className="bg-card rounded-lg p-6 shadow-sm">
+              <h2 className="text-2xl font-semibold mb-4">Description</h2>
+              <p className="text-muted-foreground leading-relaxed">{property.description}</p>
             </div>
+
+            {property.amenities && property.amenities.length > 0 && (
+              <div className="bg-card rounded-lg p-6 shadow-sm">
+                <h3 className="text-xl font-semibold mb-4">Caractéristiques</h3>
+                <ul className="grid grid-cols-2 gap-2">
+                  {property.amenities?.map((amenity: string, index: number) => (
+                    <li key={index} className="flex items-center text-muted-foreground">
+                      <span className="w-2 h-2 bg-primary rounded-full mr-2" />
+                      {amenity}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </div>
 
-        <Separator className="my-12" />
+        <Separator className="my-12 max-w-5xl mx-auto" />
 
         {/* Similar Properties Section */}
         {similarProperties && similarProperties.length > 0 && (
-          <div>
+          <div className="max-w-5xl mx-auto">
             <h2 className="text-2xl font-semibold mb-8">Biens similaires</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {similarProperties.map((prop) => (
                 <div
                   key={prop.id}
-                  className="rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
+                  className="bg-card rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
                   onClick={() => handleSimilarPropertyClick(prop.id)}
                 >
                   <img
@@ -186,9 +196,11 @@ export default function PublicPropertyDetailPage() {
                     <p className="text-primary font-semibold mb-2">
                       {prop.price.toLocaleString()} FCFA
                     </p>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span>{prop.bedrooms} chambres</span>
+                    <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+                      <span>{prop.bedrooms} pièces</span>
+                      <span>•</span>
                       <span>{prop.surface_area} m²</span>
+                      <span>•</span>
                       <span>{prop.region}</span>
                     </div>
                   </div>
