@@ -61,26 +61,15 @@ const PropertyMap = ({ latitude, longitude, className = "" }: PropertyMapProps) 
           closeButton: false
         });
 
-      // Show popup on hover
-      markerRef.current.on('mouseover', function(e) {
-        this.openPopup();
-      });
+      // Open popup by default
+      markerRef.current.openPopup();
 
-      // Optional: Hide popup when mouse leaves only if not clicked
-      let isClicked = false;
-
+      // Toggle popup on click
       markerRef.current.on('click', function(e) {
-        isClicked = !isClicked;
-        if (isClicked) {
-          this.openPopup();
+        if (this.isPopupOpen()) {
+          this.closePopup();
         } else {
-          this.closePopup();
-        }
-      });
-
-      markerRef.current.on('mouseout', function(e) {
-        if (!isClicked) {
-          this.closePopup();
+          this.openPopup();
         }
       });
     }
