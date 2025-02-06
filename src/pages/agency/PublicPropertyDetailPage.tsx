@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -77,7 +77,6 @@ export default function PublicPropertyDetailPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Back button */}
       <Button
         variant="ghost"
         className="m-4"
@@ -88,57 +87,76 @@ export default function PublicPropertyDetailPage() {
       </Button>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Image Carousel */}
-        <div className="mb-8">
-          <Carousel className="w-full max-w-5xl mx-auto">
-            <CarouselContent>
-              {property.photos?.map((photo: string, index: number) => (
-                <CarouselItem key={index}>
-                  <Dialog>
-                    <DialogTrigger>
+        {/* Property Title */}
+        <div className="mb-6">
+          <div className="flex gap-2 mb-2">
+            <Badge variant="secondary">{property.property_type}</Badge>
+            <Badge>VENTE</Badge>
+          </div>
+          <h1 className="text-4xl font-bold text-primary">{property.title}</h1>
+          <p className="text-lg text-muted-foreground mt-2">
+            {property.region && `${property.region}, `}{property.city}
+          </p>
+        </div>
+
+        {/* Image Gallery */}
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          <Dialog>
+            <DialogTrigger className="relative col-span-2 aspect-[16/9]">
+              <img
+                src={property.photos?.[0]}
+                alt={property.title}
+                className="w-full h-full object-cover rounded-lg"
+              />
+              {property.photos && property.photos.length > 1 && property.photos.length <= 4 && (
+                <div className="absolute bottom-4 right-4 bg-black/70 text-white px-3 py-1 rounded-full flex items-center">
+                  <Plus className="h-4 w-4 mr-1" />
+                  {property.photos.length - 1}
+                </div>
+              )}
+            </DialogTrigger>
+            {property.photos && property.photos.length >= 5 && (
+              <>
+                {property.photos.slice(1, 5).map((photo: string, index: number) => (
+                  <DialogTrigger key={index} className="relative">
+                    <img
+                      src={photo}
+                      alt={`${property.title} ${index + 2}`}
+                      className="w-full h-full object-cover rounded-lg"
+                    />
+                  </DialogTrigger>
+                ))}
+              </>
+            )}
+            <DialogContent className="max-w-5xl">
+              <Carousel>
+                <CarouselContent>
+                  {property.photos?.map((photo: string, index: number) => (
+                    <CarouselItem key={index}>
                       <img
                         src={photo}
-                        alt={`Property ${index + 1}`}
-                        className="w-full h-[600px] object-cover rounded-xl cursor-pointer hover:opacity-90 transition-opacity shadow-lg"
-                        onClick={() => setSelectedImage(photo)}
-                      />
-                    </DialogTrigger>
-                    <DialogContent className="max-w-5xl">
-                      <img
-                        src={selectedImage || ""}
-                        alt="Enlarged view"
+                        alt={`${property.title} ${index + 1}`}
                         className="w-full h-auto"
                       />
-                    </DialogContent>
-                  </Dialog>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious />
-            <CarouselNext />
-          </Carousel>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious />
+                <CarouselNext />
+              </Carousel>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Property Details */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
           <div className="space-y-6">
-            <h1 className="text-4xl font-bold text-primary">{property.title}</h1>
             <div className="flex flex-wrap gap-2">
               <Badge variant="secondary" className="text-lg">
                 {property.price.toLocaleString()} FCFA
               </Badge>
-              <Badge variant="outline" className="text-lg">
-                {property.property_type}
-              </Badge>
             </div>
             
-            <div className="space-y-2">
-              <p className="text-lg text-muted-foreground">
-                {property.region && `${property.region}, `}{property.city}
-              </p>
-              <p className="text-muted-foreground">{property.address}</p>
-            </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div className="p-4 bg-accent rounded-lg text-center">
                 <p className="font-semibold text-xl">{property.bedrooms}</p>
@@ -172,8 +190,6 @@ export default function PublicPropertyDetailPage() {
             )}
           </div>
         </div>
-
-        <Separator className="my-12 max-w-5xl mx-auto" />
 
         {/* Similar Properties Section */}
         {similarProperties && similarProperties.length > 0 && (
