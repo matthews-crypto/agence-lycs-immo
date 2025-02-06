@@ -6,23 +6,15 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
   DialogContent,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 
 export default function PublicPropertyDetailPage() {
   const navigate = useNavigate();
   const { agencySlug, propertyId } = useParams();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
 
   // Fetch property details
   const { data: property } = useQuery({
@@ -78,25 +70,74 @@ export default function PublicPropertyDetailPage() {
     navigate(`/${agencySlug}/properties/${propertyId}/public`);
   };
 
+  const handleImageClick = (imageUrl: string, index: number) => {
+    setSelectedImage(imageUrl);
+    setCurrentImageIndex(index);
+  };
+
+  const handleNextImage = () => {
+    if (property?.photos) {
+      setCurrentImageIndex((prev) => 
+        prev === property.photos.length - 1 ? 0 : prev + 1
+      );
+      setSelectedImage(property.photos[currentImageIndex + 1] || property.photos[0]);
+    }
+  };
+
+  const handlePrevImage = () => {
+    if (property?.photos) {
+      setCurrentImageIndex((prev) => 
+        prev === 0 ? property.photos.length - 1 : prev - 1
+      );
+      setSelectedImage(property.photos[currentImageIndex - 1] || property.photos[property.photos.length - 1]);
+    }
+  };
+
   if (!property) return null;
 
   return (
     <div className="min-h-screen bg-background">
-      <Button
-        variant="ghost"
-        className="m-4"
-        onClick={handleBack}
+      {/* Navigation Bar */}
+      <div 
+        className="w-full h-16 flex items-center px-4 relative"
+        style={{ backgroundColor: property.agencies?.primary_color || '#9b87f5' }}
       >
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Retour
-      </Button>
+        <Button
+          variant="ghost"
+          className="absolute left-4 text-white hover:text-white/80"
+          onClick={handleBack}
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Retour
+        </Button>
+        <div className="flex-1 flex justify-center items-center">
+          {property.agencies?.logo_url ? (
+            <img 
+              src={property.agencies.logo_url} 
+              alt={property.agencies.agency_name} 
+              className="h-10 object-contain"
+            />
+          ) : (
+            <span className="text-white text-lg font-semibold">
+              {property.agencies?.agency_name}
+            </span>
+          )}
+        </div>
+      </div>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Property Title */}
+        {/* Property Title and Status */}
         <div className="mb-6">
           <div className="flex gap-2 mb-2">
             <Badge variant="secondary">{property.property_type}</Badge>
-            <Badge>VENTE</Badge>
+            <Badge 
+              style={{
+                backgroundColor: property.agencies?.primary_color || '#9b87f5',
+                color: 'white'
+              }}
+            >
+              {property.property_status}
+            </Badge>
           </div>
           <h1 className="text-4xl font-bold text-primary">{property.title}</h1>
           <p className="text-lg text-muted-foreground mt-2">
@@ -106,49 +147,69 @@ export default function PublicPropertyDetailPage() {
 
         {/* Image Gallery */}
         <div className="grid grid-cols-2 gap-4 mb-8">
-          <Dialog>
-            <DialogTrigger className="relative col-span-2 aspect-[16/9]">
-              <img
-                src={property.photos?.[0]}
-                alt={property.title}
-                className="w-full h-full object-cover rounded-lg"
-              />
-              {property.photos && property.photos.length > 1 && property.photos.length <= 4 && (
-                <div className="absolute bottom-4 right-4 bg-black/70 text-white px-3 py-1 rounded-full flex items-center">
-                  <Plus className="h-4 w-4 mr-1" />
-                  {property.photos.length - 1}
-                </div>
-              )}
-            </DialogTrigger>
+          <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+            <div className="col-span-2 relative">
+              <div 
+                className="cursor-pointer"
+                onClick={() => property.photos && handleImageClick(property.photos[0], 0)}
+              >
+                <img
+                  src={property.photos?.[0]}
+                  alt={property.title}
+                  className="w-full aspect-[16/9] object-cover rounded-lg"
+                />
+                {property.photos && property.photos.length > 1 && property.photos.length <= 4 && (
+                  <div className="absolute bottom-4 right-4 bg-black/70 text-white px-3 py-1 rounded-full flex items-center">
+                    <Plus className="h-4 w-4 mr-1" />
+                    {property.photos.length - 1}
+                  </div>
+                )}
+              </div>
+            </div>
             {property.photos && property.photos.length >= 5 && (
-              <>
-                {property.photos.slice(1, 5).map((photo: string, index: number) => (
-                  <DialogTrigger key={index} className="relative">
-                    <img
-                      src={photo}
-                      alt={`${property.title} ${index + 2}`}
-                      className="w-full h-full object-cover rounded-lg"
-                    />
-                  </DialogTrigger>
-                ))}
-              </>
+              property.photos.slice(1, 5).map((photo: string, index: number) => (
+                <div 
+                  key={index}
+                  className="cursor-pointer"
+                  onClick={() => handleImageClick(photo, index + 1)}
+                >
+                  <img
+                    src={photo}
+                    alt={`${property.title} ${index + 2}`}
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                </div>
+              ))
             )}
-            <DialogContent className="max-w-5xl">
-              <Carousel>
-                <CarouselContent>
-                  {property.photos?.map((photo: string, index: number) => (
-                    <CarouselItem key={index}>
-                      <img
-                        src={photo}
-                        alt={`${property.title} ${index + 1}`}
-                        className="w-full h-auto"
-                      />
-                    </CarouselItem>
-                  ))}
-                </CarouselContent>
-                <CarouselPrevious />
-                <CarouselNext />
-              </Carousel>
+            <DialogContent className="max-w-5xl max-h-[90vh]">
+              <div className="relative">
+                {selectedImage && (
+                  <>
+                    <img
+                      src={selectedImage}
+                      alt={property.title}
+                      className="w-full h-auto"
+                    />
+                    <div className="absolute top-4 right-4 bg-black/70 text-white px-3 py-1 rounded-full">
+                      {currentImageIndex + 1}/{property.photos?.length}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-white"
+                      onClick={handlePrevImage}
+                    >
+                      <ArrowLeft className="h-6 w-6" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-white rotate-180"
+                      onClick={handleNextImage}
+                    >
+                      <ArrowLeft className="h-6 w-6" />
+                    </Button>
+                  </>
+                )}
+              </div>
             </DialogContent>
           </Dialog>
         </div>
