@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Plus } from "lucide-react";
@@ -9,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import PropertyMap from "@/components/PropertyMap";
 
 export default function PublicPropertyDetailPage() {
   const navigate = useNavigate();
@@ -143,45 +145,46 @@ export default function PublicPropertyDetailPage() {
           {property.region && `${property.region}, `}{property.city}
         </p>
 
-        {/* Image Gallery */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {property.photos && property.photos.length > 0 && (
-            <>
-              <div className="col-span-full lg:col-span-2 relative">
-                <img
-                  src={property.photos[0]}
-                  alt={property.title}
-                  className="w-full aspect-[16/9] object-cover rounded-lg cursor-pointer"
-                  onClick={() => handleImageClick(property.photos[0], 0)}
-                />
-                {property.photos.length > 1 && property.photos.length <= 4 && (
-                  <div className="absolute bottom-4 right-4 bg-black/70 text-white px-3 py-1 rounded-full flex items-center">
-                    <Plus className="h-4 w-4 mr-1" />
-                    {property.photos.length - 1}
-                  </div>
-                )}
-              </div>
-              {property.photos.length >= 5 && 
-                property.photos.slice(1, 5).map((photo, index) => (
-                  <div key={index} className="relative">
+        {/* Image Gallery and Map Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Image Gallery */}
+          <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+              {property.photos && property.photos.length > 0 && (
+                <>
+                  <div className="col-span-full relative">
                     <img
-                      src={photo}
-                      alt={`${property.title} ${index + 2}`}
-                      className="w-full aspect-square object-cover rounded-lg cursor-pointer"
-                      onClick={() => handleImageClick(photo, index + 1)}
+                      src={property.photos[0]}
+                      alt={property.title}
+                      className="w-full aspect-[16/9] object-cover rounded-lg cursor-pointer"
+                      onClick={() => handleImageClick(property.photos[0], 0)}
                     />
+                    {property.photos.length > 1 && (
+                      <div className="absolute bottom-4 right-4 bg-black/70 text-white px-3 py-1 rounded-full flex items-center">
+                        <Plus className="h-4 w-4 mr-1" />
+                        {property.photos.length - 1}
+                      </div>
+                    )}
                   </div>
-                ))
-              }
-            </>
-          )}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Map */}
+          <div className="h-[300px]">
+            <PropertyMap 
+              latitude={property.location_lat} 
+              longitude={property.location_lng}
+            />
+          </div>
         </div>
 
         {/* Main Info Cards */}
         <div className="grid grid-cols-3 gap-4 mb-8">
           <div className="bg-gray-100 p-4 rounded-lg text-center">
             <p className="text-2xl font-bold text-gray-900">
-              {property.price.toLocaleString()} €
+              {property.price.toLocaleString()} FCFA
             </p>
           </div>
           <div className="bg-gray-100 p-4 rounded-lg text-center">
