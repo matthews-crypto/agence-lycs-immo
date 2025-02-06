@@ -48,17 +48,22 @@ export default function PublicPropertyDetailPage() {
       const minPrice = property.price * 0.8;
       const maxPrice = property.price * 1.2;
 
-      const { data, error } = await supabase
+      let query = supabase
         .from("properties")
         .select("*")
         .eq("property_type", property.property_type)
         .eq("agency_id", property.agency_id)
         .neq("id", propertyId)
-        .eq("is_available", true)
-        .or(
-          `price.gte.${minPrice},price.lte.${maxPrice},bedrooms.eq.${property.bedrooms},region.eq.${property.region}`
-        )
-        .limit(6);
+        .eq("is_available", true);
+
+      // Handle the OR conditions properly
+      if (property.bedrooms === null) {
+        query = query.or(`price.gte.${minPrice},price.lte.${maxPrice},bedrooms.is.null,region.eq.${property.region}`);
+      } else {
+        query = query.or(`price.gte.${minPrice},price.lte.${maxPrice},bedrooms.eq.${property.bedrooms},region.eq.${property.region}`);
+      }
+
+      const { data, error } = await query.limit(6);
 
       if (error) throw error;
       return data;
