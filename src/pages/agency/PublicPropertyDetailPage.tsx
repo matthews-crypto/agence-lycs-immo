@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -54,8 +54,7 @@ export default function PublicPropertyDetailPage() {
         .eq("agency_id", property.agency_id)
         .neq("id", propertyId)
         .eq("is_available", true)
-        .or(`region.eq.${property.region},bedrooms.eq.${property.bedrooms}`)
-        .and(`price.gte.${minPrice},price.lte.${maxPrice}`)
+        .or(`region.eq.${property.region},bedrooms.eq.${property.bedrooms},and(price.gte.${minPrice},price.lte.${maxPrice})`)
         .limit(6);
 
       if (error) throw error;
