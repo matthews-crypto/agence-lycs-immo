@@ -96,7 +96,8 @@ export default function AgencyHomePage() {
   };
 
   const handlePropertyClick = (propertyId: string) => {
-    navigate(`properties/${propertyId}/public`);
+    if (!agency?.slug) return;
+    navigate(`/${agency.slug}/properties/${propertyId}/public`);
   };
 
   const loopedProperties = [...(properties || []), ...(properties || [])];
