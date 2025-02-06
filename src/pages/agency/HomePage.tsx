@@ -57,6 +57,30 @@ export default function AgencyHomePage() {
     },
   });
 
+  const { data: properties } = useQuery({
+    queryKey: ["agency-properties", agency?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("properties")
+        .select("*")
+        .eq("agency_id", agency?.id)
+        .eq("is_available", true)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!agency?.id,
+  });
+
+  // Get unique regions from agency properties
+  const agencyRegions = [...new Set(properties?.map(p => p.region).filter(Boolean))];
+
+  // Filter regions to only show those where the agency has properties
+  const filteredRegions = regions?.filter(region => 
+    agencyRegions.includes(region.nom)
+  );
+
   useEffect(() => {
     if (!heroApi || !propertiesApi) return;
 
@@ -75,22 +99,6 @@ export default function AgencyHomePage() {
       clearInterval(propertiesAutoplay);
     };
   }, [heroApi, propertiesApi]);
-
-  const { data: properties, isLoading } = useQuery({
-    queryKey: ["agency-properties", agency?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("properties")
-        .select("*")
-        .eq("agency_id", agency?.id)
-        .eq("is_available", true)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!agency?.id,
-  });
 
   const filteredProperties = properties?.filter(property => {
     const matchesCity = selectedCity === "all" || property.city === selectedCity;
@@ -242,7 +250,7 @@ export default function AgencyHomePage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all" className="text-base">Toutes les régions</SelectItem>
-                {regions?.map((region) => (
+                {filteredRegions?.map((region) => (
                   <SelectItem key={region.id} value={region.nom} className="text-base">
                     {region.nom}
                   </SelectItem>
