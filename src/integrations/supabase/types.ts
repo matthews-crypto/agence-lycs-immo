@@ -361,7 +361,7 @@ export type Database = {
           price: number
           property_status: Database["public"]["Enums"]["property_status"] | null
           property_type: string
-          region_id: number | null
+          region: string | null
           surface_area: number | null
           title: string
           updated_at: string
@@ -391,7 +391,7 @@ export type Database = {
             | Database["public"]["Enums"]["property_status"]
             | null
           property_type: string
-          region_id?: number | null
+          region?: string | null
           surface_area?: number | null
           title: string
           updated_at?: string
@@ -421,7 +421,7 @@ export type Database = {
             | Database["public"]["Enums"]["property_status"]
             | null
           property_type?: string
-          region_id?: number | null
+          region?: string | null
           surface_area?: number | null
           title?: string
           updated_at?: string
@@ -435,13 +435,6 @@ export type Database = {
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "properties_region_id_fkey"
-            columns: ["region_id"]
-            isOneToOne: false
-            referencedRelation: "region"
             referencedColumns: ["id"]
           },
         ]
@@ -560,39 +553,6 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      zone: {
-        Row: {
-          id: number
-          nom: string
-          region_id: number | null
-        }
-        Insert: {
-          id?: number
-          nom: string
-          region_id?: number | null
-        }
-        Update: {
-          id?: number
-          nom?: string
-          region_id?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_region"
-            columns: ["region_id"]
-            isOneToOne: false
-            referencedRelation: "region"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "zone_region_id_fkey"
-            columns: ["region_id"]
-            isOneToOne: false
-            referencedRelation: "region"
             referencedColumns: ["id"]
           },
         ]

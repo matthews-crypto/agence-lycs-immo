@@ -37,11 +37,25 @@ export default function AgencyHomePage() {
   const navigate = useNavigate();
   const [selectedCity, setSelectedCity] = useState<string>("all");
   const [selectedType, setSelectedType] = useState<string>("all");
+  const [selectedRegion, setSelectedRegion] = useState<string>("all");
   const [minBudget, setMinBudget] = useState<string>("");
   const [maxBudget, setMaxBudget] = useState<string>("");
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [heroApi, setHeroApi] = useState<any>();
   const [propertiesApi, setPropertiesApi] = useState<any>();
+
+  const { data: regions } = useQuery({
+    queryKey: ["regions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("region")
+        .select("*")
+        .order("nom");
+
+      if (error) throw error;
+      return data;
+    },
+  });
 
   useEffect(() => {
     if (!heroApi || !propertiesApi) return;
@@ -81,15 +95,16 @@ export default function AgencyHomePage() {
   const filteredProperties = properties?.filter(property => {
     const matchesCity = selectedCity === "all" || property.city === selectedCity;
     const matchesType = selectedType === "all" || property.property_type === selectedType;
+    const matchesRegion = selectedRegion === "all" || property.region === selectedRegion;
     const matchesMinBudget = !minBudget || property.price >= parseInt(minBudget);
     const matchesMaxBudget = !maxBudget || property.price <= parseInt(maxBudget);
-    return matchesCity && matchesType && matchesMinBudget && matchesMaxBudget;
+    return matchesCity && matchesType && matchesRegion && matchesMinBudget && matchesMaxBudget;
   });
 
   const cities = [...new Set(properties?.map(p => p.city).filter(Boolean))];
 
   const handleSearch = () => {
-    if (!selectedCity && !minBudget && !maxBudget && selectedType === "all") {
+    if (!selectedCity && !minBudget && !maxBudget && selectedType === "all" && selectedRegion === "all") {
       toast.warning("Veuillez sélectionner au moins un critère de recherche");
       return;
     }
@@ -213,6 +228,23 @@ export default function AgencyHomePage() {
                 {propertyTypes.map((type) => (
                   <SelectItem key={type.value} value={type.value} className="text-base">
                     {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select 
+              value={selectedRegion} 
+              onValueChange={setSelectedRegion}
+            >
+              <SelectTrigger className="w-full md:w-[200px] text-base font-medium">
+                <SelectValue placeholder="Région" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-base">Toutes les régions</SelectItem>
+                {regions?.map((region) => (
+                  <SelectItem key={region.id} value={region.nom} className="text-base">
+                    {region.nom}
                   </SelectItem>
                 ))}
               </SelectContent>
