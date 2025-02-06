@@ -38,18 +38,25 @@ export default function PublicPropertyDetailPage() {
     },
   });
 
-  // Fetch similar properties
+  // Fetch similar properties with enhanced similarity criteria
   const { data: similarProperties } = useQuery({
-    queryKey: ["similar-properties", property?.property_type, property?.region],
+    queryKey: ["similar-properties", property?.property_type, property?.price, property?.bedrooms, property?.region],
     enabled: !!property,
     queryFn: async () => {
+      // Calculate price range (±20% of the current property's price)
+      const minPrice = property.price * 0.8;
+      const maxPrice = property.price * 1.2;
+
       const { data, error } = await supabase
         .from("properties")
         .select("*")
-        .eq("property_type", property?.property_type)
-        .eq("region", property?.region)
+        .eq("property_type", property.property_type)
+        .eq("agency_id", property.agency_id)
         .neq("id", propertyId)
-        .limit(4);
+        .eq("is_available", true)
+        .or(`region.eq.${property.region},bedrooms.eq.${property.bedrooms}`)
+        .and(`price.gte.${minPrice},price.lte.${maxPrice}`)
+        .limit(6);
 
       if (error) throw error;
       return data;
@@ -58,6 +65,10 @@ export default function PublicPropertyDetailPage() {
 
   const handleBack = () => {
     navigate(`/${agencySlug}`);
+  };
+
+  const handleSimilarPropertyClick = (propertyId: string) => {
+    navigate(`/${agencySlug}/properties/${propertyId}/public`);
   };
 
   if (!property) return null;
@@ -154,15 +165,15 @@ export default function PublicPropertyDetailPage() {
         <Separator className="my-12" />
 
         {/* Similar Properties Section */}
-        <div>
-          <h2 className="text-2xl font-semibold mb-8">Autres suggestions</h2>
-          
-          {similarProperties && similarProperties.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {similarProperties && similarProperties.length > 0 && (
+          <div>
+            <h2 className="text-2xl font-semibold mb-8">Biens similaires</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {similarProperties.map((prop) => (
                 <div
                   key={prop.id}
-                  className="rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
+                  className="rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
+                  onClick={() => handleSimilarPropertyClick(prop.id)}
                 >
                   <img
                     src={prop.photos?.[0]}
@@ -171,19 +182,20 @@ export default function PublicPropertyDetailPage() {
                   />
                   <div className="p-4">
                     <h3 className="font-semibold text-lg mb-2">{prop.title}</h3>
-                    <p className="text-primary font-semibold">
+                    <p className="text-primary font-semibold mb-2">
                       {prop.price.toLocaleString()} FCFA
                     </p>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <span>{prop.bedrooms} chambres</span>
+                      <span>{prop.surface_area} m²</span>
+                      <span>{prop.region}</span>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
-          ) : (
-            <p className="text-center text-lg text-muted-foreground italic">
-              Merci de bien reconsidérer cette offre car elle est unique dans cette ville
-            </p>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
