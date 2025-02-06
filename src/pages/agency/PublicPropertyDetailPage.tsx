@@ -54,7 +54,9 @@ export default function PublicPropertyDetailPage() {
         .eq("agency_id", property.agency_id)
         .neq("id", propertyId)
         .eq("is_available", true)
-        .or(`region.eq.${property.region},bedrooms.eq.${property.bedrooms},and(price.gte.${minPrice},price.lte.${maxPrice})`)
+        .or(
+          `and(price.gte.${minPrice},price.lte.${maxPrice}),bedrooms.eq.${property.bedrooms},region.eq.${property.region}`
+        )
         .limit(6);
 
       if (error) throw error;
