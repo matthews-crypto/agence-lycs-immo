@@ -15,12 +15,10 @@ export default function AgencyPropertiesPage() {
   const { agency } = useAgencyContext();
 
   const propertyTypeTranslations: { [key: string]: string } = {
-    APARTMENT: "Appartement",
-    HOUSE: "Maison",
-    LAND: "Terrain",
-    COMMERCIAL: "Local commercial",
-    OFFICE: "Bureau",
-    OTHER: "Autre",
+    Appartement: "Appartement",
+    Maison: "Maison",
+    Terrain: "Terrain",
+    Bureau: "Bureau",
   };
 
   const { data: properties, isLoading } = useQuery({
@@ -52,7 +50,7 @@ export default function AgencyPropertiesPage() {
             <div className="flex flex-col space-y-8">
               <div className="flex flex-col space-y-4">
                 <div className="flex justify-between items-center">
-                  <h1 className="text-4xl font-light">Nos biens immobiliers</h1>
+                  <h1 className="text-4xl font-light">Nos offres immobilières</h1>
                   <AddPropertyDialog />
                 </div>
                 <div className="relative">
@@ -104,21 +102,12 @@ export default function AgencyPropertiesPage() {
                             <Home className="h-4 w-4" />
                             <span>{propertyTypeTranslations[property.property_type] || property.property_type}</span>
                           </div>
-                          <div className="flex items-center space-x-2 text-muted-foreground">
-                            <span>{property.price.toLocaleString()} FCFA</span>
-                          </div>
-                          {(property.bedrooms || property.bathrooms) && (
+                          {(property.bedrooms || property.bedrooms) && (
                             <div className="flex space-x-4">
                               {property.bedrooms && (
                                 <div className="flex items-center space-x-1">
                                   <BedDouble className="h-4 w-4" />
                                   <span>{property.bedrooms}</span>
-                                </div>
-                              )}
-                              {property.bathrooms && (
-                                <div className="flex items-center space-x-1">
-                                  <Bath className="h-4 w-4" />
-                                  <span>{property.bathrooms}</span>
                                 </div>
                               )}
                             </div>
