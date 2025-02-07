@@ -45,7 +45,6 @@ export default function AdminAuthPage() {
       password: "",
     },
   });
-
   const forgotPasswordForm = useForm<ForgotPasswordFormValues>({
     resolver: zodResolver(forgotPasswordFormSchema),
     defaultValues: {

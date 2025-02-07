@@ -68,7 +68,7 @@ export function AgencySidebar() {
       label: "Gestion",
       items: [
         {
-          title: "Biens Immobiliers",
+          title: "Offres",
           icon: Home,
           url: `/${agency?.slug}/agency/properties`,
         },

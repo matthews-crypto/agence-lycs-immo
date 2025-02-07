@@ -13,10 +13,7 @@ export default function AdminLayout() {
   useEffect(() => {
     // Vérifier la session initiale
     checkAndUpdateSession();
-
-    // Configurer le timeout d'inactivité
     const cleanupTimeout = setupInactivityTimeout();
-
     // Écouter les changements d'état d'authentification
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
       console.log("Auth state change event:", event);
@@ -48,13 +45,15 @@ export default function AdminLayout() {
   }
 
   return (
-    <SidebarProvider defaultOpen={true}>
-      <div className="flex min-h-screen w-full bg-background">
-        <AdminSidebar />
-        <main className="flex-1 overflow-x-hidden">
-          <Outlet />
-        </main>
-      </div>
-    </SidebarProvider>
+      <SessionContext.Provider value={session}>
+        <SidebarProvider defaultOpen={true}>
+          <div className="flex min-h-screen w-full bg-background">
+            <AdminSidebar />
+            <main className="flex-1 overflow-x-hidden">
+              <Outlet />
+            </main>
+          </div>
+        </SidebarProvider>
+      </SessionContext.Provider>
   )
 }
