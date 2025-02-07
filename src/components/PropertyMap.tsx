@@ -64,9 +64,9 @@ const PropertyMap = ({ latitude, longitude, className = "" }: PropertyMapProps) 
       // Open popup immediately after initialization
       markerRef.current.openPopup();
 
-      // Toggle popup on click
-      markerRef.current.on('click', function(e) {
-        if (this.isPopupOpen()) {
+      // Simple toggle popup on click
+      markerRef.current.on('click', function() {
+        if (this.getPopup().isOpen()) {
           this.closePopup();
         } else {
           this.openPopup();
@@ -93,9 +93,9 @@ const PropertyMap = ({ latitude, longitude, className = "" }: PropertyMapProps) 
     <div 
       id={`map-${latitude}-${longitude}`} 
       className={`h-full min-h-[300px] rounded-lg ${className}`}
+      style={{ zIndex: 1 }} // Ensure map stays below the dialog
     />
   );
 };
 
 export default PropertyMap;
-
