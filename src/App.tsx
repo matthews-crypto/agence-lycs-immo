@@ -23,6 +23,7 @@ import AgencyAuthPage from "@/pages/agency/AuthPage"
 import AgencyHomePage from "@/pages/agency/HomePage"
 import AgencyPropertiesPage from "@/pages/agency/PropertiesPage"
 import AgencyPropertyDetailPage from "@/pages/agency/PropertyDetailPage"
+import PublicPropertyDetailPage from "@/pages/agency/PublicPropertyDetailPage"
 import PropertyImagesPage from "@/pages/agency/PropertyImagesPage"
 import AgencyRegisterPage from "@/pages/agency/RegisterPage"
 import AgencyDashboardPage from "@/pages/agency/DashboardPage"
@@ -81,6 +82,10 @@ const App = () => (
               <Route
                 path="properties/:propertyId"
                 element={<AgencyPropertyDetailPage />}
+              />
+              <Route
+                path="properties/:propertyId/public"
+                element={<PublicPropertyDetailPage />}
               />
               <Route
                 path="properties/:propertyId/images"

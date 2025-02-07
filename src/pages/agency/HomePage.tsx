@@ -2,11 +2,10 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { MapPin, User, BedDouble } from "lucide-react";
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { AuthDrawer } from "@/components/agency/AuthDrawer";
 import {
   Select,
@@ -24,24 +23,72 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 
-const propertyTypeTranslations: { [key: string]: string } = {
-  APARTMENT: "Appartement",
-  HOUSE: "Maison",
-  LAND: "Terrain",
-  COMMERCIAL: "Local commercial",
-  OFFICE: "Bureau",
-  OTHER: "Autre",
+const propertyTypeLabels: { [key: string]: string } = {
+  "APARTMENT": "Appartement",
+  "HOUSE": "Maison",
+  "LAND": "Terrain",
+  "COMMERCIAL": "Local commercial",
+  "OFFICE": "Bureau",
+  "OTHER": "Autre"
 };
+
+const propertyTypes = [
+  { value: "APARTMENT", label: "Appartement" },
+  { value: "HOUSE", label: "Maison" },
+  { value: "LAND", label: "Terrain" },
+  { value: "COMMERCIAL", label: "Local commercial" },
+  { value: "OFFICE", label: "Bureau" },
+  { value: "OTHER", label: "Autre" },
+];
 
 export default function AgencyHomePage() {
   const { agency } = useAgencyContext();
   const navigate = useNavigate();
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [selectedCity, setSelectedCity] = useState<string>("all");
+  const [selectedType, setSelectedType] = useState<string>("all");
+  const [selectedRegion, setSelectedRegion] = useState<string>("all");
   const [minBudget, setMinBudget] = useState<string>("");
   const [maxBudget, setMaxBudget] = useState<string>("");
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [heroApi, setHeroApi] = useState<any>();
   const [propertiesApi, setPropertiesApi] = useState<any>();
+
+  const { data: regions } = useQuery({
+    queryKey: ["regions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("region")
+        .select("*")
+        .order("nom");
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: properties } = useQuery({
+    queryKey: ["agency-properties", agency?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("properties")
+        .select("*")
+        .eq("agency_id", agency?.id)
+        .eq("is_available", true)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!agency?.id,
+  });
+
+  // Get unique regions from agency properties
+  const agencyRegions = [...new Set(properties?.map(p => p.region).filter(Boolean))];
+
+  // Filter regions to only show those where the agency has properties
+  const filteredRegions = regions?.filter(region => 
+    agencyRegions.includes(region.nom)
+  );
 
   useEffect(() => {
     if (!heroApi || !propertiesApi) return;
@@ -62,41 +109,28 @@ export default function AgencyHomePage() {
     };
   }, [heroApi, propertiesApi]);
 
-  const { data: properties, isLoading } = useQuery({
-    queryKey: ["agency-properties", agency?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("properties")
-        .select("*")
-        .eq("agency_id", agency?.id)
-        .eq("is_available", true)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!agency?.id,
-  });
-
   const filteredProperties = properties?.filter(property => {
     const matchesCity = selectedCity === "all" || property.city === selectedCity;
+    const matchesType = selectedType === "all" || property.property_type === selectedType;
+    const matchesRegion = selectedRegion === "all" || property.region === selectedRegion;
     const matchesMinBudget = !minBudget || property.price >= parseInt(minBudget);
     const matchesMaxBudget = !maxBudget || property.price <= parseInt(maxBudget);
-    return matchesCity && matchesMinBudget && matchesMaxBudget;
+    return matchesCity && matchesType && matchesRegion && matchesMinBudget && matchesMaxBudget;
   });
 
   const cities = [...new Set(properties?.map(p => p.city).filter(Boolean))];
 
   const handleSearch = () => {
-    if (!selectedCity && !minBudget && !maxBudget) {
+    if (!selectedCity && !minBudget && !maxBudget && selectedType === "all" && selectedRegion === "all") {
       toast.warning("Veuillez sélectionner au moins un critère de recherche");
       return;
     }
     toast.success("Recherche effectuée avec succès");
   };
 
-  const handlePropertyClick = () => {
-    setIsAuthOpen(true);
+  const handlePropertyClick = (propertyId: string) => {
+    if (!agency?.slug) return;
+    navigate(`/${agency.slug}/properties/${propertyId}/public`);
   };
 
   const loopedProperties = [...(properties || []), ...(properties || [])];
@@ -150,7 +184,7 @@ export default function AgencyHomePage() {
               {properties?.slice(0, 3).map((property) => (
                 <CarouselItem 
                   key={property.id} 
-                  className="h-full transition-opacity duration-500"
+                  className="h-full"
                 >
                   <div className="relative h-full">
                     {property.photos?.[0] ? (
@@ -169,7 +203,7 @@ export default function AgencyHomePage() {
                         {property.title}
                       </h2>
                       <p className="text-white/80 mt-2">
-                        {property.city} - {propertyTypeTranslations[property.property_type] || property.property_type}
+                        {property.city}
                       </p>
                     </div>
                   </div>
@@ -181,43 +215,77 @@ export default function AgencyHomePage() {
 
         {/* Search Bar */}
         <div className="mt-8 max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-4 flex gap-4">
+          <div className="bg-white rounded-lg shadow-lg p-4 flex flex-col md:flex-row gap-4">
             <Select 
               value={selectedCity} 
               onValueChange={setSelectedCity}
             >
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-full md:w-[200px] text-base font-medium">
                 <SelectValue placeholder="Ville" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Toutes les villes</SelectItem>
+                <SelectItem value="all" className="text-base">Villes</SelectItem>
                 {cities.map((city) => (
-                  <SelectItem key={city} value={city}>
+                  <SelectItem key={city} value={city} className="text-base">
                     {city}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
-            <div className="flex gap-4 flex-1">
+            <Select 
+              value={selectedType} 
+              onValueChange={setSelectedType}
+            >
+              <SelectTrigger className="w-full md:w-[200px] text-base font-medium">
+                <SelectValue placeholder="Type de bien" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-base">Types</SelectItem>
+                {propertyTypes.map((type) => (
+                  <SelectItem key={type.value} value={type.value} className="text-base">
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select 
+              value={selectedRegion} 
+              onValueChange={setSelectedRegion}
+            >
+              <SelectTrigger className="w-full md:w-[200px] text-base font-medium">
+                <SelectValue placeholder="Région" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-base">Toutes les régions</SelectItem>
+                {filteredRegions?.map((region) => (
+                  <SelectItem key={region.id} value={region.nom} className="text-base">
+                    {region.nom}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <div className="flex flex-col md:flex-row gap-4 flex-1">
               <input
                 type="number"
                 placeholder="Budget min"
-                className="flex-1 px-3 py-2 border rounded-md"
+                className="flex-1 px-3 py-2 border rounded-md text-base font-medium"
                 value={minBudget}
                 onChange={(e) => setMinBudget(e.target.value)}
               />
               <input
                 type="number"
                 placeholder="Budget max"
-                className="flex-1 px-3 py-2 border rounded-md"
+                className="flex-1 px-3 py-2 border rounded-md text-base font-medium"
                 value={maxBudget}
                 onChange={(e) => setMaxBudget(e.target.value)}
               />
             </div>
 
             <Button 
-              className="px-8"
+              className="w-full md:w-auto px-8"
               style={{
                 backgroundColor: agency?.primary_color || '#000000',
               }}
@@ -230,17 +298,17 @@ export default function AgencyHomePage() {
       </div>
 
       {/* Filtered Properties */}
-      {filteredProperties && filteredProperties.length > 0 && (selectedCity !== "all" || minBudget || maxBudget) && (
+      {filteredProperties && filteredProperties.length > 0 && (selectedCity !== "all" || minBudget || maxBudget || selectedType !== "all") && (
         <div className="container mx-auto px-4 mt-16">
           <h2 className="text-2xl font-light mb-8">Résultats de votre recherche</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredProperties.map((property) => (
               <div 
-                key={property.id}
+                key={property.id} 
                 className="cursor-pointer"
-                onClick={handlePropertyClick}
+                onClick={() => handlePropertyClick(property.id)}
               >
-                <div className="aspect-[4/3] overflow-hidden rounded-lg">
+                <div className="aspect-[4/3] overflow-hidden rounded-lg relative">
                   {property.photos?.[0] ? (
                     <img
                       src={property.photos[0]}
@@ -252,6 +320,15 @@ export default function AgencyHomePage() {
                       <BedDouble className="w-12 h-12 text-gray-400" />
                     </div>
                   )}
+                  <div 
+                    className="absolute top-4 left-4 px-3 py-1 rounded-full text-sm font-medium"
+                    style={{
+                      backgroundColor: agency?.primary_color || '#000000',
+                      color: 'white',
+                    }}
+                  >
+                    {propertyTypeLabels[property.property_type] || property.property_type}
+                  </div>
                 </div>
                 <div className="mt-4">
                   <h3 className="text-xl font-light">{property.title}</h3>
@@ -297,12 +374,15 @@ export default function AgencyHomePage() {
           >
             <CarouselContent>
               {loopedProperties.map((property, index) => (
-                <CarouselItem key={`${property.id}-${index}`} className="md:basis-1/2 lg:basis-1/3">
+                <CarouselItem 
+                  key={`${property.id}-${index}`} 
+                  className="md:basis-1/2 lg:basis-1/3"
+                >
                   <div 
                     className="relative group cursor-pointer"
-                    onClick={handlePropertyClick}
+                    onClick={() => handlePropertyClick(property.id)}
                   >
-                    <div className="aspect-[4/3] overflow-hidden rounded-lg">
+                    <div className="aspect-[4/3] overflow-hidden rounded-lg relative">
                       {property.photos?.[0] ? (
                         <img
                           src={property.photos[0]}
@@ -314,6 +394,15 @@ export default function AgencyHomePage() {
                           <BedDouble className="w-12 h-12 text-gray-400" />
                         </div>
                       )}
+                      <div 
+                        className="absolute top-4 left-4 px-3 py-1 rounded-full text-sm font-medium"
+                        style={{
+                          backgroundColor: agency?.primary_color || '#000000',
+                          color: 'white',
+                        }}
+                      >
+                        {propertyTypeLabels[property.property_type] || property.property_type}
+                      </div>
                     </div>
                     <div className="mt-4">
                       <h3 className="text-xl font-light">{property.title}</h3>

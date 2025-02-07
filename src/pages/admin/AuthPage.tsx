@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,28 +17,43 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
-const formSchema = z.object({
+const loginFormSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+const forgotPasswordFormSchema = z.object({
+  email: z.string().email("Invalid email address"),
+});
+
+type LoginFormValues = z.infer<typeof loginFormSchema>;
+type ForgotPasswordFormValues = z.infer<typeof forgotPasswordFormSchema>;
 
 export default function AdminAuthPage() {
   const navigate = useNavigate();
   const { login, isLoading, isAuthenticated, error, checkAndUpdateSession } = useAdminAuthStore();
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [isResetEmailSent, setIsResetEmailSent] = useState(false);
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+  const loginForm = useForm<LoginFormValues>({
+    resolver: zodResolver(loginFormSchema),
     defaultValues: {
       email: "",
       password: "",
     },
   });
 
+  const forgotPasswordForm = useForm<ForgotPasswordFormValues>({
+    resolver: zodResolver(forgotPasswordFormSchema),
+    defaultValues: {
+      email: "",
+    },
+  });
+
   useEffect(() => {
-    // Vérifier la session au chargement
     checkAndUpdateSession();
   }, [checkAndUpdateSession]);
 
@@ -47,7 +63,7 @@ export default function AdminAuthPage() {
     }
   }, [isAuthenticated, navigate]);
 
-  const onSubmit = async (values: FormValues) => {
+  const onSubmitLogin = async (values: LoginFormValues) => {
     try {
       await login(values.email, values.password);
     } catch (error) {
@@ -55,68 +71,151 @@ export default function AdminAuthPage() {
     }
   };
 
+  const onSubmitForgotPassword = async (values: ForgotPasswordFormValues) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(values.email, {
+        redirectTo: `${window.location.origin}/admin/auth`,
+      });
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      setIsResetEmailSent(true);
+      toast.success("Si cette adresse email existe, vous recevrez un lien de réinitialisation.");
+    } catch (error) {
+      console.error("Password reset error:", error);
+      toast.error("Une erreur est survenue");
+    }
+  };
+
+  const renderForgotPasswordForm = () => (
+    <Form {...forgotPasswordForm}>
+      <form onSubmit={forgotPasswordForm.handleSubmit(onSubmitForgotPassword)} className="space-y-4">
+        <FormField
+          control={forgotPasswordForm.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input
+                  type="email"
+                  placeholder="admin@example.com"
+                  {...field}
+                  disabled={isLoading}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={isLoading}
+        >
+          Envoyer le lien de réinitialisation
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          className="w-full"
+          onClick={() => setIsForgotPassword(false)}
+        >
+          Retour à la connexion
+        </Button>
+      </form>
+    </Form>
+  );
+
+  const renderLoginForm = () => (
+    <Form {...loginForm}>
+      <form onSubmit={loginForm.handleSubmit(onSubmitLogin)} className="space-y-4">
+        <FormField
+          control={loginForm.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input
+                  type="email"
+                  placeholder="admin@example.com"
+                  {...field}
+                  disabled={isLoading}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={loginForm.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Password</FormLabel>
+              <FormControl>
+                <Input
+                  type="password"
+                  placeholder="••••••••"
+                  {...field}
+                  disabled={isLoading}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={isLoading}
+        >
+          {isLoading ? "Logging in..." : "Login"}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          className="w-full"
+          onClick={() => setIsForgotPassword(true)}
+        >
+          Mot de passe oublié ?
+        </Button>
+      </form>
+    </Form>
+  );
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Admin Login</CardTitle>
+          <CardTitle className="text-2xl font-bold">
+            {isForgotPassword ? "Réinitialisation du mot de passe" : "Admin Login"}
+          </CardTitle>
           <CardDescription>
-            Enter your credentials to access the admin dashboard
+            {isForgotPassword 
+              ? "Entrez votre email pour recevoir un lien de réinitialisation"
+              : "Enter your credentials to access the admin dashboard"
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {error && (
+          {error && !isForgotPassword && (
             <Alert variant="destructive" className="mb-4">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="email"
-                        placeholder="admin@example.com"
-                        {...field}
-                        disabled={isLoading}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="••••••••"
-                        {...field}
-                        disabled={isLoading}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? "Logging in..." : "Login"}
-              </Button>
-            </form>
-          </Form>
+          {isResetEmailSent && isForgotPassword && (
+            <Alert className="mb-4">
+              <AlertDescription>
+                Si cette adresse email existe, vous recevrez un lien de réinitialisation dans quelques minutes.
+              </AlertDescription>
+            </Alert>
+          )}
+          {isForgotPassword ? renderForgotPasswordForm() : renderLoginForm()}
         </CardContent>
       </Card>
     </div>

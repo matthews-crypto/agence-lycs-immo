@@ -85,6 +85,7 @@ export function AddPropertyDialog() {
     }
 
     try {
+
       const propertyData = {
         title: data.title,
         description: data.description,
@@ -98,7 +99,7 @@ export function AddPropertyDialog() {
         postal_code: data.postal_code,
         year_built: data.year_built,
         agency_id: agency.id,
-        property_status: "AVAILABLE" as const,
+        property_status: "DISPONIBLE" as const,
         is_available: true,
         amenities: [] as string[],
         photos: [] as string[],
@@ -351,3 +352,4 @@ export function AddPropertyDialog() {
     </Dialog>
   );
 }
+
