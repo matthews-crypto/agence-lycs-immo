@@ -31,6 +31,8 @@ export type Database = {
         Row: {
           address: string | null
           admin_email: string | null
+          admin_first_name: string | null
+          admin_last_name: string | null
           admin_license: string | null
           admin_name: string | null
           admin_phone: string | null
@@ -57,6 +59,8 @@ export type Database = {
         Insert: {
           address?: string | null
           admin_email?: string | null
+          admin_first_name?: string | null
+          admin_last_name?: string | null
           admin_license?: string | null
           admin_name?: string | null
           admin_phone?: string | null
@@ -83,6 +87,8 @@ export type Database = {
         Update: {
           address?: string | null
           admin_email?: string | null
+          admin_first_name?: string | null
+          admin_last_name?: string | null
           admin_license?: string | null
           admin_name?: string | null
           admin_phone?: string | null
@@ -355,6 +361,7 @@ export type Database = {
           preview_description: string | null
           property_status: Database["public"]["Enums"]["property_status"] | null
           property_type: string
+          region: string | null
           surface_area: number | null
           title: string
           updated_at: string
@@ -383,6 +390,7 @@ export type Database = {
             | Database["public"]["Enums"]["property_status"]
             | null
           property_type: string
+          region?: string | null
           surface_area?: number | null
           title: string
           updated_at?: string
@@ -411,6 +419,7 @@ export type Database = {
             | Database["public"]["Enums"]["property_status"]
             | null
           property_type?: string
+          region?: string | null
           surface_area?: number | null
           title?: string
           updated_at?: string
@@ -515,6 +524,21 @@ export type Database = {
           },
         ]
       }
+      region: {
+        Row: {
+          id: number
+          nom: string
+        }
+        Insert: {
+          id?: number
+          nom: string
+        }
+        Update: {
+          id?: number
+          nom?: string
+        }
+        Relationships: []
+      }
       search_criteria: {
         Row: {
           city: string | null
@@ -600,11 +624,13 @@ export type Database = {
       }
     }
     Enums: {
-      appointment_status: "RESERVEE" | "COMPLETED" | "ANNULEE"
+      appointment_status: "RESERVEE" | "ACHETEE" | "ANNULEE"
       property_status:
         | "DISPONIBLE"
         | "VENDUE"
         | "ARCHIVEE"
+        | "OCCUPEE"
+        | "RESERVEE"
       registration_status: "EN_ATTENTE" | "VALIDEE" | "REJETEE"
       theme_type: "LIGHT" | "DARK"
       user_role: "ADMIN" | "AGENCY" | "AGENT" | "CLIENT"

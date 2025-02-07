@@ -131,6 +131,7 @@ export function AddPropertyDialog() {
     }
 
     try {
+
       const propertyData = {
         title: data.title,
         description: data.description,
@@ -442,3 +443,4 @@ export function AddPropertyDialog() {
     </Dialog>
   );
 }
+
