@@ -1,3 +1,4 @@
+
 import { Drawer } from "vaul";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +8,7 @@ import { useAgencyContext } from "@/contexts/AgencyContext";
 import { useAgencyAuthStore } from "@/stores/useAgencyAuthStore";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AuthDrawerProps {
   open: boolean;
@@ -17,7 +19,6 @@ export function AuthDrawer({ open, onOpenChange }: AuthDrawerProps) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const { agency } = useAgencyContext();
   const { login, isLoading } = useAgencyAuthStore();
   const navigate = useNavigate();
@@ -41,6 +42,24 @@ export function AuthDrawer({ open, onOpenChange }: AuthDrawerProps) {
     toast.success("Connexion réussie");
   };
 
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast.error("Veuillez entrer votre email");
+      return;
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/${agency?.slug}/reset-password`,
+    });
+
+    if (error) {
+      toast.error("Une erreur est survenue lors de l'envoi du mail");
+      return;
+    }
+
+    toast.success("Un email de réinitialisation vous a été envoyé");
+  };
+
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange}>
       <Drawer.Portal>
@@ -49,7 +68,7 @@ export function AuthDrawer({ open, onOpenChange }: AuthDrawerProps) {
           <div className="h-full flex flex-col p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-light">
-                {isLogin ? "Connectez-vous" : "Créez un compte"}
+                Connectez-vous
               </h2>
               <Button 
                 variant="ghost" 
@@ -79,17 +98,6 @@ export function AuthDrawer({ open, onOpenChange }: AuthDrawerProps) {
                   className="w-full"
                 />
               </div>
-              {!isLogin && (
-                <div>
-                  <Input
-                    type="password"
-                    placeholder="Confirmez le mot de passe"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full"
-                  />
-                </div>
-              )}
               <Button 
                 type="submit"
                 className="w-full"
@@ -98,21 +106,19 @@ export function AuthDrawer({ open, onOpenChange }: AuthDrawerProps) {
                   backgroundColor: agency?.primary_color || '#000000',
                 }}
               >
-                {isLogin ? "Se connecter" : "S'inscrire"}
+                Se connecter
               </Button>
             </form>
 
             <div className="mt-4 text-center">
               <Button 
                 variant="link" 
-                onClick={() => setIsLogin(!isLogin)}
+                onClick={handleForgotPassword}
                 style={{
                   color: agency?.primary_color || '#000000',
                 }}
               >
-                {isLogin 
-                  ? "Pas encore de compte ? Inscrivez-vous" 
-                  : "Déjà un compte ? Connectez-vous"}
+                Mot de passe oublié ?
               </Button>
             </div>
           </div>
