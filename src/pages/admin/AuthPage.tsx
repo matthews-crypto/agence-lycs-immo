@@ -37,21 +37,21 @@ export default function AdminAuthPage() {
     },
   });
 
-  useEffect(() => {
-    // Check if user is already authenticated
-    const checkSession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (session) {
-        console.log("Session found:", session);
-        navigate("/admin/dashboard");
-      }
-      if (error) {
-        console.error("Session check error:", error);
-      }
-    };
-    
-    checkSession();
-  }, [navigate]);
+  // useEffect(() => {
+  //   // Check if user is already authenticated
+  //   const checkSession = async () => {
+  //     const { data: { session }, error } = await supabase.auth.getSession();
+  //     if (session) {
+  //       console.log("Session found:", session);
+  //       navigate("/admin/dashboard");
+  //     }
+  //     if (error) {
+  //       console.error("Session check error:", error);
+  //     }
+  //   };
+  //
+  //   checkSession();
+  // }, [navigate]);
 
   useEffect(() => {
     if (isAuthenticated) {

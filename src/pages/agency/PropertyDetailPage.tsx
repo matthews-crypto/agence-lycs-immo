@@ -18,11 +18,13 @@ import { fr } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useState, useEffect } from "react";
+import ModifyPropertyDialog from "@/components/agency/properties/ModifyProperty.tsx";
 
 export default function AgencyPropertyDetailPage() {
   const { propertyId, agencySlug } = useParams();
   const navigate = useNavigate();
   const { agency } = useAgencyContext();
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [api, setApi] = useState<any>();
 
@@ -87,19 +89,30 @@ export default function AgencyPropertyDetailPage() {
           style={{ color: agency?.primary_color }}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Retour aux biens
+            Retour aux offres
         </Button>
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold mb-2">{property.title}</h1>
-          <Button
-            onClick={() => navigate(`/${agencySlug}/properties/${propertyId}/images`)}
-            style={{
-              backgroundColor: agency?.primary_color,
-              color: "white",
-            }}
-          >
-            Gérer les images
-          </Button>
+          <div className="align-text-bottom space-x-2">
+            <Button
+                onClick={() => setIsDialogOpen(true)}
+                style={{
+                  backgroundColor: agency?.secondary_color,
+                  color: "white",
+                }}
+            >
+              Modifier Offre
+            </Button>
+            <Button
+                onClick={() => navigate(`/${agencySlug}/properties/${propertyId}/images`)}
+                style={{
+                  backgroundColor: agency?.primary_color,
+                  color: "white",
+                }}
+            >
+              Gérer les images
+            </Button>
+          </div>
         </div>
         <p className="text-muted-foreground text-lg">{property.city}</p>
       </div>
@@ -205,16 +218,7 @@ export default function AgencyPropertyDetailPage() {
                   <div className="flex items-center gap-2">
                     <BedDouble className="h-5 w-5 text-muted-foreground" />
                     <span>
-                      {property.bedrooms} chambre{property.bedrooms > 1 && "s"}
-                    </span>
-                  </div>
-                )}
-                {property.bathrooms && (
-                  <div className="flex items-center gap-2">
-                    <Bath className="h-5 w-5 text-muted-foreground" />
-                    <span>
-                      {property.bathrooms} salle{property.bathrooms > 1 && "s"} de
-                      bain
+                      {property.bedrooms} pièce{property.bedrooms > 1 && "s"}
                     </span>
                   </div>
                 )}
@@ -222,12 +226,6 @@ export default function AgencyPropertyDetailPage() {
                   <div className="flex items-center gap-2">
                     <Ruler className="h-5 w-5 text-muted-foreground" />
                     <span>{property.surface_area} m²</span>
-                  </div>
-                )}
-                {property.year_built && (
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-muted-foreground" />
-                    <span>Construit en {property.year_built}</span>
                   </div>
                 )}
               </div>
@@ -257,10 +255,19 @@ export default function AgencyPropertyDetailPage() {
             <CardContent className="p-6">
               <h2 className="text-xl font-semibold mb-4">Localisation</h2>
               <div className="space-y-2">
-                <p className="text-muted-foreground">{property.address}</p>
-                <p className="text-muted-foreground">
-                  {property.city}, {property.postal_code}
+                {property.region &&
+                    <p className="text-muted-foreground">Région de {property.region}</p>
+                }
+                {property.city && property.address && property.postal_code &&
+                    <p className="text-muted-foreground">
+                      Ville de {property.city}, {property.address}, {property.postal_code}
+                    </p>
+                }
+                {property.location_lat && property.location_lng &&
+                <p className="text-muted-foreground text-black">
+                  <strong>Coordonnées GPS</strong> : {property.location_lat}, {property.location_lng}
                 </p>
+                }
               </div>
             </CardContent>
           </Card>
@@ -277,14 +284,19 @@ export default function AgencyPropertyDetailPage() {
                     locale: fr,
                   })}
                 </p>
-                <p className="text-sm text-muted-foreground">
-                  Référence: {property.id}
-                </p>
+                {/*<p className="text-sm text-muted-foreground">*/}
+                {/*  Référence: {property.id}*/}
+                {/*</p>*/}
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
+      <ModifyPropertyDialog
+          open={isDialogOpen}
+          onOpenChange={setIsDialogOpen}
+          propertyId={propertyId}
+      />
     </div>
   );
 }

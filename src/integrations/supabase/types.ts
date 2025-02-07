@@ -339,9 +339,10 @@ export type Database = {
           address: string | null
           agency_id: string | null
           amenities: string[] | null
-          bathrooms: number | null
           bedrooms: number | null
+          price?: number | null
           city: string | null
+          region: string | null
           created_at: string
           description: string | null
           detailed_description: string | null
@@ -352,7 +353,6 @@ export type Database = {
           photos: string[] | null
           postal_code: string | null
           preview_description: string | null
-          price: number
           property_status: Database["public"]["Enums"]["property_status"] | null
           property_type: string
           surface_area: number | null
@@ -360,15 +360,15 @@ export type Database = {
           updated_at: string
           view_count: number | null
           virtual_tour_url: string | null
-          year_built: number | null
         }
         Insert: {
           address?: string | null
           agency_id?: string | null
           amenities?: string[] | null
-          bathrooms?: number | null
           bedrooms?: number | null
+          price?: number | null
           city?: string | null
+          region?: string | null
           created_at?: string
           description?: string | null
           detailed_description?: string | null
@@ -379,7 +379,6 @@ export type Database = {
           photos?: string[] | null
           postal_code?: string | null
           preview_description?: string | null
-          price: number
           property_status?:
             | Database["public"]["Enums"]["property_status"]
             | null
@@ -389,15 +388,15 @@ export type Database = {
           updated_at?: string
           view_count?: number | null
           virtual_tour_url?: string | null
-          year_built?: number | null
         }
         Update: {
           address?: string | null
           agency_id?: string | null
           amenities?: string[] | null
-          bathrooms?: number | null
           bedrooms?: number | null
+          price?: number | null
           city?: string | null
+          region?: string | null
           created_at?: string
           description?: string | null
           detailed_description?: string | null
@@ -408,7 +407,6 @@ export type Database = {
           photos?: string[] | null
           postal_code?: string | null
           preview_description?: string | null
-          price?: number
           property_status?:
             | Database["public"]["Enums"]["property_status"]
             | null
@@ -418,7 +416,6 @@ export type Database = {
           updated_at?: string
           view_count?: number | null
           virtual_tour_url?: string | null
-          year_built?: number | null
         }
         Relationships: [
           {
@@ -429,7 +426,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
+      },
+      region:{
+        Row: {
+          id: string,
+          nom: string | null
+        },
+        Insert: {
+          id ?: string,
+          nom?: string | null
+        },
+        Update: {
+          id ?: string,
+          nom?: string | null
+        },
+        Relationships: []
+      },
+      zone: {
+        Row: {
+          id: string
+          nom: string | null
+          region_id: string | null
+        },
+        Insert: {
+          id ?: string
+          nom?: string | null
+          region_id?: string | null
+        },
+        Update: {
+          id ?: string,
+          nom?: string | null
+          region_id?: string | null
+        },
+        Relationships: [
+          {
+            foreignKeyName: "zone_region_id"
+            columns: ["region_id"]
+            isManyToOne: true
+            referencedRelation: "region"
+            referencedColumns: ["id"]
+          }
+        ]
+      },
       real_estate_agents: {
         Row: {
           agency_id: string | null
@@ -562,13 +600,11 @@ export type Database = {
       }
     }
     Enums: {
-      appointment_status: "SCHEDULED" | "COMPLETED" | "CANCELLED"
+      appointment_status: "RESERVEE" | "COMPLETED" | "ANNULEE"
       property_status:
-        | "AVAILABLE"
-        | "UNDER_OPTION"
-        | "SOLD"
-        | "RENTED"
-        | "ARCHIVED"
+        | "DISPONIBLE"
+        | "VENDUE"
+        | "ARCHIVEE"
       registration_status: "EN_ATTENTE" | "VALIDEE" | "REJETEE"
       theme_type: "LIGHT" | "DARK"
       user_role: "ADMIN" | "AGENCY" | "AGENT" | "CLIENT"
