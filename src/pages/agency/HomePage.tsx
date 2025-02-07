@@ -23,6 +23,15 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 
+const propertyTypeLabels: { [key: string]: string } = {
+  "APARTMENT": "Appartement",
+  "HOUSE": "Maison",
+  "LAND": "Terrain",
+  "COMMERCIAL": "Local commercial",
+  "OFFICE": "Bureau",
+  "OTHER": "Autre"
+};
+
 const propertyTypes = [
   { value: "APARTMENT", label: "Appartement" },
   { value: "HOUSE", label: "Maison" },
@@ -299,7 +308,7 @@ export default function AgencyHomePage() {
                 className="cursor-pointer"
                 onClick={() => handlePropertyClick(property.id)}
               >
-                <div className="aspect-[4/3] overflow-hidden rounded-lg">
+                <div className="aspect-[4/3] overflow-hidden rounded-lg relative">
                   {property.photos?.[0] ? (
                     <img
                       src={property.photos[0]}
@@ -311,6 +320,15 @@ export default function AgencyHomePage() {
                       <BedDouble className="w-12 h-12 text-gray-400" />
                     </div>
                   )}
+                  <div 
+                    className="absolute top-4 left-4 px-3 py-1 rounded-full text-sm font-medium"
+                    style={{
+                      backgroundColor: agency?.primary_color || '#000000',
+                      color: 'white',
+                    }}
+                  >
+                    {propertyTypeLabels[property.property_type] || property.property_type}
+                  </div>
                 </div>
                 <div className="mt-4">
                   <h3 className="text-xl font-light">{property.title}</h3>
@@ -364,7 +382,7 @@ export default function AgencyHomePage() {
                     className="relative group cursor-pointer"
                     onClick={() => handlePropertyClick(property.id)}
                   >
-                    <div className="aspect-[4/3] overflow-hidden rounded-lg">
+                    <div className="aspect-[4/3] overflow-hidden rounded-lg relative">
                       {property.photos?.[0] ? (
                         <img
                           src={property.photos[0]}
@@ -376,6 +394,15 @@ export default function AgencyHomePage() {
                           <BedDouble className="w-12 h-12 text-gray-400" />
                         </div>
                       )}
+                      <div 
+                        className="absolute top-4 left-4 px-3 py-1 rounded-full text-sm font-medium"
+                        style={{
+                          backgroundColor: agency?.primary_color || '#000000',
+                          color: 'white',
+                        }}
+                      >
+                        {propertyTypeLabels[property.property_type] || property.property_type}
+                      </div>
                     </div>
                     <div className="mt-4">
                       <h3 className="text-xl font-light">{property.title}</h3>
