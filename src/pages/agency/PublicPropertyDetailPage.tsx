@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Plus } from "lucide-react";
@@ -7,6 +8,13 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import PropertyMap from "@/components/PropertyMap";
+
+const getAbsoluteUrl = (path: string) => {
+  if (!path) return null;
+  const fullUrl = path.startsWith('http') ? path : `${window.location.origin}${path}`;
+  // Ajout d'un timestamp et forçage du protocole HTTPS
+  return fullUrl.replace('http://', 'https://') + `?cache=${Date.now()}`;
+};
 
 export default function PublicPropertyDetailPage() {
   const navigate = useNavigate();
@@ -32,26 +40,23 @@ export default function PublicPropertyDetailPage() {
   // Update meta tags when property data is loaded
   useEffect(() => {
     if (property) {
-      // Get the truncated description (100 characters)
       const truncatedDescription = property.description
         ? property.description.length > 100
           ? `${property.description.substring(0, 100)}...`
           : property.description
         : "";
 
-      // Remove any existing meta tags to avoid duplicates
       document.querySelectorAll('meta[property^="og:"], meta[name^="twitter:"]').forEach(element => {
         element.remove();
       });
 
-      // Update meta tags
       const metaTags = [
         { property: "og:title", content: property.title },
         { property: "og:description", content: truncatedDescription },
         { property: "og:type", content: "website" },
         { 
           property: "og:image", 
-          content: property.photos?.[0] || "" 
+          content: property.photos?.[0] ? getAbsoluteUrl(property.photos[0]) : "" 
         },
         { 
           property: "og:url", 
@@ -71,11 +76,10 @@ export default function PublicPropertyDetailPage() {
         { name: "twitter:description", content: truncatedDescription },
         { 
           name: "twitter:image", 
-          content: property.photos?.[0] || "" 
+          content: property.photos?.[0] ? getAbsoluteUrl(property.photos[0]) : "" 
         }
       ];
 
-      // Update existing meta tags or create new ones
       metaTags.forEach(({ property: prop, name, content }) => {
         let element = document.createElement('meta');
         if (prop) {
@@ -88,7 +92,6 @@ export default function PublicPropertyDetailPage() {
       });
     }
 
-    // Cleanup function to remove meta tags when component unmounts
     return () => {
       document.querySelectorAll('meta[property^="og:"], meta[name^="twitter:"]').forEach(element => {
         element.remove();
