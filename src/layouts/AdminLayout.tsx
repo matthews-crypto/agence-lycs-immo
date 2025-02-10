@@ -45,7 +45,7 @@ export default function AdminLayout() {
   }
 
   return (
-      <SessionContext.Provider value={session}>
+      
         <SidebarProvider defaultOpen={true}>
           <div className="flex min-h-screen w-full bg-background">
             <AdminSidebar />
@@ -54,6 +54,6 @@ export default function AdminLayout() {
             </main>
           </div>
         </SidebarProvider>
-      </SessionContext.Provider>
+      
   )
 }
