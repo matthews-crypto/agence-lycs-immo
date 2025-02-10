@@ -112,7 +112,7 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
         .rpc('is_admin', { user_id: signInData.user.id });
 
       if (adminCheckError) throw adminCheckError;
-      if (!isAdmin) throw new Error("Unauthorized: Not an admin user");
+      if (!isAdmin) throw new Error("Email ou mot de passe incorrect");
 
       set({ isAuthenticated: true, error: null });
       toast.success("Connexion réussie");
