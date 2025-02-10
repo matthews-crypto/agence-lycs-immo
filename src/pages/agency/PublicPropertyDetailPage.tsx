@@ -1,13 +1,9 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import PropertyMap from "@/components/PropertyMap";
@@ -32,6 +28,70 @@ export default function PublicPropertyDetailPage() {
       return data;
     },
   });
+
+  // Update meta tags when property data is loaded
+  useEffect(() => {
+    if (property) {
+      // Get the truncated description (100 characters)
+      const truncatedDescription = property.description
+        ? property.description.length > 100
+          ? `${property.description.substring(0, 100)}...`
+          : property.description
+        : "";
+
+      // Update meta tags
+      const metaTags = [
+        { property: "og:title", content: property.title },
+        { property: "og:description", content: truncatedDescription },
+        { property: "og:type", content: "website" },
+        { 
+          property: "og:image", 
+          content: property.photos?.[0] || "" 
+        },
+        { 
+          property: "og:url", 
+          content: window.location.href 
+        },
+        { 
+          property: "og:price:amount", 
+          content: property.price.toString() 
+        },
+        { 
+          property: "og:price:currency", 
+          content: "FCFA" 
+        },
+        // Twitter Card tags
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: property.title },
+        { name: "twitter:description", content: truncatedDescription },
+        { 
+          name: "twitter:image", 
+          content: property.photos?.[0] || "" 
+        }
+      ];
+
+      // Update existing meta tags or create new ones
+      metaTags.forEach(({ property: prop, name, content }) => {
+        let element;
+        if (prop) {
+          element = document.querySelector(`meta[property="${prop}"]`);
+          if (!element) {
+            element = document.createElement('meta');
+            element.setAttribute('property', prop);
+            document.head.appendChild(element);
+          }
+        } else if (name) {
+          element = document.querySelector(`meta[name="${name}"]`);
+          if (!element) {
+            element = document.createElement('meta');
+            element.setAttribute('name', name);
+            document.head.appendChild(element);
+          }
+        }
+        element?.setAttribute('content', content);
+      });
+    }
+  }, [property]);
 
   // Fetch similar properties
   const { data: similarProperties } = useQuery({
@@ -97,7 +157,6 @@ export default function PublicPropertyDetailPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation Bar */}
       <div 
         className="w-full h-16 flex items-center px-4 relative"
         style={{ backgroundColor: property.agencies?.primary_color || '#0066FF' }}
@@ -126,7 +185,6 @@ export default function PublicPropertyDetailPage() {
       </div>
 
       <div className="container mx-auto px-4 py-6">
-        {/* Property Type and Status Badges */}
         <div className="flex gap-2 mb-4">
           <Badge variant="secondary" className="text-sm">
             {property.property_type}
@@ -139,15 +197,12 @@ export default function PublicPropertyDetailPage() {
           </Badge>
         </div>
 
-        {/* Property Title and Location */}
         <h1 className="text-3xl font-bold text-gray-900 mb-2">{property.title}</h1>
         <p className="text-gray-600 mb-6">
           {property.region && `${property.region}, `}{property.city}
         </p>
 
-        {/* Image Gallery and Map Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Image Gallery */}
           <div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
               {property.photos && property.photos.length > 0 && (
@@ -171,7 +226,6 @@ export default function PublicPropertyDetailPage() {
             </div>
           </div>
 
-          {/* Map */}
           <div className="h-[300px]">
             <PropertyMap 
               latitude={property.location_lat} 
@@ -180,7 +234,6 @@ export default function PublicPropertyDetailPage() {
           </div>
         </div>
 
-        {/* Main Info Cards */}
         <div className="grid grid-cols-3 gap-4 mb-8">
           <div className="bg-gray-100 p-4 rounded-lg text-center">
             <p className="text-2xl font-bold text-gray-900">
@@ -199,13 +252,11 @@ export default function PublicPropertyDetailPage() {
           </div>
         </div>
 
-        {/* Description */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold mb-4">Description</h2>
           <p className="text-gray-600 leading-relaxed">{property.description}</p>
         </div>
 
-        {/* Amenities */}
         {property.amenities && property.amenities.length > 0 && (
           <div className="mb-12">
             <h2 className="text-2xl font-bold mb-4">Équipements</h2>
@@ -219,7 +270,6 @@ export default function PublicPropertyDetailPage() {
           </div>
         )}
 
-        {/* Similar Properties */}
         {similarProperties && similarProperties.length > 0 && (
           <div>
             <h2 className="text-2xl font-bold mb-6">Biens Similaires</h2>
@@ -253,7 +303,6 @@ export default function PublicPropertyDetailPage() {
         )}
       </div>
 
-      {/* Image Gallery Modal */}
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
         <DialogContent className="max-w-5xl max-h-[90vh] p-0">
           {selectedImage && (
