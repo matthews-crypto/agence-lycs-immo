@@ -39,6 +39,11 @@ export default function PublicPropertyDetailPage() {
           : property.description
         : "";
 
+      // Remove any existing meta tags to avoid duplicates
+      document.querySelectorAll('meta[property^="og:"], meta[name^="twitter:"]').forEach(element => {
+        element.remove();
+      });
+
       // Update meta tags
       const metaTags = [
         { property: "og:title", content: property.title },
@@ -72,25 +77,23 @@ export default function PublicPropertyDetailPage() {
 
       // Update existing meta tags or create new ones
       metaTags.forEach(({ property: prop, name, content }) => {
-        let element;
+        let element = document.createElement('meta');
         if (prop) {
-          element = document.querySelector(`meta[property="${prop}"]`);
-          if (!element) {
-            element = document.createElement('meta');
-            element.setAttribute('property', prop);
-            document.head.appendChild(element);
-          }
+          element.setAttribute('property', prop);
         } else if (name) {
-          element = document.querySelector(`meta[name="${name}"]`);
-          if (!element) {
-            element = document.createElement('meta');
-            element.setAttribute('name', name);
-            document.head.appendChild(element);
-          }
+          element.setAttribute('name', name);
         }
-        element?.setAttribute('content', content);
+        element.setAttribute('content', content);
+        document.head.appendChild(element);
       });
     }
+
+    // Cleanup function to remove meta tags when component unmounts
+    return () => {
+      document.querySelectorAll('meta[property^="og:"], meta[name^="twitter:"]').forEach(element => {
+        element.remove();
+      });
+    };
   }, [property]);
 
   // Fetch similar properties
