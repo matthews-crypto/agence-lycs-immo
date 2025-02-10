@@ -99,7 +99,13 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
         password
       });
 
-      if (signInError) throw signInError;
+       if (signInError) {
+        // Personnalisation des messages d'erreur
+        if (signInError instanceof AuthError && signInError.message === 'Invalid login credentials') {
+          throw new Error('Email ou mot de passe incorrect');
+        }
+        throw signInError;
+      }
       if (!signInData.user) throw new Error("No user data received");
 
       const { data: isAdmin, error: adminCheckError } = await supabase
