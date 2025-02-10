@@ -44,8 +44,8 @@ const propertySchema = z.object({
   surface_area: z.coerce.number().optional(),
   address: z.string().min(1, "L'adresse est requise"),
   city: z.string().optional(),
-  location_lat: z.coerce.number().min(1, "La latitude est requise"),
-  location_lng:  z.coerce.number().min(1, "La longitude est requise"),
+  location_lat: z.coerce.number().min(-90,"la latitude doit etre compris entre -90 et 90").max(90,"la latitude doit etre compris entre -90 et 90").nullable(),
+  location_lng: z.coerce.number().min(-180,"la longitude doit etre compris entre -180 et 180").max(180,"la longitude doit etre compris entre -180 et 180").nullable(),
   region: z.string().min(1, "La région est requise"),
   postal_code: z.string().optional(),
 });
