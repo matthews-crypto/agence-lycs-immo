@@ -23,18 +23,20 @@ export default function PropertyMetaTags({
       : description
     : "";
 
+  const pageTitle = `${title} | ${agencyName || 'LYCS Immobilier'}`;
+
   return (
     <Helmet prioritizeSeoTags>
       {/* Title et Description de base */}
-      <title>{title} | LYCS Immobilier</title>
+      <title>{pageTitle}</title>
       <meta name="description" content={truncatedDescription} />
 
       {/* Open Graph tags */}
-      <meta property="og:title" content={title} />
+      <meta property="og:title" content={pageTitle} />
       <meta property="og:description" content={truncatedDescription} />
       <meta property="og:type" content="website" />
       <meta property="og:url" content={window.location.href} />
-      <meta property="og:site_name" content="LYCS Immobilier" />
+      <meta property="og:site_name" content={agencyName || 'LYCS Immobilier'} />
       
       {/* Image tags */}
       {photos?.[0] && (
@@ -54,7 +56,7 @@ export default function PropertyMetaTags({
 
       {/* Twitter Card tags */}
       <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={title} />
+      <meta name="twitter:title" content={pageTitle} />
       <meta name="twitter:description" content={truncatedDescription} />
       {photos?.[0] && (
         <meta name="twitter:image" content={getAbsoluteUrl(photos[0])} />

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +12,7 @@ import PropertyHeader from "@/components/property/PropertyHeader";
 import PropertyImageGallery from "@/components/property/PropertyImageGallery";
 import PropertyStats from "@/components/property/PropertyStats";
 import SimilarProperties from "@/components/property/SimilarProperties";
-import { getAbsoluteUrl } from "@/utils/urlUtils";
+import PropertyMetaTags from "@/components/property/PropertyMetaTags";
 
 export default function PublicPropertyDetailPage() {
   const navigate = useNavigate();
@@ -33,57 +33,6 @@ export default function PublicPropertyDetailPage() {
       return data;
     },
   });
-
-  useEffect(() => {
-    if (property) {
-      const head = document.head;
-
-      // Fonction pour mettre à jour un meta tag
-      const updateMetaTag = (property: string, content: string) => {
-        const meta = head.querySelector(`meta[property="${property}"]`) ||
-                    head.querySelector(`meta[name="${property}"]`);
-        if (meta) {
-          meta.setAttribute('content', content);
-        }
-      };
-
-      // Mise à jour des meta tags
-      updateMetaTag('og:title', `${property.title} | LYCS Immobilier`);
-      updateMetaTag('og:description', property.description?.substring(0, 160) || '');
-      updateMetaTag('og:image', property.photos?.[0] ? getAbsoluteUrl(property.photos[0]) : '');
-      updateMetaTag('og:url', window.location.href);
-      updateMetaTag('og:price:amount', property.price?.toString() || '0');
-      updateMetaTag('og:image:secure_url', property.photos?.[0] ? getAbsoluteUrl(property.photos[0]) : '');
-      updateMetaTag('twitter:title', `${property.title} | LYCS Immobilier`);
-      updateMetaTag('twitter:description', property.description?.substring(0, 160) || '');
-      updateMetaTag('twitter:image', property.photos?.[0] ? getAbsoluteUrl(property.photos[0]) : '');
-
-      // Mise à jour du titre
-      document.title = `${property.title} | LYCS Immobilier`;
-
-      // Log pour debug
-      console.log('Meta tags updated:', {
-        title: property.title,
-        description: property.description,
-        image: property.photos?.[0] ? getAbsoluteUrl(property.photos[0]) : '',
-        url: window.location.href,
-        price: property.price
-      });
-
-      // Nettoyage au démontage du composant
-      return () => {
-        document.title = 'LYCS Immobilier';
-        updateMetaTag('og:title', 'LYCS Immobilier');
-        updateMetaTag('og:description', 'Découvrez nos biens immobiliers de qualité');
-        updateMetaTag('og:image', 'https://preview--agence-lycs-immo.lovable.app/og-image.png');
-        updateMetaTag('og:url', 'https://preview--agence-lycs-immo.lovable.app');
-        updateMetaTag('og:price:amount', '0');
-        updateMetaTag('twitter:title', 'LYCS Immobilier');
-        updateMetaTag('twitter:description', 'Découvrez nos biens immobiliers de qualité');
-        updateMetaTag('twitter:image', 'https://preview--agence-lycs-immo.lovable.app/og-image.png');
-      };
-    }
-  }, [property]);
 
   const { data: similarProperties } = useQuery({
     queryKey: ["similar-properties", property?.property_type, property?.price, property?.bedrooms, property?.region],
@@ -148,6 +97,14 @@ export default function PublicPropertyDetailPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <PropertyMetaTags
+        title={property.title}
+        description={property.description || ''}
+        price={property.price}
+        photos={property.photos}
+        agencyName={property.agencies?.agency_name}
+      />
+
       <PropertyHeader
         onBack={handleBack}
         agencyLogo={property.agencies?.logo_url}
