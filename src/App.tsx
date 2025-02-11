@@ -48,10 +48,12 @@ const App = () => {
     if (process.env.NODE_ENV === 'production') {
       const userAgent = window.navigator.userAgent;
       if (shouldPrerender(userAgent)) {
-        console.log('Redirecting to Rendertron:', getPrerenderUrl(window.location.href));
+        // Attendre que le contenu soit chargé
         setTimeout(() => {
-          window.location.href = getPrerenderUrl(window.location.href);
-        }, 100);
+          const prerenderUrl = getPrerenderUrl(window.location.href);
+          console.log('Redirecting to Rendertron:', prerenderUrl);
+          window.location.href = prerenderUrl;
+        }, 1000); // Attendre 1 seconde
       }
     }
   }, []);

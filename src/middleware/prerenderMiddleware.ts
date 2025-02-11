@@ -26,5 +26,5 @@ export function shouldPrerender(userAgent: string = '') {
 }
 
 export function getPrerenderUrl(originalUrl: string) {
-  return `${RENDERTRON_URL}/render/${encodeURIComponent(originalUrl)}?waitForSelector=meta[property="og:title"]`;
+  return `${RENDERTRON_URL}/render/${encodeURIComponent(originalUrl)}?wc-inject-shadydom=true&waitForSelector=meta[property="og:title"]&timeout=10000`;
 }
