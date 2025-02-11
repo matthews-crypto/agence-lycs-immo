@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster"
 import { Toaster as Sonner } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -44,9 +45,12 @@ const queryClient = new QueryClient()
 
 const App = () => {
   useEffect(() => {
-    const userAgent = window.navigator.userAgent;
-    if (shouldPrerender(userAgent)) {
-      window.location.href = getPrerenderUrl(window.location.href);
+    if (process.env.NODE_ENV === 'production') {
+      const userAgent = window.navigator.userAgent;
+      if (shouldPrerender(userAgent)) {
+        console.log('Redirecting to Rendertron:', getPrerenderUrl(window.location.href));
+        window.location.href = getPrerenderUrl(window.location.href);
+      }
     }
   }, []);
 

@@ -4,17 +4,25 @@ const RENDERTRON_URL = 'https://middlewarepreview-production.up.railway.app';
 const BOTS = [
   'bot',
   'facebookexternalhit',
+  'facebookcatalog',
   'whatsapp',
   'twitter',
-  'linkedin',
+  'pinterest',
+  'linkedinbot',
   'telegram',
   'discord',
   'slack',
-  'viber'
+  'viber',
+  'skype',
+  'snapchat',
+  'googlebot',
+  'Chrome-Lighthouse'
 ];
 
 export function shouldPrerender(userAgent: string = '') {
-  return BOTS.some(bot => userAgent.toLowerCase().includes(bot));
+  const lowercaseUA = userAgent.toLowerCase();
+  return BOTS.some(bot => lowercaseUA.includes(bot.toLowerCase())) ||
+    /facebookexternalhit|whatsapp|telegram|twitter/i.test(lowercaseUA);
 }
 
 export function getPrerenderUrl(originalUrl: string) {
