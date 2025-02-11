@@ -17,6 +17,8 @@ export default function PropertyMetaTags({
   photos,
   agencyName
 }: PropertyMetaTagsProps) {
+  console.log('PropertyMetaTags - Photos reçues:', photos);
+  
   const truncatedDescription = description
     ? description.length > 160
       ? `${description.substring(0, 160)}...`
@@ -24,6 +26,12 @@ export default function PropertyMetaTags({
     : "";
 
   const pageTitle = `${title} | ${agencyName || 'LYCS Immobilier'}`;
+  
+  const firstPhotoUrl = photos?.[0];
+  console.log('PropertyMetaTags - Première photo:', firstPhotoUrl);
+  
+  const absoluteImageUrl = firstPhotoUrl ? getAbsoluteUrl(firstPhotoUrl) : '';
+  console.log('PropertyMetaTags - URL absolue de l\'image:', absoluteImageUrl);
 
   return (
     <Helmet prioritizeSeoTags>
@@ -39,10 +47,10 @@ export default function PropertyMetaTags({
       <meta property="og:site_name" content={agencyName || 'LYCS Immobilier'} />
       
       {/* Image tags */}
-      {photos?.[0] && (
+      {firstPhotoUrl && (
         <>
-          <meta property="og:image" content={getAbsoluteUrl(photos[0])} />
-          <meta property="og:image:secure_url" content={getAbsoluteUrl(photos[0])} />
+          <meta property="og:image" content={absoluteImageUrl} />
+          <meta property="og:image:secure_url" content={absoluteImageUrl} />
           <meta property="og:image:type" content="image/jpeg" />
           <meta property="og:image:width" content="1200" />
           <meta property="og:image:height" content="630" />
@@ -58,8 +66,8 @@ export default function PropertyMetaTags({
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={pageTitle} />
       <meta name="twitter:description" content={truncatedDescription} />
-      {photos?.[0] && (
-        <meta name="twitter:image" content={getAbsoluteUrl(photos[0])} />
+      {firstPhotoUrl && (
+        <meta name="twitter:image" content={absoluteImageUrl} />
       )}
     </Helmet>
   );
