@@ -1,8 +1,9 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,6 @@ import PropertyMap from "@/components/PropertyMap";
 const getAbsoluteUrl = (path: string) => {
   if (!path) return null;
   const fullUrl = path.startsWith('http') ? path : `${window.location.origin}${path}`;
-  // Ajout d'un timestamp et forçage du protocole HTTPS
   return fullUrl.replace('http://', 'https://') + `?cache=${Date.now()}`;
 };
 
@@ -161,8 +161,45 @@ export default function PublicPropertyDetailPage() {
 
   if (!property) return null;
 
+  const truncatedDescription = property.description
+    ? property.description.length > 100
+      ? `${property.description.substring(0, 100)}...`
+      : property.description
+    : "";
+
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        {/* Tags de base */}
+        <title>{property.title}</title>
+        <meta name="description" content={truncatedDescription} />
+
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content={property.title} />
+        <meta property="og:description" content={truncatedDescription} />
+        <meta property="og:url" content={window.location.href} />
+        {property.photos?.[0] && (
+          <>
+            <meta property="og:image" content={getAbsoluteUrl(property.photos[0])} />
+            <meta property="og:image:secure_url" content={getAbsoluteUrl(property.photos[0])} />
+            <meta property="og:image:type" content="image/jpeg" />
+            <meta property="og:image:width" content="1200" />
+            <meta property="og:image:height" content="630" />
+          </>
+        )}
+        <meta property="og:price:amount" content={property.price.toString()} />
+        <meta property="og:price:currency" content="FCFA" />
+
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={property.title} />
+        <meta name="twitter:description" content={truncatedDescription} />
+        {property.photos?.[0] && (
+          <meta name="twitter:image" content={getAbsoluteUrl(property.photos[0])} />
+        )}
+      </Helmet>
+
       <div 
         className="w-full h-16 flex items-center px-4 relative"
         style={{ backgroundColor: property.agencies?.primary_color || '#0066FF' }}
