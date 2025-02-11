@@ -49,7 +49,9 @@ const App = () => {
       const userAgent = window.navigator.userAgent;
       if (shouldPrerender(userAgent)) {
         console.log('Redirecting to Rendertron:', getPrerenderUrl(window.location.href));
-        window.location.href = getPrerenderUrl(window.location.href);
+        setTimeout(() => {
+          window.location.href = getPrerenderUrl(window.location.href);
+        }, 100);
       }
     }
   }, []);
@@ -161,7 +163,7 @@ const App = () => {
         </TooltipProvider>
       </QueryClientProvider>
     </HelmetProvider>
-  )
+  );
 }
 
 export default App
