@@ -1,20 +1,18 @@
 
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ArrowLeft } from "lucide-react";
 import PropertyMap from "@/components/PropertyMap";
-
-const getAbsoluteUrl = (path: string) => {
-  if (!path) return null;
-  const fullUrl = path.startsWith('http') ? path : `${window.location.origin}${path}`;
-  return fullUrl.replace('http://', 'https://') + `?cache=${Date.now()}`;
-};
+import PropertyHeader from "@/components/property/PropertyHeader";
+import PropertyImageGallery from "@/components/property/PropertyImageGallery";
+import PropertyStats from "@/components/property/PropertyStats";
+import SimilarProperties from "@/components/property/SimilarProperties";
+import PropertyMetaTags from "@/components/property/PropertyMetaTags";
 
 export default function PublicPropertyDetailPage() {
   const navigate = useNavigate();
@@ -22,7 +20,6 @@ export default function PublicPropertyDetailPage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
 
-  // Fetch property details
   const { data: property } = useQuery({
     queryKey: ["property", propertyId],
     queryFn: async () => {
@@ -37,69 +34,6 @@ export default function PublicPropertyDetailPage() {
     },
   });
 
-  // Update meta tags when property data is loaded
-  useEffect(() => {
-    if (property) {
-      const truncatedDescription = property.description
-        ? property.description.length > 100
-          ? `${property.description.substring(0, 100)}...`
-          : property.description
-        : "";
-
-      document.querySelectorAll('meta[property^="og:"], meta[name^="twitter:"]').forEach(element => {
-        element.remove();
-      });
-
-      const metaTags = [
-        { property: "og:title", content: property.title },
-        { property: "og:description", content: truncatedDescription },
-        { property: "og:type", content: "website" },
-        { 
-          property: "og:image", 
-          content: property.photos?.[0] ? getAbsoluteUrl(property.photos[0]) : "" 
-        },
-        { 
-          property: "og:url", 
-          content: window.location.href 
-        },
-        { 
-          property: "og:price:amount", 
-          content: property.price.toString() 
-        },
-        { 
-          property: "og:price:currency", 
-          content: "FCFA" 
-        },
-        // Twitter Card tags
-        { name: "twitter:card", content: "summary_large_image" },
-        { name: "twitter:title", content: property.title },
-        { name: "twitter:description", content: truncatedDescription },
-        { 
-          name: "twitter:image", 
-          content: property.photos?.[0] ? getAbsoluteUrl(property.photos[0]) : "" 
-        }
-      ];
-
-      metaTags.forEach(({ property: prop, name, content }) => {
-        let element = document.createElement('meta');
-        if (prop) {
-          element.setAttribute('property', prop);
-        } else if (name) {
-          element.setAttribute('name', name);
-        }
-        element.setAttribute('content', content);
-        document.head.appendChild(element);
-      });
-    }
-
-    return () => {
-      document.querySelectorAll('meta[property^="og:"], meta[name^="twitter:"]').forEach(element => {
-        element.remove();
-      });
-    };
-  }, [property]);
-
-  // Fetch similar properties
   const { data: similarProperties } = useQuery({
     queryKey: ["similar-properties", property?.property_type, property?.price, property?.bedrooms, property?.region],
     enabled: !!property,
@@ -161,71 +95,21 @@ export default function PublicPropertyDetailPage() {
 
   if (!property) return null;
 
-  const truncatedDescription = property.description
-    ? property.description.length > 100
-      ? `${property.description.substring(0, 100)}...`
-      : property.description
-    : "";
-
   return (
     <div className="min-h-screen bg-background">
-      <Helmet>
-        {/* Tags de base */}
-        <title>{property.title}</title>
-        <meta name="description" content={truncatedDescription} />
+      <PropertyMetaTags
+        title={property.title}
+        description={property.description || ""}
+        price={property.price}
+        photos={property.photos}
+      />
 
-        {/* Open Graph / Facebook */}
-        <meta property="og:type" content="website" />
-        <meta property="og:title" content={property.title} />
-        <meta property="og:description" content={truncatedDescription} />
-        <meta property="og:url" content={window.location.href} />
-        {property.photos?.[0] && (
-          <>
-            <meta property="og:image" content={getAbsoluteUrl(property.photos[0])} />
-            <meta property="og:image:secure_url" content={getAbsoluteUrl(property.photos[0])} />
-            <meta property="og:image:type" content="image/jpeg" />
-            <meta property="og:image:width" content="1200" />
-            <meta property="og:image:height" content="630" />
-          </>
-        )}
-        <meta property="og:price:amount" content={property.price.toString()} />
-        <meta property="og:price:currency" content="FCFA" />
-
-        {/* Twitter Card */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={property.title} />
-        <meta name="twitter:description" content={truncatedDescription} />
-        {property.photos?.[0] && (
-          <meta name="twitter:image" content={getAbsoluteUrl(property.photos[0])} />
-        )}
-      </Helmet>
-
-      <div 
-        className="w-full h-16 flex items-center px-4 relative"
-        style={{ backgroundColor: property.agencies?.primary_color || '#0066FF' }}
-      >
-        <Button
-          variant="ghost"
-          className="absolute left-4 text-white hover:text-white/80"
-          onClick={handleBack}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Retour
-        </Button>
-        <div className="flex-1 flex justify-center items-center">
-          {property.agencies?.logo_url ? (
-            <img 
-              src={property.agencies.logo_url} 
-              alt={property.agencies.agency_name} 
-              className="h-10 object-contain"
-            />
-          ) : (
-            <span className="text-white text-lg font-semibold">
-              {property.agencies?.agency_name}
-            </span>
-          )}
-        </div>
-      </div>
+      <PropertyHeader
+        onBack={handleBack}
+        agencyLogo={property.agencies?.logo_url}
+        agencyName={property.agencies?.agency_name}
+        primaryColor={property.agencies?.primary_color}
+      />
 
       <div className="container mx-auto px-4 py-6">
         <div className="flex gap-2 mb-4">
@@ -247,26 +131,11 @@ export default function PublicPropertyDetailPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-              {property.photos && property.photos.length > 0 && (
-                <>
-                  <div className="col-span-full relative">
-                    <img
-                      src={property.photos[0]}
-                      alt={property.title}
-                      className="w-full aspect-[16/9] object-cover rounded-lg cursor-pointer"
-                      onClick={() => handleImageClick(property.photos[0], 0)}
-                    />
-                    {property.photos.length > 1 && (
-                      <div className="absolute bottom-4 right-4 bg-black/70 text-white px-3 py-1 rounded-full flex items-center">
-                        <Plus className="h-4 w-4 mr-1" />
-                        {property.photos.length - 1}
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
+            <PropertyImageGallery
+              images={property.photos || []}
+              title={property.title}
+              onImageClick={handleImageClick}
+            />
           </div>
 
           <div className="h-[300px]">
@@ -277,23 +146,11 @@ export default function PublicPropertyDetailPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className="bg-gray-100 p-4 rounded-lg text-center">
-            <p className="text-2xl font-bold text-gray-900">
-              {property.price.toLocaleString()} FCFA
-            </p>
-          </div>
-          <div className="bg-gray-100 p-4 rounded-lg text-center">
-            <p className="text-2xl font-bold text-gray-900">
-              {property.bedrooms} Pièces
-            </p>
-          </div>
-          <div className="bg-gray-100 p-4 rounded-lg text-center">
-            <p className="text-2xl font-bold text-gray-900">
-              {property.surface_area} m²
-            </p>
-          </div>
-        </div>
+        <PropertyStats
+          price={property.price}
+          bedrooms={property.bedrooms}
+          surfaceArea={property.surface_area}
+        />
 
         <div className="mb-8">
           <h2 className="text-2xl font-bold mb-4">Description</h2>
@@ -314,35 +171,19 @@ export default function PublicPropertyDetailPage() {
         )}
 
         {similarProperties && similarProperties.length > 0 && (
-          <div>
-            <h2 className="text-2xl font-bold mb-6">Biens Similaires</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {similarProperties.map((prop) => (
-                <div
-                  key={prop.id}
-                  onClick={() => handleSimilarPropertyClick(prop.id)}
-                  className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
-                >
-                  <img
-                    src={prop.photos?.[0]}
-                    alt={prop.title}
-                    className="w-full h-48 object-cover"
-                  />
-                  <div className="p-4">
-                    <h3 className="font-bold text-lg mb-2">{prop.title}</h3>
-                    <div className="flex justify-between items-center text-gray-600 mb-2">
-                      <span>{prop.price.toLocaleString()} FCFA</span>
-                      <span>•</span>
-                      <span>{prop.bedrooms} Pièces</span>
-                      <span>•</span>
-                      <span>{prop.surface_area} m²</span>
-                    </div>
-                    <p style={{ color: property.agencies?.primary_color }}>{prop.region}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <SimilarProperties
+            properties={similarProperties.map(prop => ({
+              id: prop.id,
+              title: prop.title,
+              photos: prop.photos || [],
+              price: prop.price,
+              bedrooms: prop.bedrooms,
+              surfaceArea: prop.surface_area,
+              region: prop.region,
+              onClick: handleSimilarPropertyClick
+            }))}
+            agencyPrimaryColor={property.agencies?.primary_color}
+          />
         )}
       </div>
 
