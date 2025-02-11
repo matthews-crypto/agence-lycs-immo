@@ -8,7 +8,8 @@ import RootLayout from "@/layouts/RootLayout"
 import AdminLayout from "@/layouts/AdminLayout"
 import AgencyLayout from "@/layouts/AgencyLayout"
 import { AgencyProvider } from "@/contexts/AgencyContext"
-import { LoadingLayout } from "@/components/LoadingLayout"
+import { useEffect } from "react"
+import { shouldPrerender, getPrerenderUrl } from './middleware/prerenderMiddleware'
 
 // Pages
 import HomePage from "@/pages/HomePage"
@@ -41,121 +42,122 @@ import UsersPage from "@/pages/admin/UsersPage"
 
 const queryClient = new QueryClient()
 
-const App = () => (
-  <HelmetProvider>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route element={<RootLayout />}>
-              {/* Public routes */}
-              <Route index element={<HomePage />} />
-              <Route path="404" element={<NotFoundPage />} />
+const App = () => {
+  useEffect(() => {
+    const userAgent = window.navigator.userAgent;
+    if (shouldPrerender(userAgent)) {
+      window.location.href = getPrerenderUrl(window.location.href);
+    }
+  }, []);
 
-              {/* Admin routes */}
-              <Route path="admin/auth" element={<AdminAuthPage />} />
-              <Route path="admin" element={<AdminLayout />}>
-                <Route index element={<Navigate to="dashboard" replace />} />
-                <Route path="dashboard" element={<AdminDashboardPage />} />
-                <Route path="agencies" element={<AdminAgenciesPage />} />
-                <Route path="agencies/create" element={<CreateAgencyPage />} />
-                <Route path="agencies/:id/edit" element={<EditAgencyPage />} />
-                <Route path="registration-requests" element={<RegistrationRequestsPage />} />
-                <Route path="registration-requests/:id" element={<RegistrationRequestDetailPage />} />
-                <Route path="users" element={<UsersPage />} />
-                <Route path="settings" element={<AdminSettingsPage />} />
+  return (
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route element={<RootLayout />}>
+                <Route index element={<HomePage />} />
+                <Route path="404" element={<NotFoundPage />} />
+
+                <Route path="admin/auth" element={<AdminAuthPage />} />
+                <Route path="admin" element={<AdminLayout />}>
+                  <Route index element={<Navigate to="dashboard" replace />} />
+                  <Route path="dashboard" element={<AdminDashboardPage />} />
+                  <Route path="agencies" element={<AdminAgenciesPage />} />
+                  <Route path="agencies/create" element={<CreateAgencyPage />} />
+                  <Route path="agencies/:id/edit" element={<EditAgencyPage />} />
+                  <Route path="registration-requests" element={<RegistrationRequestsPage />} />
+                  <Route path="registration-requests/:id" element={<RegistrationRequestDetailPage />} />
+                  <Route path="users" element={<UsersPage />} />
+                  <Route path="settings" element={<AdminSettingsPage />} />
+                </Route>
+
+                <Route
+                  path=":agencySlug"
+                  element={
+                    <AgencyProvider>
+                      <AgencyLayout />
+                    </AgencyProvider>
+                  }
+                >
+                  <Route index element={<AgencyHomePage />} />
+                  <Route path="auth" element={<AgencyAuthPage />} />
+                  <Route path="properties" element={<AgencyPropertiesPage />} />
+                  <Route
+                    path="properties/:propertyId"
+                    element={<AgencyPropertyDetailPage />}
+                  />
+                  <Route
+                    path="properties/:propertyId/public"
+                    element={<PublicPropertyDetailPage />}
+                  />
+                  <Route
+                    path="properties/:propertyId/images"
+                    element={<PropertyImagesPage />}
+                  />
+                  <Route path="register" element={<AgencyRegisterPage />} />
+
+                  <Route path="agency">
+                    <Route
+                      index
+                      element={<Navigate to="dashboard" replace />}
+                    />
+                    <Route path="dashboard" element={<AgencyDashboardPage />} />
+                    <Route path="agents" element={<AgencyAgentsPage />} />
+                    <Route path="settings" element={<AgencySettingsPage />} />
+                    <Route
+                      path="properties"
+                      element={<AgencyPropertiesPage />}
+                    />
+                  </Route>
+
+                  <Route path="agent">
+                    <Route
+                      index
+                      element={<Navigate to="dashboard" replace />}
+                    />
+                    <Route path="dashboard" element={<AgentDashboardPage />} />
+                    <Route
+                      path="properties"
+                      element={<AgentPropertiesPage />}
+                    />
+                    <Route
+                      path="appointments"
+                      element={<AgentAppointmentsPage />}
+                    />
+                  </Route>
+
+                  <Route path="client">
+                    <Route
+                      index
+                      element={<Navigate to="dashboard" replace />}
+                    />
+                    <Route
+                      path="dashboard"
+                      element={<ClientDashboardPage />}
+                    />
+                    <Route
+                      path="favorites"
+                      element={<ClientFavoritesPage />}
+                    />
+                    <Route
+                      path="appointments"
+                      element={<ClientAppointmentsPage />}
+                    />
+                  </Route>
+                </Route>
+
+                <Route path="*" element={<Navigate to="/404" replace />} />
               </Route>
-
-              {/* Agency routes */}
-              <Route
-                path=":agencySlug"
-                element={
-                  <AgencyProvider>
-                    <AgencyLayout />
-                  </AgencyProvider>
-                }
-              >
-                {/* Public agency routes */}
-                <Route index element={<AgencyHomePage />} />
-                <Route path="auth" element={<AgencyAuthPage />} />
-                <Route path="properties" element={<AgencyPropertiesPage />} />
-                <Route
-                  path="properties/:propertyId"
-                  element={<AgencyPropertyDetailPage />}
-                />
-                <Route
-                  path="properties/:propertyId/public"
-                  element={<PublicPropertyDetailPage />}
-                />
-                <Route
-                  path="properties/:propertyId/images"
-                  element={<PropertyImagesPage />}
-                />
-                <Route path="register" element={<AgencyRegisterPage />} />
-
-                {/* Agency admin routes */}
-                <Route path="agency">
-                  <Route
-                    index
-                    element={<Navigate to="dashboard" replace />}
-                  />
-                  <Route path="dashboard" element={<AgencyDashboardPage />} />
-                  <Route path="agents" element={<AgencyAgentsPage />} />
-                  <Route path="settings" element={<AgencySettingsPage />} />
-                  <Route
-                    path="properties"
-                    element={<AgencyPropertiesPage />}
-                  />
-                </Route>
-
-                {/* Agent routes */}
-                <Route path="agent">
-                  <Route
-                    index
-                    element={<Navigate to="dashboard" replace />}
-                  />
-                  <Route path="dashboard" element={<AgentDashboardPage />} />
-                  <Route
-                    path="properties"
-                    element={<AgentPropertiesPage />}
-                  />
-                  <Route
-                    path="appointments"
-                    element={<AgentAppointmentsPage />}
-                  />
-                </Route>
-
-                {/* Client routes */}
-                <Route path="client">
-                  <Route
-                    index
-                    element={<Navigate to="dashboard" replace />}
-                  />
-                  <Route
-                    path="dashboard"
-                    element={<ClientDashboardPage />}
-                  />
-                  <Route
-                    path="favorites"
-                    element={<ClientFavoritesPage />}
-                  />
-                  <Route
-                    path="appointments"
-                    element={<ClientAppointmentsPage />}
-                  />
-                </Route>
-              </Route>
-
-              {/* Catch all route */}
-              <Route path="*" element={<Navigate to="/404" replace />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </HelmetProvider>
-)
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </HelmetProvider>
+  )
+}
 
 export default App

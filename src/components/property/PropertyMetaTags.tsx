@@ -1,6 +1,7 @@
 
 import { Helmet } from "react-helmet-async";
 import { getAbsoluteUrl } from "@/utils/urlUtils";
+import { getPrerenderUrl, shouldPrerender } from "@/middleware/prerenderMiddleware";
 
 interface PropertyMetaTagsProps {
   title: string;
@@ -18,6 +19,9 @@ export default function PropertyMetaTags({
   agencyName
 }: PropertyMetaTagsProps) {
   console.log('PropertyMetaTags - Photos reçues:', photos);
+  console.log('Preview URL:', getPrerenderUrl(window.location.href));
+  console.log('User Agent:', window.navigator.userAgent);
+  console.log('Should Prerender:', shouldPrerender(window.navigator.userAgent));
   
   const truncatedDescription = description
     ? description.length > 160
