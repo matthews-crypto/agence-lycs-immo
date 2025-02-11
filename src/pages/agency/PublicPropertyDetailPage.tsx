@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +11,7 @@ import PropertyHeader from "@/components/property/PropertyHeader";
 import PropertyImageGallery from "@/components/property/PropertyImageGallery";
 import PropertyStats from "@/components/property/PropertyStats";
 import SimilarProperties from "@/components/property/SimilarProperties";
-import PropertyMetaTags from "@/components/property/PropertyMetaTags";
+import { getAbsoluteUrl } from "@/utils/urlUtils";
 
 export default function PublicPropertyDetailPage() {
   const navigate = useNavigate();
@@ -33,6 +32,38 @@ export default function PublicPropertyDetailPage() {
       return data;
     },
   });
+
+  useEffect(() => {
+    if (property) {
+      const updateMetaTags = () => {
+        const head = document.head;
+        const metas = head.getElementsByTagName('meta');
+
+        for (let meta of metas) {
+          const content = meta.getAttribute('content');
+          if (content) {
+            if (content === '__TITLE__') {
+              meta.setAttribute('content', `${property.title} | LYCS Immobilier`);
+            }
+            if (content === '__DESC__') {
+              meta.setAttribute('content', property.description?.substring(0, 160) || '');
+            }
+            if (content === '__IMAGE__' && property.photos?.[0]) {
+              meta.setAttribute('content', getAbsoluteUrl(property.photos[0]));
+            }
+            if (content === '__URL__') {
+              meta.setAttribute('content', window.location.href);
+            }
+          }
+        }
+
+        // Mise à jour du titre de la page
+        document.title = `${property.title} | LYCS Immobilier`;
+      };
+
+      updateMetaTags();
+    }
+  }, [property]);
 
   const { data: similarProperties } = useQuery({
     queryKey: ["similar-properties", property?.property_type, property?.price, property?.bedrooms, property?.region],
@@ -97,13 +128,6 @@ export default function PublicPropertyDetailPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <PropertyMetaTags
-        title={property.title}
-        description={property.description || ""}
-        price={property.price}
-        photos={property.photos}
-      />
-
       <PropertyHeader
         onBack={handleBack}
         agencyLogo={property.agencies?.logo_url}
