@@ -26,5 +26,6 @@ export function shouldPrerender(userAgent: string = '') {
 }
 
 export function getPrerenderUrl(originalUrl: string) {
-  return `${RENDERTRON_URL}/render/${encodeURIComponent(originalUrl)}?wc-inject-shadydom=true&waitForSelector=meta[property="og:title"]&timeout=10000`;
+  return `${RENDERTRON_URL}/render/${encodeURIComponent(originalUrl)}?wc-inject-shadydom=true&waitForSelector=meta[property="og:image"]&timeout=30000&renderAfterTime=2000`;
 }
+

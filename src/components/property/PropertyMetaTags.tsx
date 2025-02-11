@@ -1,8 +1,6 @@
 
-import { Helmet } from "react-helmet-async";
-import { getAbsoluteUrl } from "@/utils/urlUtils";
-import { getPrerenderUrl, shouldPrerender } from "@/middleware/prerenderMiddleware";
 import { useEffect } from "react";
+import { getAbsoluteUrl } from "@/utils/urlUtils";
 
 interface PropertyMetaTagsProps {
   title: string;
@@ -20,76 +18,52 @@ export default function PropertyMetaTags({
   agencyName
 }: PropertyMetaTagsProps) {
   console.log('PropertyMetaTags - Photos reçues:', photos);
-  console.log('Preview URL:', getPrerenderUrl(window.location.href));
-  console.log('User Agent:', window.navigator.userAgent);
-  console.log('Should Prerender:', shouldPrerender(window.navigator.userAgent));
   
   useEffect(() => {
     const updateMetaTags = () => {
-      const metaTags = {
-        'og:title': `${title} | ${agencyName || 'LYCS Immobilier'}`,
-        'og:description': description,
-        'og:image': photos?.[0] ? getAbsoluteUrl(photos[0]) : '',
-        'og:url': window.location.href
-      };
+      const tags = [
+        { property: 'og:title', content: `${title} | ${agencyName || 'LYCS Immobilier'}` },
+        { property: 'og:description', content: description },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:url', content: window.location.href },
+        { property: 'og:site_name', content: agencyName || 'LYCS Immobilier' },
+        { property: 'og:price:amount', content: price.toString() },
+        { property: 'og:price:currency', content: 'FCFA' }
+      ];
 
-      Object.entries(metaTags).forEach(([property, content]) => {
-        let meta = document.querySelector(`meta[property="${property}"]`);
-        if (!meta) {
-          meta = document.createElement('meta');
-          meta.setAttribute('property', property);
-          document.head.appendChild(meta);
-        }
+      if (photos?.[0]) {
+        const imageUrl = getAbsoluteUrl(photos[0]);
+        tags.push(
+          { property: 'og:image', content: imageUrl },
+          { property: 'og:image:secure_url', content: imageUrl },
+          { property: 'og:image:type', content: 'image/jpeg' },
+          { property: 'og:image:width', content: '1200' },
+          { property: 'og:image:height', content: '630' },
+          { property: 'og:image:alt', content: title }
+        );
+      }
+
+      // Supprimer les anciens meta tags
+      document.querySelectorAll('meta[property^="og:"]').forEach(el => el.remove());
+
+      // Ajouter les nouveaux
+      tags.forEach(({ property, content }) => {
+        const meta = document.createElement('meta');
+        meta.setAttribute('property', property);
         meta.setAttribute('content', content);
+        document.head.appendChild(meta);
       });
     };
 
     updateMetaTags();
-  }, [title, description, photos, agencyName]);
+    
+    // Mettre à jour toutes les 100ms pendant 2 secondes
+    const interval = setInterval(updateMetaTags, 100);
+    setTimeout(() => clearInterval(interval), 2000);
 
-  const truncatedDescription = description
-    ? description.length > 160
-      ? `${description.substring(0, 160)}...`
-      : description
-    : "";
+    return () => clearInterval(interval);
+  }, [title, description, photos, agencyName, price]);
 
-  const pageTitle = `${title} | ${agencyName || 'LYCS Immobilier'}`;
-  const firstPhotoUrl = photos?.[0];
-  const absoluteImageUrl = firstPhotoUrl ? getAbsoluteUrl(firstPhotoUrl) : '';
-
-  return (
-    <Helmet prioritizeSeoTags>
-      <title>{pageTitle}</title>
-      <meta name="description" content={truncatedDescription} />
-      <meta property="og:title" content={pageTitle} />
-      <meta property="og:description" content={truncatedDescription} />
-      <meta property="og:type" content="website" />
-      <meta property="og:url" content={window.location.href} />
-      <meta property="og:site_name" content={agencyName || 'LYCS Immobilier'} />
-      
-      {/* Image tags */}
-      {firstPhotoUrl && (
-        <>
-          <meta property="og:image" content={absoluteImageUrl} />
-          <meta property="og:image:secure_url" content={absoluteImageUrl} />
-          <meta property="og:image:type" content="image/jpeg" />
-          <meta property="og:image:width" content="1200" />
-          <meta property="og:image:height" content="630" />
-          <meta property="og:image:alt" content={title} />
-        </>
-      )}
-
-      {/* Prix et détails */}
-      <meta property="og:price:amount" content={price.toString()} />
-      <meta property="og:price:currency" content="FCFA" />
-
-      {/* Twitter Card tags */}
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={pageTitle} />
-      <meta name="twitter:description" content={truncatedDescription} />
-      {firstPhotoUrl && (
-        <meta name="twitter:image" content={absoluteImageUrl} />
-      )}
-    </Helmet>
-  );
+  return null;
 }
+

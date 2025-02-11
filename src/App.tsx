@@ -48,12 +48,12 @@ const App = () => {
     if (process.env.NODE_ENV === 'production') {
       const userAgent = window.navigator.userAgent;
       if (shouldPrerender(userAgent)) {
-        // Attendre que le contenu soit chargé
+        // Attendre plus longtemps
         setTimeout(() => {
           const prerenderUrl = getPrerenderUrl(window.location.href);
           console.log('Redirecting to Rendertron:', prerenderUrl);
           window.location.href = prerenderUrl;
-        }, 1000); // Attendre 1 seconde
+        }, 2000); // Attendre 2 secondes
       }
     }
   }, []);
@@ -169,3 +169,4 @@ const App = () => {
 }
 
 export default App
+
