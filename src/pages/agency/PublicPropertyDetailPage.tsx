@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -35,38 +36,51 @@ export default function PublicPropertyDetailPage() {
 
   useEffect(() => {
     if (property) {
-      const updateMetaTags = () => {
-        const head = document.head;
-        const metas = head.getElementsByTagName('meta');
+      const head = document.head;
 
-        const metaUpdates = {
-          '__TITLE__': `${property.title} | LYCS Immobilier`,
-          '__DESC__': property.description?.substring(0, 160) || '',
-          '__IMAGE__': property.photos?.[0] ? getAbsoluteUrl(property.photos[0]) : '',
-          '__URL__': window.location.href,
-          '__PRICE__': property.price?.toString() || ''
-        };
-
-        for (let meta of metas) {
-          const content = meta.getAttribute('content');
-          if (content && content.startsWith('__') && content.endsWith('__')) {
-            const newContent = metaUpdates[content as keyof typeof metaUpdates];
-            if (newContent) {
-              meta.setAttribute('content', newContent);
-            }
-          }
+      // Fonction pour mettre à jour un meta tag
+      const updateMetaTag = (property: string, content: string) => {
+        const meta = head.querySelector(`meta[property="${property}"]`) ||
+                    head.querySelector(`meta[name="${property}"]`);
+        if (meta) {
+          meta.setAttribute('content', content);
         }
-
-        // Mise à jour du titre de la page
-        document.title = `${property.title} | LYCS Immobilier`;
       };
 
-      updateMetaTags();
+      // Mise à jour des meta tags
+      updateMetaTag('og:title', `${property.title} | LYCS Immobilier`);
+      updateMetaTag('og:description', property.description?.substring(0, 160) || '');
+      updateMetaTag('og:image', property.photos?.[0] ? getAbsoluteUrl(property.photos[0]) : '');
+      updateMetaTag('og:url', window.location.href);
+      updateMetaTag('og:price:amount', property.price?.toString() || '0');
+      updateMetaTag('og:image:secure_url', property.photos?.[0] ? getAbsoluteUrl(property.photos[0]) : '');
+      updateMetaTag('twitter:title', `${property.title} | LYCS Immobilier`);
+      updateMetaTag('twitter:description', property.description?.substring(0, 160) || '');
+      updateMetaTag('twitter:image', property.photos?.[0] ? getAbsoluteUrl(property.photos[0]) : '');
+
+      // Mise à jour du titre
+      document.title = `${property.title} | LYCS Immobilier`;
+
+      // Log pour debug
+      console.log('Meta tags updated:', {
+        title: property.title,
+        description: property.description,
+        image: property.photos?.[0] ? getAbsoluteUrl(property.photos[0]) : '',
+        url: window.location.href,
+        price: property.price
+      });
 
       // Nettoyage au démontage du composant
       return () => {
         document.title = 'LYCS Immobilier';
-        // Réinitialiser les meta tags par défaut si nécessaire
+        updateMetaTag('og:title', 'LYCS Immobilier');
+        updateMetaTag('og:description', 'Découvrez nos biens immobiliers de qualité');
+        updateMetaTag('og:image', 'https://preview--agence-lycs-immo.lovable.app/og-image.png');
+        updateMetaTag('og:url', 'https://preview--agence-lycs-immo.lovable.app');
+        updateMetaTag('og:price:amount', '0');
+        updateMetaTag('twitter:title', 'LYCS Immobilier');
+        updateMetaTag('twitter:description', 'Découvrez nos biens immobiliers de qualité');
+        updateMetaTag('twitter:image', 'https://preview--agence-lycs-immo.lovable.app/og-image.png');
       };
     }
   }, [property]);
