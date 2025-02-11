@@ -39,20 +39,20 @@ export default function PublicPropertyDetailPage() {
         const head = document.head;
         const metas = head.getElementsByTagName('meta');
 
+        const metaUpdates = {
+          '__TITLE__': `${property.title} | LYCS Immobilier`,
+          '__DESC__': property.description?.substring(0, 160) || '',
+          '__IMAGE__': property.photos?.[0] ? getAbsoluteUrl(property.photos[0]) : '',
+          '__URL__': window.location.href,
+          '__PRICE__': property.price?.toString() || ''
+        };
+
         for (let meta of metas) {
           const content = meta.getAttribute('content');
-          if (content) {
-            if (content === '__TITLE__') {
-              meta.setAttribute('content', `${property.title} | LYCS Immobilier`);
-            }
-            if (content === '__DESC__') {
-              meta.setAttribute('content', property.description?.substring(0, 160) || '');
-            }
-            if (content === '__IMAGE__' && property.photos?.[0]) {
-              meta.setAttribute('content', getAbsoluteUrl(property.photos[0]));
-            }
-            if (content === '__URL__') {
-              meta.setAttribute('content', window.location.href);
+          if (content && content.startsWith('__') && content.endsWith('__')) {
+            const newContent = metaUpdates[content as keyof typeof metaUpdates];
+            if (newContent) {
+              meta.setAttribute('content', newContent);
             }
           }
         }
@@ -62,6 +62,12 @@ export default function PublicPropertyDetailPage() {
       };
 
       updateMetaTags();
+
+      // Nettoyage au démontage du composant
+      return () => {
+        document.title = 'LYCS Immobilier';
+        // Réinitialiser les meta tags par défaut si nécessaire
+      };
     }
   }, [property]);
 
