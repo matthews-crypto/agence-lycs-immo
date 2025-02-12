@@ -1,8 +1,8 @@
 
-import { defineConfig, loadEnv, ViteDevServer } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
-import { type Prerenderer } from '@prerenderer/prerenderer';
+import { Prerenderer } from '@prerenderer/prerenderer';
 import PuppeteerRenderer from '@prerenderer/renderer-puppeteer';
 import { componentTagger } from "lovable-tagger";
 import ssr from 'vite-plugin-ssr/plugin';
@@ -22,20 +22,22 @@ export default defineConfig(({ mode }) => {
       ssr(),
       isProd && {
         name: 'prerender',
-        configureServer(server: ViteDevServer) {
+        configureServer(server) {
           return () => {
-            // Using require to get the actual class constructor at runtime
-            const PrerendererClass = require('@prerenderer/prerenderer').Prerenderer;
-            const prerenderer = new PrerendererClass({
+            const prerenderer = new Prerenderer({
               renderer: new PuppeteerRenderer({
                 renderAfterTime: 2000,
                 injectProperty: '__PRERENDER_INJECTED',
-                maxConcurrentRoutes: 4,
+                waitForSelector: 'meta[property="og:image"]',
               }),
               staticDir: path.join(__dirname, 'dist'),
               server: {
                 port: 8080,
               },
+              routes: [
+                '/',
+                '/:agencySlug/properties/:propertyId/public'
+              ],
             });
 
             return prerenderer.initialize()
@@ -60,4 +62,3 @@ export default defineConfig(({ mode }) => {
     },
   };
 });
-
