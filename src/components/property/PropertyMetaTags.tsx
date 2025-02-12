@@ -1,5 +1,5 @@
 
-import { Helmet } from "react-helmet";
+import { Helmet } from "react-helmet-async";
 import { getAbsoluteUrl } from "@/utils/urlUtils";
 
 interface PropertyMetaTagsProps {
