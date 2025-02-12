@@ -1,5 +1,5 @@
 
-import { Helmet } from 'react-helmet';
+import { useEffect } from "react";
 import { getAbsoluteUrl } from "@/utils/urlUtils";
 
 interface PropertyMetaTagsProps {
@@ -17,41 +17,53 @@ export default function PropertyMetaTags({
   photos,
   agencyName
 }: PropertyMetaTagsProps) {
-  const truncatedDescription = description.length > 160 
-    ? `${description.substring(0, 157)}...` 
-    : description;
+  console.log('PropertyMetaTags - Photos reçues:', photos);
+  
+  useEffect(() => {
+    const updateMetaTags = () => {
+      const tags = [
+        { property: 'og:title', content: `${title} | ${agencyName || 'LYCS Immobilier'}` },
+        { property: 'og:description', content: description },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:url', content: window.location.href },
+        { property: 'og:site_name', content: agencyName || 'LYCS Immobilier' },
+        { property: 'og:price:amount', content: price.toString() },
+        { property: 'og:price:currency', content: 'FCFA' }
+      ];
 
-  const mainImage = photos?.[0] ? getAbsoluteUrl(photos[0]) : '';
-  const siteName = agencyName || 'LYCS Immobilier';
-  const fullTitle = `${title} | ${siteName}`;
+      if (photos?.[0]) {
+        const imageUrl = getAbsoluteUrl(photos[0]);
+        tags.push(
+          { property: 'og:image', content: imageUrl },
+          { property: 'og:image:secure_url', content: imageUrl },
+          { property: 'og:image:type', content: 'image/jpeg' },
+          { property: 'og:image:width', content: '1200' },
+          { property: 'og:image:height', content: '630' },
+          { property: 'og:image:alt', content: title }
+        );
+      }
 
-  return (
-    <Helmet>
-      {/* Open Graph Meta Tags */}
-      <meta property="og:title" content={fullTitle} />
-      <meta property="og:description" content={truncatedDescription} />
-      <meta property="og:type" content="website" />
-      <meta property="og:url" content={window.location.href} />
-      <meta property="og:site_name" content={siteName} />
-      <meta property="og:price:amount" content={price.toString()} />
-      <meta property="og:price:currency" content="FCFA" />
-      
-      {mainImage && (
-        <>
-          <meta property="og:image" content={mainImage} />
-          <meta property="og:image:secure_url" content={mainImage} />
-          <meta property="og:image:type" content="image/jpeg" />
-          <meta property="og:image:width" content="1200" />
-          <meta property="og:image:height" content="630" />
-          <meta property="og:image:alt" content={title} />
-        </>
-      )}
+      // Supprimer les anciens meta tags
+      document.querySelectorAll('meta[property^="og:"]').forEach(el => el.remove());
 
-      {/* Twitter Card Meta Tags */}
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={fullTitle} />
-      <meta name="twitter:description" content={truncatedDescription} />
-      {mainImage && <meta name="twitter:image" content={mainImage} />}
-    </Helmet>
-  );
+      // Ajouter les nouveaux
+      tags.forEach(({ property, content }) => {
+        const meta = document.createElement('meta');
+        meta.setAttribute('property', property);
+        meta.setAttribute('content', content);
+        document.head.appendChild(meta);
+      });
+    };
+
+    updateMetaTags();
+    
+    // Mettre à jour toutes les 100ms pendant 2 secondes
+    const interval = setInterval(updateMetaTags, 100);
+    setTimeout(() => clearInterval(interval), 2000);
+
+    return () => clearInterval(interval);
+  }, [title, description, photos, agencyName, price]);
+
+  return null;
 }
+
