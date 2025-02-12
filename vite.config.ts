@@ -5,6 +5,7 @@ import path from "path";
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import puppeteer from 'puppeteer';
 import { componentTagger } from "lovable-tagger";
+import type { Plugin, UserConfig } from 'vite';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -17,11 +18,11 @@ export default defineConfig(({ mode }) => ({
     mode === 'development' && componentTagger(),
     {
       name: 'prerender',
-      apply: 'build',
+      apply: 'build' as const,
       async closeBundle() {
         console.log('Starting prerender process...');
         const browser = await puppeteer.launch({
-          headless: 'new',
+          headless: true,
           args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
 
@@ -60,7 +61,7 @@ export default defineConfig(({ mode }) => ({
         }
       }
     }
-  ].filter(Boolean),
+  ].filter(Boolean) as Plugin[],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
