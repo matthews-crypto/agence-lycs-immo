@@ -559,20 +559,29 @@ export type Database = {
       }
       zone: {
         Row: {
+          circle_radius: number | null
           created_at: string | null
           id: number
+          latitude: number | null
+          longitude: number | null
           nom: string
           region_id: number | null
         }
         Insert: {
+          circle_radius?: number | null
           created_at?: string | null
           id?: number
+          latitude?: number | null
+          longitude?: number | null
           nom: string
           region_id?: number | null
         }
         Update: {
+          circle_radius?: number | null
           created_at?: string | null
           id?: number
+          latitude?: number | null
+          longitude?: number | null
           nom?: string
           region_id?: number | null
         }
