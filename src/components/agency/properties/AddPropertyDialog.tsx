@@ -1,4 +1,3 @@
-
 import {useEffect, useState} from "react";
 import {useForm} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -43,7 +42,7 @@ const propertySchema = z.object({
   price: z.coerce.number().min(1, "Le prix est requis"),
   surface_area: z.coerce.number().optional(),
   address: z.string().optional(),
-  city: z.string().optional(),
+  zone_id: z.coerce.number().min(1, "La zone est requise"),
   region: z.string().min(1, "La région est requise"),
   postal_code: z.string().optional(),
 });
@@ -121,7 +120,7 @@ export function AddPropertyDialog() {
       price: undefined,
       surface_area: undefined,
       address: "",
-      city: "",
+      zone_id: undefined,
       region: "",
       postal_code: "",
     },
@@ -146,7 +145,7 @@ export function AddPropertyDialog() {
         price: data.price,
         surface_area: data.surface_area,
         address: data.address,
-        city: data.city,
+        zone_id: data.zone_id,
         region: data.region,
         postal_code: data.postal_code,
         agency_id: agency.id,
@@ -341,33 +340,33 @@ export function AddPropertyDialog() {
                   )}
               />
               <FormField
-                  control={form.control}
-                  name="city"
-                  render={({ field }) => (
-                      <FormItem>
-                          <FormLabel>Ville</FormLabel>
-                          <Select
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
-                              disabled={availableCities.length === 0}
-                          >
-                              <FormControl>
-                                  <SelectTrigger>
-                                      <SelectValue placeholder="Sélectionnez une ville" />
-                                  </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                  {availableCities.map((city) => (
-                                      <SelectItem key={city.id} value={city.nom}>
-                                          {city.nom}
-                                      </SelectItem>
-                                  ))}
-                              </SelectContent>
-                          </Select>
-                          <FormMessage />
-                      </FormItem>
-                  )}
-              />
+                control={form.control}
+                name="zone_id"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Zone</FormLabel>
+                        <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value?.toString()}
+                            disabled={availableCities.length === 0}
+                        >
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Sélectionnez une zone" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {availableCities.map((city) => (
+                                    <SelectItem key={city.id} value={city.id.toString()}>
+                                        {city.nom}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
               <FormField
                   control={form.control}
                   name="address"
