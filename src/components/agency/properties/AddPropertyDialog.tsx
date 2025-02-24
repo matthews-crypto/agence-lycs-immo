@@ -1,3 +1,4 @@
+
 import {useEffect, useState} from "react";
 import {useForm} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -41,6 +42,7 @@ const propertySchema = z.object({
   bedrooms: z.coerce.number().min(1, "Le nombre de pièces est requis"),
   price: z.coerce.number().min(1, "Le prix est requis"),
   surface_area: z.coerce.number().optional(),
+  address: z.string().optional(),
   city: z.string().optional(),
   region: z.string().min(1, "La région est requise"),
   postal_code: z.string().optional(),
@@ -118,6 +120,7 @@ export function AddPropertyDialog() {
       bedrooms: undefined,
       price: undefined,
       surface_area: undefined,
+      address: "",
       city: "",
       region: "",
       postal_code: "",
@@ -142,6 +145,7 @@ export function AddPropertyDialog() {
         bedrooms: data.bedrooms,
         price: data.price,
         surface_area: data.surface_area,
+        address: data.address,
         city: data.city,
         region: data.region,
         postal_code: data.postal_code,
@@ -360,6 +364,19 @@ export function AddPropertyDialog() {
                                   ))}
                               </SelectContent>
                           </Select>
+                          <FormMessage />
+                      </FormItem>
+                  )}
+              />
+              <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Adresse complémentaire</FormLabel>
+                          <FormControl>
+                              <Input placeholder="Adresse complémentaire" {...field} />
+                          </FormControl>
                           <FormMessage />
                       </FormItem>
                   )}
