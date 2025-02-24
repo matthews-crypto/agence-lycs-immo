@@ -34,18 +34,20 @@ import { PlusCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { useNavigate } from "react-router-dom";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const propertySchema = z.object({
   title: z.string().min(1, "Le titre est requis"),
   description: z.string().optional(),
   property_type: z.string().min(1, "Le type de bien est requis"),
-  bedrooms: z.coerce.number().min(1, "Le nombre de pièces est requis"),
+  bedrooms: z.coerce.number().optional(),
   price: z.coerce.number().min(1, "Le prix est requis"),
   surface_area: z.coerce.number().optional(),
   address: z.string().optional(),
   zone_id: z.coerce.number().min(1, "La zone est requise"),
   region: z.string().min(1, "La région est requise"),
   postal_code: z.string().optional(),
+  is_furnished: z.boolean().optional(),
 });
 
 type PropertyFormValues = z.infer<typeof propertySchema>;
@@ -124,8 +126,14 @@ export function AddPropertyDialog() {
       zone_id: undefined,
       region: "",
       postal_code: "",
+      is_furnished: false,
     },
   });
+
+  const selectedPropertyType = form.watch("property_type");
+
+  const showBedroomsField = ["APPARTEMENT", "MAISON", "BUREAU"].includes(selectedPropertyType);
+  const showFurnishedField = ["APPARTEMENT", "MAISON"].includes(selectedPropertyType);
 
   const onSubmit = async (data: PropertyFormValues) => {
     if (!agency?.id) {
@@ -152,6 +160,7 @@ export function AddPropertyDialog() {
         agency_id: agency.id,
         property_status: "DISPONIBLE" as const,
         is_available: true,
+        is_furnished: data.is_furnished,
         amenities: [] as string[],
       };
 
@@ -255,24 +264,48 @@ export function AddPropertyDialog() {
                   </FormItem>
                 )}
               />
+              {showBedroomsField && (
+                <FormField
+                  control={form.control}
+                  name="bedrooms"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nombre de pièces</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          placeholder="Nombre de pièces"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
+
+            {showFurnishedField && (
               <FormField
                 control={form.control}
-                name="bedrooms"
+                name="is_furnished"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nombre de pièces</FormLabel>
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                     <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="Nombre de pièces"
-                        {...field}
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
                       />
                     </FormControl>
-                    <FormMessage />
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>
+                        Meublé
+                      </FormLabel>
+                    </div>
                   </FormItem>
                 )}
               />
-            </div>
+            )}
 
             <FormField
                 control={form.control}
@@ -370,7 +403,7 @@ export function AddPropertyDialog() {
                         <FormMessage />
                     </FormItem>
                 )}
-            />
+              />
               <FormField
                   control={form.control}
                   name="address"
@@ -415,4 +448,3 @@ export function AddPropertyDialog() {
     </Dialog>
   );
 }
-
