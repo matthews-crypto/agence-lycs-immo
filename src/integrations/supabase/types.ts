@@ -557,6 +557,35 @@ export type Database = {
           },
         ]
       }
+      zone: {
+        Row: {
+          created_at: string | null
+          id: number
+          nom: string
+          region_id: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          nom: string
+          region_id?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          nom?: string
+          region_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zone_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "region"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
