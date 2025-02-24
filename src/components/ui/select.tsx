@@ -36,26 +36,49 @@ const SelectContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>
 >(({ className, children, position = "popper", ...props }, ref) => {
   const viewportRef = React.useRef<HTMLDivElement>(null);
+  const scrollIntervalRef = React.useRef<number | null>(null);
 
-  const handleScrollUp = () => {
-    if (viewportRef.current) {
-      viewportRef.current.scrollBy({ top: -50, behavior: 'smooth' });
+  const clearScrollInterval = () => {
+    if (scrollIntervalRef.current) {
+      window.clearInterval(scrollIntervalRef.current);
+      scrollIntervalRef.current = null;
     }
   };
 
-  const handleScrollDown = () => {
+  React.useEffect(() => {
+    return () => clearScrollInterval();
+  }, []);
+
+  const startScroll = (direction: 'up' | 'down') => {
+    clearScrollInterval();
+    handleScroll(direction);
+    scrollIntervalRef.current = window.setInterval(() => {
+      handleScroll(direction);
+    }, 100);
+  };
+
+  const stopScroll = () => {
+    clearScrollInterval();
+  };
+
+  const handleScroll = (direction: 'up' | 'down') => {
     if (viewportRef.current) {
-      viewportRef.current.scrollBy({ top: 50, behavior: 'smooth' });
+      viewportRef.current.scrollBy({
+        top: direction === 'up' ? -80 : 80,
+        behavior: 'auto'
+      });
     }
   };
 
   const CustomScrollButton = ({ direction }: { direction: 'up' | 'down' }) => (
     <button
       type="button"
-      onClick={() => direction === 'up' ? handleScrollUp() : handleScrollDown()}
+      onMouseDown={() => startScroll(direction)}
+      onMouseUp={stopScroll}
+      onMouseLeave={stopScroll}
       className={cn(
-        "flex w-full items-center justify-center py-1 hover:bg-gray-100 transition-colors",
-        "sticky z-10 bg-white",
+        "flex w-full items-center justify-center py-1 hover:bg-gray-100 active:bg-gray-200 transition-colors",
+        "sticky z-10 bg-white cursor-pointer select-none",
         direction === 'up' ? "top-0" : "bottom-0"
       )}
     >
