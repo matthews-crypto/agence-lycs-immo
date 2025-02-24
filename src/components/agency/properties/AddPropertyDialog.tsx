@@ -1,3 +1,4 @@
+
 import {useEffect, useState} from "react";
 import {useForm} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -317,8 +318,11 @@ export function AddPropertyDialog() {
                           <FormLabel>Région</FormLabel>
                           <Select
                               onValueChange={(value) => {
-                                  field.onChange(value);
-                                  setSelectedRegion(value);
+                                  const selectedRegion = regions.find(r => r.id.toString() === value);
+                                  if (selectedRegion) {
+                                      field.onChange(selectedRegion.nom);
+                                      setSelectedRegion(value);
+                                  }
                               }}
                               defaultValue={field.value}
                           >
@@ -411,3 +415,4 @@ export function AddPropertyDialog() {
     </Dialog>
   );
 }
+
