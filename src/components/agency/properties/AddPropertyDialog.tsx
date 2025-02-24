@@ -1,4 +1,3 @@
-
 import {useEffect, useState} from "react";
 import {useForm} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -63,7 +62,6 @@ export function AddPropertyDialog() {
   const { agency } = useAgencyContext();
   const navigate = useNavigate();
 
-  // Charger les régions au montage du composant
   useEffect(() => {
     const fetchRegions = async () => {
       const { data: regionsData, error } = await supabase
@@ -82,7 +80,6 @@ export function AddPropertyDialog() {
     fetchRegions();
   }, []);
 
-  // Charger les villes quand une région est sélectionnée
   useEffect(() => {
     const fetchCities = async (regionId: string) => {
       const numericRegionId = parseInt(regionId, 10);
