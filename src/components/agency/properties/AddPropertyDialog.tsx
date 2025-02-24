@@ -1,3 +1,4 @@
+
 import {useEffect, useState} from "react";
 import {useForm} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -47,6 +48,7 @@ const propertySchema = z.object({
   region: z.string().min(1, "La région est requise"),
   postal_code: z.string().optional(),
   is_furnished: z.boolean().optional(),
+  property_offer_type: z.string().optional(),
 });
 
 type PropertyFormValues = z.infer<typeof propertySchema>;
@@ -58,6 +60,8 @@ export function AddPropertyDialog() {
   const [selectedRegion, setSelectedRegion] = useState<string>("");
   const [regions, setRegions] = useState<Region[]>([]);
   const [availableCities, setAvailableCities] = useState<Zone[]>([]);
+  const [isLocation, setIsLocation] = useState(false);
+  const [isVente, setIsVente] = useState(true);
   const { toast } = useToast();
   const { agency } = useAgencyContext();
   const navigate = useNavigate();
@@ -124,6 +128,7 @@ export function AddPropertyDialog() {
       region: "",
       postal_code: "",
       is_furnished: false,
+      property_offer_type: "VENTE",
     },
   });
 
@@ -131,6 +136,23 @@ export function AddPropertyDialog() {
 
   const showBedroomsField = ["APPARTEMENT", "MAISON", "BUREAU"].includes(selectedPropertyType);
   const showFurnishedField = ["APPARTEMENT", "MAISON"].includes(selectedPropertyType);
+  const showOfferTypeField = ["APPARTEMENT", "MAISON", "BUREAU"].includes(selectedPropertyType);
+
+  const handleLocationChange = (checked: boolean) => {
+    if (checked) {
+      setIsLocation(true);
+      setIsVente(false);
+      form.setValue("property_offer_type", "LOCATION");
+    }
+  };
+
+  const handleVenteChange = (checked: boolean) => {
+    if (checked) {
+      setIsVente(true);
+      setIsLocation(false);
+      form.setValue("property_offer_type", "VENTE");
+    }
+  };
 
   const onSubmit = async (data: PropertyFormValues) => {
     if (!agency?.id) {
@@ -158,6 +180,7 @@ export function AddPropertyDialog() {
         property_status: "DISPONIBLE" as const,
         is_available: true,
         is_furnished: data.is_furnished,
+        property_offer_type: data.property_type === "TERRAIN" ? "VENTE" : data.property_offer_type,
         amenities: [] as string[],
       };
 
@@ -281,6 +304,40 @@ export function AddPropertyDialog() {
                 />
               )}
             </div>
+
+            {showOfferTypeField && (
+              <div className="flex flex-col space-y-4">
+                <FormLabel>Type d'offre</FormLabel>
+                <div className="flex space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      checked={isLocation}
+                      onCheckedChange={handleLocationChange}
+                      id="location"
+                    />
+                    <label
+                      htmlFor="location"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      Location
+                    </label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      checked={isVente}
+                      onCheckedChange={handleVenteChange}
+                      id="vente"
+                    />
+                    <label
+                      htmlFor="vente"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      Vente
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {showFurnishedField && (
               <FormField
@@ -445,3 +502,4 @@ export function AddPropertyDialog() {
     </Dialog>
   );
 }
+
