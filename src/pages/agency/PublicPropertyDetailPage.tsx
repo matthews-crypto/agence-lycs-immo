@@ -45,26 +45,21 @@ export default function PublicPropertyDetailPage() {
   });
 
   const { data: similarProperties } = useQuery({
-    queryKey: ["similar-properties", property?.property_type, property?.price, property?.bedrooms, property?.zone?.id],
+    queryKey: ["similar-properties", property?.property_type, property?.price, property?.zone?.id, property?.property_offer_type],
     enabled: !!property,
     queryFn: async () => {
       const minPrice = property.price * 0.8;
       const maxPrice = property.price * 1.2;
 
-      let query = supabase
+      const query = supabase
         .from("properties")
         .select("*")
         .eq("property_type", property.property_type)
+        .eq("property_offer_type", property.property_offer_type)
         .eq("agency_id", property.agency_id)
         .eq("zone_id", property.zone?.id)
         .neq("id", propertyId)
         .eq("is_available", true);
-
-      if (property.bedrooms === null) {
-        query = query.or(`price.gte.${minPrice},price.lte.${maxPrice}`);
-      } else {
-        query = query.or(`price.gte.${minPrice},price.lte.${maxPrice},bedrooms.eq.${property.bedrooms}`);
-      }
 
       const { data, error } = await query.limit(6);
 
@@ -133,6 +128,12 @@ export default function PublicPropertyDetailPage() {
           >
             {property.property_status}
           </Badge>
+          <Badge 
+            className="text-sm text-white"
+            style={{ backgroundColor: property.agencies?.primary_color || '#0066FF' }}
+          >
+            {property.property_offer_type === 'VENTE' ? 'À Vendre' : 'À Louer'}
+          </Badge>
         </div>
 
         <h1 className="text-3xl font-bold text-gray-900 mb-2">{property.title}</h1>
@@ -192,6 +193,7 @@ export default function PublicPropertyDetailPage() {
               bedrooms: prop.bedrooms,
               surfaceArea: prop.surface_area,
               region: prop.region,
+              propertyOfferType: prop.property_offer_type,
               onClick: handleSimilarPropertyClick
             }))}
             agencyPrimaryColor={property.agencies?.primary_color}
@@ -232,3 +234,4 @@ export default function PublicPropertyDetailPage() {
     </div>
   );
 }
+

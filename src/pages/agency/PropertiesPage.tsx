@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +10,7 @@ import { Link } from "react-router-dom";
 import { AgencySidebar } from "@/components/agency/AgencySidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AddPropertyDialog } from "@/components/agency/properties/AddPropertyDialog";
+import { Badge } from "@/components/ui/badge";
 
 export default function AgencyPropertiesPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -73,7 +75,6 @@ export default function AgencyPropertiesPage() {
                 </div>
               </div>
 
-              {/* Properties Grid */}
               {isLoading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {[1, 2, 3, 4, 5, 6].map((n) => (
@@ -96,13 +97,20 @@ export default function AgencyPropertiesPage() {
                     >
                       <Card className="overflow-hidden h-full">
                         <div 
-                          className="h-48 bg-cover bg-center"
+                          className="relative h-48 bg-cover bg-center"
                           style={{
                             backgroundImage: property.photos?.length 
                               ? `url(${property.photos[0]})` 
                               : "url(/placeholder.svg)"
                           }}
-                        />
+                        >
+                          <Badge 
+                            className="absolute top-4 right-4 text-white"
+                            style={{ backgroundColor: agency?.primary_color || '#0066FF' }}
+                          >
+                            {property.property_offer_type === 'VENTE' ? 'À Vendre' : 'À Louer'}
+                          </Badge>
+                        </div>
                         <CardHeader>
                           <CardTitle className="line-clamp-1">{property.title}</CardTitle>
                         </CardHeader>
@@ -140,3 +148,4 @@ export default function AgencyPropertiesPage() {
     </SidebarProvider>
   );
 }
+
