@@ -38,9 +38,11 @@ const SelectScrollUpButton = React.forwardRef<
   <SelectPrimitive.ScrollUpButton
     ref={ref}
     className={cn(
-      "flex cursor-pointer items-center justify-center py-1 hover:bg-accent",
+      "flex cursor-pointer select-none items-center justify-center py-1 hover:bg-accent",
       className
     )}
+    onPointerEnter={(e) => e.preventDefault()}
+    onMouseEnter={(e) => e.preventDefault()}
     {...props}
   >
     <ChevronUp className="h-4 w-4" />
@@ -55,9 +57,11 @@ const SelectScrollDownButton = React.forwardRef<
   <SelectPrimitive.ScrollDownButton
     ref={ref}
     className={cn(
-      "flex cursor-pointer items-center justify-center py-1 hover:bg-accent",
+      "flex cursor-pointer select-none items-center justify-center py-1 hover:bg-accent",
       className
     )}
+    onPointerEnter={(e) => e.preventDefault()}
+    onMouseEnter={(e) => e.preventDefault()}
     {...props}
   >
     <ChevronDown className="h-4 w-4" />
@@ -157,3 +161,4 @@ export {
   SelectScrollUpButton,
   SelectScrollDownButton,
 }
+
