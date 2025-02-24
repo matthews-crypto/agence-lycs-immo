@@ -1,4 +1,3 @@
-
 import {useEffect, useState} from "react";
 import {useForm} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -82,10 +81,17 @@ export function AddPropertyDialog() {
   // Charger les villes quand une région est sélectionnée
   useEffect(() => {
     const fetchCities = async (regionId: string) => {
+      const numericRegionId = parseInt(regionId, 10);
+      
+      if (isNaN(numericRegionId)) {
+        console.error('Invalid region ID:', regionId);
+        return;
+      }
+
       const { data: citiesData, error } = await supabase
         .from('zone')
         .select('*')
-        .eq('region_id', regionId)
+        .eq('region_id', numericRegionId)
         .order('nom');
       
       if (error) {
