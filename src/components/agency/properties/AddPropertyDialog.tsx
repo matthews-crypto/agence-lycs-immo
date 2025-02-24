@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -34,6 +35,7 @@ import { PlusCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { useNavigate } from "react-router-dom";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const propertySchema = z.object({
   title: z.string().min(1, "Le titre est requis"),
@@ -43,19 +45,33 @@ const propertySchema = z.object({
   bedrooms: z.coerce.number().optional(),
   bathrooms: z.coerce.number().optional(),
   surface_area: z.coerce.number().optional(),
-  address: z.string().min(1, "L'adresse est requise"),
-  city: z.string().min(1, "La ville est requise"),
-  postal_code: z.string().min(1, "Le code postal est requis"),
+  region: z.string().min(1, "La région est requise"),
+  zone: z.string().min(1, "La zone est requise"),
+  address: z.string().optional(),
   year_built: z.coerce.number().optional(),
 });
 
 type PropertyFormValues = z.infer<typeof propertySchema>;
+
+type Region = {
+  id: number;
+  nom: string;
+};
+
+type Zone = {
+  id: number;
+  nom: string;
+  region_id: number | null;
+};
 
 export function AddPropertyDialog() {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const { agency } = useAgencyContext();
   const navigate = useNavigate();
+  const [regions, setRegions] = useState<Region[]>([]);
+  const [zones, setZones] = useState<Zone[]>([]);
+  const [selectedRegionId, setSelectedRegionId] = useState<number | null>(null);
 
   const form = useForm<PropertyFormValues>({
     resolver: zodResolver(propertySchema),
@@ -67,12 +83,64 @@ export function AddPropertyDialog() {
       bedrooms: undefined,
       bathrooms: undefined,
       surface_area: undefined,
+      region: "",
+      zone: "",
       address: "",
-      city: "",
-      postal_code: "",
       year_built: undefined,
     },
   });
+
+  useEffect(() => {
+    const fetchRegions = async () => {
+      const { data, error } = await supabase
+        .from("region")
+        .select("*")
+        .order('nom');
+      
+      if (error) {
+        console.error("Error fetching regions:", error);
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Impossible de charger les régions",
+        });
+        return;
+      }
+      
+      setRegions(data);
+    };
+
+    fetchRegions();
+  }, [toast]);
+
+  useEffect(() => {
+    const fetchZones = async () => {
+      if (!selectedRegionId) {
+        setZones([]);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("zone")
+        .select("*")
+        .eq('region_id', selectedRegionId)
+        .order('nom');
+      
+      if (error) {
+        console.error("Error fetching zones:", error);
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Impossible de charger les zones",
+        });
+        return;
+      }
+      
+      setZones(data);
+    };
+
+    fetchZones();
+  }, [selectedRegionId, toast]);
 
   const onSubmit = async (data: PropertyFormValues) => {
     if (!agency?.id) {
@@ -85,6 +153,18 @@ export function AddPropertyDialog() {
     }
 
     try {
+      // Find the region and zone names based on the selected IDs
+      const selectedRegion = regions.find(r => r.id === parseInt(data.region));
+      const selectedZone = zones.find(z => z.id === parseInt(data.zone));
+
+      if (!selectedRegion || !selectedZone) {
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Région ou zone invalide",
+        });
+        return;
+      }
 
       const propertyData = {
         title: data.title,
@@ -94,9 +174,9 @@ export function AddPropertyDialog() {
         bedrooms: data.bedrooms,
         bathrooms: data.bathrooms,
         surface_area: data.surface_area,
-        address: data.address,
-        city: data.city,
-        postal_code: data.postal_code,
+        region: selectedRegion.nom,
+        city: selectedZone.nom,
+        address: data.address || null,
         year_built: data.year_built,
         agency_id: agency.id,
         property_status: "DISPONIBLE" as const,
@@ -130,6 +210,11 @@ export function AddPropertyDialog() {
         description: "Une erreur est survenue lors de l'ajout du bien",
       });
     }
+  };
+
+  const handleRegionChange = (regionId: string) => {
+    setSelectedRegionId(parseInt(regionId));
+    form.setValue('zone', ''); // Reset zone when region changes
   };
 
   return (
@@ -280,38 +365,76 @@ export function AddPropertyDialog() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
+                name="region"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Région</FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        handleRegionChange(value);
+                      }}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionnez une région" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <ScrollArea className="h-[200px]">
+                          {regions.map((region) => (
+                            <SelectItem key={region.id} value={region.id.toString()}>
+                              {region.nom}
+                            </SelectItem>
+                          ))}
+                        </ScrollArea>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="zone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Zone</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      disabled={!selectedRegionId}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={selectedRegionId ? "Sélectionnez une zone" : "Choisissez d'abord une région"} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <ScrollArea className="h-[200px]">
+                          {zones.map((zone) => (
+                            <SelectItem key={zone.id} value={zone.id.toString()}>
+                              {zone.nom}
+                            </SelectItem>
+                          ))}
+                        </ScrollArea>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
                 name="address"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Adresse</FormLabel>
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>
+                      Adresse complémentaire <span className="text-sm text-muted-foreground">(optionnel)</span>
+                    </FormLabel>
                     <FormControl>
-                      <Input placeholder="Adresse du bien" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="city"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Ville</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ville" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="postal_code"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Code postal</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Code postal" {...field} />
+                      <Input placeholder="Adresse complémentaire" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -352,4 +475,3 @@ export function AddPropertyDialog() {
     </Dialog>
   );
 }
-
