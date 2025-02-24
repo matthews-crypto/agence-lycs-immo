@@ -48,7 +48,7 @@ const propertySchema = z.object({
   region: z.string().min(1, "La région est requise"),
   postal_code: z.string().optional(),
   is_furnished: z.boolean().optional(),
-  property_offer_type: z.string().optional(),
+  property_offer_type: z.string(),
 });
 
 type PropertyFormValues = z.infer<typeof propertySchema>;
@@ -502,4 +502,3 @@ export function AddPropertyDialog() {
     </Dialog>
   );
 }
-

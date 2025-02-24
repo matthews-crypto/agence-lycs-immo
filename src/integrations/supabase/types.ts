@@ -359,6 +359,7 @@ export type Database = {
           postal_code: string | null
           preview_description: string | null
           price: number
+          property_offer_type: string | null
           property_status: Database["public"]["Enums"]["property_status"] | null
           property_type: string
           region: string | null
@@ -388,6 +389,7 @@ export type Database = {
           postal_code?: string | null
           preview_description?: string | null
           price: number
+          property_offer_type?: string | null
           property_status?:
             | Database["public"]["Enums"]["property_status"]
             | null
@@ -419,6 +421,7 @@ export type Database = {
           postal_code?: string | null
           preview_description?: string | null
           price?: number
+          property_offer_type?: string | null
           property_status?:
             | Database["public"]["Enums"]["property_status"]
             | null
