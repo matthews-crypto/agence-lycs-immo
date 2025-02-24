@@ -25,7 +25,17 @@ export default function PublicPropertyDetailPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("properties")
-        .select("*, agencies(*)")
+        .select(`
+          *,
+          agencies(*),
+          zone (
+            id,
+            nom,
+            latitude,
+            longitude,
+            circle_radius
+          )
+        `)
         .eq("id", propertyId)
         .single();
 
@@ -35,7 +45,7 @@ export default function PublicPropertyDetailPage() {
   });
 
   const { data: similarProperties } = useQuery({
-    queryKey: ["similar-properties", property?.property_type, property?.price, property?.bedrooms, property?.region],
+    queryKey: ["similar-properties", property?.property_type, property?.price, property?.bedrooms, property?.zone?.id],
     enabled: !!property,
     queryFn: async () => {
       const minPrice = property.price * 0.8;
@@ -46,13 +56,14 @@ export default function PublicPropertyDetailPage() {
         .select("*")
         .eq("property_type", property.property_type)
         .eq("agency_id", property.agency_id)
+        .eq("zone_id", property.zone?.id)
         .neq("id", propertyId)
         .eq("is_available", true);
 
       if (property.bedrooms === null) {
-        query = query.or(`price.gte.${minPrice},price.lte.${maxPrice},bedrooms.is.null,region.eq.${property.region}`);
+        query = query.or(`price.gte.${minPrice},price.lte.${maxPrice}`);
       } else {
-        query = query.or(`price.gte.${minPrice},price.lte.${maxPrice},bedrooms.eq.${property.bedrooms},region.eq.${property.region}`);
+        query = query.or(`price.gte.${minPrice},price.lte.${maxPrice},bedrooms.eq.${property.bedrooms}`);
       }
 
       const { data, error } = await query.limit(6);
@@ -126,7 +137,7 @@ export default function PublicPropertyDetailPage() {
 
         <h1 className="text-3xl font-bold text-gray-900 mb-2">{property.title}</h1>
         <p className="text-gray-600 mb-6">
-          {property.region && `${property.region}, `}{property.city}
+          {property.zone?.nom}
         </p>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -140,8 +151,9 @@ export default function PublicPropertyDetailPage() {
 
           <div className="h-[300px]">
             <PropertyMap 
-              latitude={property.location_lat} 
-              longitude={property.location_lng}
+              latitude={property.zone?.latitude || null} 
+              longitude={property.zone?.longitude || null}
+              radius={property.zone?.circle_radius || 5000}
             />
           </div>
         </div>

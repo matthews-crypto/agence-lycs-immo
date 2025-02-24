@@ -347,7 +347,6 @@ export type Database = {
           amenities: string[] | null
           bathrooms: number | null
           bedrooms: number | null
-          city: string | null
           created_at: string
           description: string | null
           detailed_description: string | null
@@ -368,6 +367,7 @@ export type Database = {
           view_count: number | null
           virtual_tour_url: string | null
           year_built: number | null
+          zone_id: number | null
         }
         Insert: {
           address?: string | null
@@ -375,7 +375,6 @@ export type Database = {
           amenities?: string[] | null
           bathrooms?: number | null
           bedrooms?: number | null
-          city?: string | null
           created_at?: string
           description?: string | null
           detailed_description?: string | null
@@ -398,6 +397,7 @@ export type Database = {
           view_count?: number | null
           virtual_tour_url?: string | null
           year_built?: number | null
+          zone_id?: number | null
         }
         Update: {
           address?: string | null
@@ -405,7 +405,6 @@ export type Database = {
           amenities?: string[] | null
           bathrooms?: number | null
           bedrooms?: number | null
-          city?: string | null
           created_at?: string
           description?: string | null
           detailed_description?: string | null
@@ -428,6 +427,7 @@ export type Database = {
           view_count?: number | null
           virtual_tour_url?: string | null
           year_built?: number | null
+          zone_id?: number | null
         }
         Relationships: [
           {
@@ -435,6 +435,13 @@ export type Database = {
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "properties_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zone"
             referencedColumns: ["id"]
           },
         ]
