@@ -34,41 +34,54 @@ SelectTrigger.displayName = SelectPrimitive.Trigger.displayName
 const SelectScrollUpButton = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.ScrollUpButton>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollUpButton>
->(({ className, ...props }, ref) => (
-  <SelectPrimitive.ScrollUpButton
-    ref={ref}
-    className={cn(
-      "flex cursor-pointer select-none items-center justify-center py-1 hover:bg-accent",
-      className
-    )}
-    onPointerEnter={(e) => e.preventDefault()}
-    onMouseEnter={(e) => e.preventDefault()}
-    {...props}
-  >
-    <ChevronUp className="h-4 w-4" />
-  </SelectPrimitive.ScrollUpButton>
-))
+>(({ className, ...props }, ref) => {
+  const [isHovering, setIsHovering] = React.useState(false);
+
+  return (
+    <SelectPrimitive.ScrollUpButton
+      ref={ref}
+      className={cn(
+        "flex cursor-pointer select-none items-center justify-center py-2",
+        "hover:bg-gray-100 active:bg-gray-200",
+        "sticky top-0 bg-white z-10",
+        className
+      )}
+      onPointerEnter={() => setIsHovering(true)}
+      onPointerLeave={() => setIsHovering(false)}
+      onMouseEnter={(e) => e.preventDefault()}
+      {...props}
+    >
+      <ChevronUp className="h-4 w-4" />
+    </SelectPrimitive.ScrollUpButton>
+  );
+})
 SelectScrollUpButton.displayName = SelectPrimitive.ScrollUpButton.displayName
 
 const SelectScrollDownButton = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.ScrollDownButton>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollDownButton>
->(({ className, ...props }, ref) => (
-  <SelectPrimitive.ScrollDownButton
-    ref={ref}
-    className={cn(
-      "flex cursor-pointer select-none items-center justify-center py-1 hover:bg-accent",
-      className
-    )}
-    onPointerEnter={(e) => e.preventDefault()}
-    onMouseEnter={(e) => e.preventDefault()}
-    {...props}
-  >
-    <ChevronDown className="h-4 w-4" />
-  </SelectPrimitive.ScrollDownButton>
-))
-SelectScrollDownButton.displayName =
-  SelectPrimitive.ScrollDownButton.displayName
+>(({ className, ...props }, ref) => {
+  const [isHovering, setIsHovering] = React.useState(false);
+
+  return (
+    <SelectPrimitive.ScrollDownButton
+      ref={ref}
+      className={cn(
+        "flex cursor-pointer select-none items-center justify-center py-2",
+        "hover:bg-gray-100 active:bg-gray-200",
+        "sticky bottom-0 bg-white z-10",
+        className
+      )}
+      onPointerEnter={() => setIsHovering(true)}
+      onPointerLeave={() => setIsHovering(false)}
+      onMouseEnter={(e) => e.preventDefault()}
+      {...props}
+    >
+      <ChevronDown className="h-4 w-4" />
+    </SelectPrimitive.ScrollDownButton>
+  );
+})
+SelectScrollDownButton.displayName = SelectPrimitive.ScrollDownButton.displayName
 
 const SelectContent = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Content>,
@@ -161,4 +174,3 @@ export {
   SelectScrollUpButton,
   SelectScrollDownButton,
 }
-
