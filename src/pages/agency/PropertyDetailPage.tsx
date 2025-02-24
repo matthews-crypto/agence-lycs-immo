@@ -33,7 +33,16 @@ export default function AgencyPropertyDetailPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("properties")
-        .select("*")
+        .select(`
+          *,
+          zone (
+            id,
+            nom,
+            latitude,
+            longitude,
+            circle_radius
+          )
+        `)
         .eq("id", propertyId)
         .single();
 
@@ -43,7 +52,6 @@ export default function AgencyPropertyDetailPage() {
     enabled: !!propertyId,
   });
 
-  // Auto-scroll every 5 seconds
   useEffect(() => {
     if (!api) return;
 
@@ -89,35 +97,34 @@ export default function AgencyPropertyDetailPage() {
           style={{ color: agency?.primary_color }}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-            Retour aux offres
+          Retour aux offres
         </Button>
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold mb-2">{property.title}</h1>
           <div className="align-text-bottom space-x-2">
             <Button
-                onClick={() => setIsDialogOpen(true)}
-                style={{
-                  backgroundColor: agency?.secondary_color,
-                  color: "white",
-                }}
+              onClick={() => setIsDialogOpen(true)}
+              style={{
+                backgroundColor: agency?.secondary_color,
+                color: "white",
+              }}
             >
               Modifier Offre
             </Button>
             <Button
-                onClick={() => navigate(`/${agencySlug}/properties/${propertyId}/images`)}
-                style={{
-                  backgroundColor: agency?.primary_color,
-                  color: "white",
-                }}
+              onClick={() => navigate(`/${agencySlug}/properties/${propertyId}/images`)}
+              style={{
+                backgroundColor: agency?.primary_color,
+                color: "white",
+              }}
             >
               Gérer les images
             </Button>
           </div>
         </div>
-        <p className="text-muted-foreground text-lg">{property.city}</p>
+        <p className="text-muted-foreground text-lg">{property.zone?.nom}</p>
       </div>
 
-      {/* Carousel */}
       <div className="mb-8 relative rounded-lg overflow-hidden">
         <Carousel
           opts={{
@@ -156,7 +163,6 @@ export default function AgencyPropertyDetailPage() {
         </Carousel>
       </div>
 
-      {/* Image Modal */}
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
         <DialogContent className="max-w-[90vw] max-h-[90vh] p-0">
           {selectedImage && (
@@ -170,7 +176,6 @@ export default function AgencyPropertyDetailPage() {
       </Dialog>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Main Info */}
         <div className="md:col-span-2 space-y-8">
           <Card>
             <CardContent className="p-6">
@@ -209,7 +214,6 @@ export default function AgencyPropertyDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Features */}
           <Card>
             <CardContent className="p-6">
               <h2 className="text-2xl font-semibold mb-6">Caractéristiques</h2>
@@ -232,7 +236,6 @@ export default function AgencyPropertyDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Amenities */}
           {property.amenities && property.amenities.length > 0 && (
             <Card>
               <CardContent className="p-6">
@@ -249,25 +252,24 @@ export default function AgencyPropertyDetailPage() {
           )}
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-6">
           <Card>
             <CardContent className="p-6">
               <h2 className="text-xl font-semibold mb-4">Localisation</h2>
               <div className="space-y-2">
-                {property.region &&
-                    <p className="text-muted-foreground">Région de {property.region}</p>
-                }
-                {property.city && property.address && property.postal_code &&
-                    <p className="text-muted-foreground">
-                      Ville de {property.city}, {property.address}, {property.postal_code}
-                    </p>
-                }
-                {property.location_lat && property.location_lng &&
-                <p className="text-muted-foreground text-black">
-                  <strong>Coordonnées GPS</strong> : {property.location_lat}, {property.location_lng}
-                </p>
-                }
+                {property.region && (
+                  <p className="text-muted-foreground">Région de {property.region}</p>
+                )}
+                {property.zone?.nom && property.address && property.postal_code && (
+                  <p className="text-muted-foreground">
+                    {property.zone.nom}, {property.address}, {property.postal_code}
+                  </p>
+                )}
+                {property.zone?.latitude && property.zone?.longitude && (
+                  <p className="text-muted-foreground text-black">
+                    <strong>Coordonnées GPS</strong>: {property.zone.latitude}, {property.zone.longitude}
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -284,9 +286,6 @@ export default function AgencyPropertyDetailPage() {
                     locale: fr,
                   })}
                 </p>
-                {/*<p className="text-sm text-muted-foreground">*/}
-                {/*  Référence: {property.id}*/}
-                {/*</p>*/}
               </div>
             </CardContent>
           </Card>

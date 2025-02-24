@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MapPin, BedDouble } from "lucide-react";
+import { MapPin, User, BedDouble } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { AgencyRegistrationDialog } from "@/components/agency-registration/AgencyRegistrationDialog";
 import {
@@ -31,6 +31,15 @@ const propertyTypes = [
   { value: "OTHER", label: "Autre" },
 ];
 
+const propertyTypeLabels: { [key: string]: string } = {
+  "APARTMENT": "Appartement",
+  "HOUSE": "Maison",
+  "LAND": "Terrain",
+  "COMMERCIAL": "Local commercial",
+  "OFFICE": "Bureau",
+  "OTHER": "Autre"
+};
+
 export default function HomePage() {
   const navigate = useNavigate();
   const [selectedRegion, setSelectedRegion] = useState<string>("all");
@@ -38,28 +47,39 @@ export default function HomePage() {
   const [selectedType, setSelectedType] = useState<string>("all");
   const [minBudget, setMinBudget] = useState<string>("");
   const [maxBudget, setMaxBudget] = useState<string>("");
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
   const [heroApi, setHeroApi] = useState<any>();
   const [propertiesApi, setPropertiesApi] = useState<any>();
-  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
 
   const { data: regions } = useQuery({
     queryKey: ["regions"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("region")
-        .select("*");
+        .select("*")
+        .order("nom");
 
       if (error) throw error;
       return data;
     },
   });
 
-  const { data: properties, isLoading } = useQuery({
+  const { data: properties } = useQuery({
     queryKey: ["all-properties"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("properties")
-        .select("*, agencies(*)")
+        .select(`
+          *,
+          agencies(*),
+          zone (
+            id,
+            nom,
+            latitude,
+            longitude,
+            circle_radius
+          )
+        `)
         .eq("is_available", true);
 
       if (error) throw error;
@@ -87,54 +107,32 @@ export default function HomePage() {
   }, [heroApi, propertiesApi]);
 
   const filteredProperties = properties?.filter(property => {
-    const matchesRegion = selectedRegion === "all" || property.region === selectedRegion;
-    const matchesCity = selectedCity === "all" || property.city === selectedCity;
+    const matchesCity = selectedCity === "all" || property.zone?.nom === selectedCity;
     const matchesType = selectedType === "all" || property.property_type === selectedType;
+    const matchesRegion = selectedRegion === "all" || property.region === selectedRegion;
     const matchesMinBudget = !minBudget || property.price >= parseInt(minBudget);
     const matchesMaxBudget = !maxBudget || property.price <= parseInt(maxBudget);
-    return matchesRegion && matchesCity && matchesType && matchesMinBudget && matchesMaxBudget;
+    return matchesCity && matchesType && matchesRegion && matchesMinBudget && matchesMaxBudget;
   });
 
-  const cities = [...new Set(properties?.map(p => p.city).filter(Boolean))];
-  const loopedProperties = [...(properties || []), ...(properties || [])];
+  const cities = [...new Set(properties?.map(p => p.zone?.nom).filter(Boolean))];
 
   const handleSearch = () => {
-    if (!selectedCity && !minBudget && !maxBudget && selectedRegion === "all" && selectedType === "all") {
+    if (!selectedCity && !minBudget && !maxBudget && selectedType === "all" && selectedRegion === "all") {
       toast.warning("Veuillez sélectionner au moins un critère de recherche");
       return;
     }
     toast.success("Recherche effectuée avec succès");
   };
 
-  const handlePropertyClick = (agencySlug: string) => {
-    navigate(`/${agencySlug}`);
+  const handlePropertyClick = (propertyId: string) => {
+    navigate(`/properties/${propertyId}`);
   };
+
+  const loopedProperties = [...(properties || []), ...(properties || [])];
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Navbar */}
-      <nav className="border-b" style={{ backgroundColor: '#aa1ca0' }}>
-        <div className="container mx-auto py-4 px-4 flex justify-between items-center">
-          <div className="flex-1" />
-          <div className="flex-1 flex justify-center">
-            <img 
-              src="/lovable-uploads/684fe972-b658-43e2-b8cd-cd79ce781c45.png" 
-              alt="Lycs Immo"
-              className="h-16 object-contain rounded-full"
-            />
-          </div>
-          <div className="flex-1 flex justify-end">
-            <Button 
-              variant="ghost" 
-              className="text-[#aa1ca0] bg-white hover:text-white hover:bg-[#aa1ca0]/20"
-              onClick={() => setIsRegistrationOpen(true)}
-            >
-              Inscrire mon agence
-            </Button>
-          </div>
-        </div>
-      </nav>
-
       {/* Hero Carousel */}
       <div className="container mx-auto px-4 mt-8">
         <div className="relative h-[40vh] max-w-5xl mx-auto bg-gray-100 rounded-lg overflow-hidden">
@@ -151,9 +149,8 @@ export default function HomePage() {
                 <CarouselItem 
                   key={property.id} 
                   className="h-full"
-                  onClick={() => handlePropertyClick(property.agencies?.slug || '')}
                 >
-                  <div className="relative h-full cursor-pointer">
+                  <div className="relative h-full">
                     {property.photos?.[0] ? (
                       <img
                         src={property.photos[0]}
@@ -170,7 +167,7 @@ export default function HomePage() {
                         {property.title}
                       </h2>
                       <p className="text-white/80 mt-2">
-                        {property.city} - {property.agencies?.agency_name}
+                        {property.zone?.nom}
                       </p>
                     </div>
                   </div>
@@ -183,23 +180,6 @@ export default function HomePage() {
         {/* Search Bar */}
         <div className="mt-8 max-w-4xl mx-auto">
           <div className="bg-white rounded-lg shadow-lg p-4 flex flex-col md:flex-row gap-4">
-            <Select 
-              value={selectedRegion} 
-              onValueChange={setSelectedRegion}
-            >
-              <SelectTrigger className="w-full md:w-[200px] text-base font-medium">
-                <SelectValue placeholder="Région" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all" className="text-base">Régions</SelectItem>
-                {regions?.map((region) => (
-                  <SelectItem key={region.id} value={region.id.toString()} className="text-base">
-                    {region.nom}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
             <Select 
               value={selectedCity} 
               onValueChange={setSelectedCity}
@@ -265,7 +245,7 @@ export default function HomePage() {
       </div>
 
       {/* Filtered Properties */}
-      {filteredProperties && filteredProperties.length > 0 && (selectedCity !== "all" || minBudget || maxBudget || selectedRegion !== "all" || selectedType !== "all") && (
+      {filteredProperties && filteredProperties.length > 0 && (selectedCity !== "all" || minBudget || maxBudget || selectedType !== "all") && (
         <div className="container mx-auto px-4 mt-16">
           <h2 className="text-2xl font-light mb-8">Résultats de votre recherche</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -273,7 +253,7 @@ export default function HomePage() {
               <div 
                 key={property.id} 
                 className="cursor-pointer"
-                onClick={() => handlePropertyClick(property.agencies?.slug || '')}
+                onClick={() => handlePropertyClick(property.id)}
               >
                 <div className="aspect-[4/3] overflow-hidden rounded-lg">
                   {property.photos?.[0] ? (
@@ -292,7 +272,7 @@ export default function HomePage() {
                   <h3 className="text-xl font-light">{property.title}</h3>
                   <div className="flex items-center gap-2 text-gray-600 mt-2">
                     <MapPin className="w-4 h-4" />
-                    <p className="text-sm">{property.city}</p>
+                    <p className="text-sm">{property.zone?.nom}</p>
                   </div>
                   <div className="mt-2 flex justify-between items-center">
                     <p className="text-lg">
@@ -308,9 +288,6 @@ export default function HomePage() {
                       )}
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600 mt-2">
-                    {property.agencies?.agency_name}
-                  </p>
                 </div>
               </div>
             ))}
@@ -341,7 +318,7 @@ export default function HomePage() {
                 >
                   <div 
                     className="relative group cursor-pointer"
-                    onClick={() => handlePropertyClick(property.agencies?.slug || '')}
+                    onClick={() => handlePropertyClick(property.id)}
                   >
                     <div className="aspect-[4/3] overflow-hidden rounded-lg">
                       {property.photos?.[0] ? (
@@ -360,7 +337,7 @@ export default function HomePage() {
                       <h3 className="text-xl font-light">{property.title}</h3>
                       <div className="flex items-center gap-2 text-gray-600 mt-2">
                         <MapPin className="w-4 h-4" />
-                        <p className="text-sm">{property.city}</p>
+                        <p className="text-sm">{property.zone?.nom}</p>
                       </div>
                       <div className="mt-2 flex justify-between items-center">
                         <p className="text-lg">

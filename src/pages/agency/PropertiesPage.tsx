@@ -26,7 +26,16 @@ export default function AgencyPropertiesPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("properties")
-        .select("*")
+        .select(`
+          *,
+          zone (
+            id,
+            nom,
+            latitude,
+            longitude,
+            circle_radius
+          )
+        `)
         .eq("agency_id", agency?.id);
 
       if (error) throw error;
@@ -38,7 +47,7 @@ export default function AgencyPropertiesPage() {
   const filteredProperties = properties?.filter(
     (property) =>
       property.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      property.city?.toLowerCase().includes(searchTerm.toLowerCase())
+      property.zone?.nom.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -115,7 +124,7 @@ export default function AgencyPropertiesPage() {
                         </CardContent>
                         <CardFooter className="flex justify-between items-center">
                           <div className="text-sm text-muted-foreground">
-                            {property.city}
+                            {property.zone?.nom}
                           </div>
                           <ArrowRight className="h-4 w-4" />
                         </CardFooter>
