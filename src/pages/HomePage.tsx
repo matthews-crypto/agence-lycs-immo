@@ -125,8 +125,12 @@ export default function HomePage() {
     toast.success("Recherche effectuée avec succès");
   };
 
-  const handlePropertyClick = (propertyId: string) => {
-    navigate(`/properties/${propertyId}`);
+  const handlePropertyClick = (propertyId: string, agencySlug: string) => {
+    if (!agencySlug) {
+      console.error('No agency slug found for this property');
+      return;
+    }
+    navigate(`/${agencySlug}/properties/${propertyId}/public`);
   };
 
   const loopedProperties = [...(properties || []), ...(properties || [])];
@@ -253,7 +257,7 @@ export default function HomePage() {
               <div 
                 key={property.id} 
                 className="cursor-pointer"
-                onClick={() => handlePropertyClick(property.id)}
+                onClick={() => handlePropertyClick(property.id, property.agencies?.slug)}
               >
                 <div className="aspect-[4/3] overflow-hidden rounded-lg">
                   {property.photos?.[0] ? (
@@ -318,7 +322,7 @@ export default function HomePage() {
                 >
                   <div 
                     className="relative group cursor-pointer"
-                    onClick={() => handlePropertyClick(property.id)}
+                    onClick={() => handlePropertyClick(property.id, property.agencies?.slug)}
                   >
                     <div className="aspect-[4/3] overflow-hidden rounded-lg">
                       {property.photos?.[0] ? (
