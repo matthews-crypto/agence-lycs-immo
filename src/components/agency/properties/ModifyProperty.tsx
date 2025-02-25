@@ -28,6 +28,9 @@ const propertySchema = z.object({
     location_lng: z.coerce.number().min(-180,"la longitude doit etre compris entre -180 et 180").max(180,"la longitude doit etre compris entre -180 et 180").nullable(),
     region: z.string().min(1, "La région est requise"),
     postal_code: z.string().optional(),
+    property_condition: z.enum(["VEFA", "NEUF", "RENOVE", "USAGE"]).optional(),
+    vefa_availability_date: z.string().optional(),
+    property_offer_type: z.string().optional(),
 });
 
 const citiesByRegion: Record<string, string[]> = {
@@ -103,6 +106,9 @@ export default function ModifyPropertyDialog({open, onOpenChange, propertyId}: M
             city: "",
             region: "",
             postal_code: "",
+            property_condition: undefined,
+            vefa_availability_date: undefined,
+            property_offer_type: undefined,
         },
     });
 
@@ -154,6 +160,8 @@ export default function ModifyPropertyDialog({open, onOpenChange, propertyId}: M
             });
         }
     };
+
+    const { watch } = form;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -217,6 +225,76 @@ export default function ModifyPropertyDialog({open, onOpenChange, propertyId}: M
                                                 {...field}
                                             />
                                         </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="property_condition"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>État du bien</FormLabel>
+                                        <Select
+                                            onValueChange={field.onChange}
+                                            defaultValue={field.value}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Sélectionnez l'état" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="VEFA">Vente en l'État Futur d'Achèvement</SelectItem>
+                                                <SelectItem value="NEUF">Neuf</SelectItem>
+                                                <SelectItem value="RENOVE">Rénové</SelectItem>
+                                                <SelectItem value="USAGE">Usage</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            {watch("property_condition") === "VEFA" && (
+                                <FormField
+                                    control={form.control}
+                                    name="vefa_availability_date"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Date de disponibilité</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    type="date"
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            )}
+
+                            <FormField
+                                control={form.control}
+                                name="property_offer_type"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Type d'offre</FormLabel>
+                                        <Select
+                                            onValueChange={field.onChange}
+                                            defaultValue={field.value}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Sélectionnez le type d'offre" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="VENTE">Vente</SelectItem>
+                                                <SelectItem value="LOCATION">Location</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                         <FormMessage />
                                     </FormItem>
                                 )}

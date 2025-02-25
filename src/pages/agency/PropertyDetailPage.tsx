@@ -263,7 +263,40 @@ export default function AgencyPropertyDetailPage() {
           )}
         </div>
 
-        <div className="space-y-6">
+          <div className="space-y-6">
+            <Card>
+              <CardContent className="p-6">
+                <h2 className="text-xl font-semibold mb-4">Informations supplémentaires</h2>
+                <div className="space-y-2">
+                  {property.reference_number && (
+                    <div className="flex items-center gap-2">
+                      <strong className="text-sm">Référence:</strong>
+                      <span className="text-muted-foreground">{property.reference_number}</span>
+                    </div>
+                  )}
+                  {property.property_condition && (
+                    <div className="flex items-center gap-2">
+                      <strong className="text-sm">État du bien:</strong>
+                      <span className="text-muted-foreground">
+                        {property.property_condition === "VEFA" && "Vente en l'État Futur d'Achèvement"}
+                        {property.property_condition === "NEUF" && "Neuf"}
+                        {property.property_condition === "RENOVE" && "Rénové"}
+                        {property.property_condition === "USAGE" && "Usage"}
+                      </span>
+                    </div>
+                  )}
+                  {property.property_condition === "VEFA" && property.vefa_availability_date && (
+                    <div className="flex items-center gap-2">
+                      <strong className="text-sm">Date de disponibilité:</strong>
+                      <span className="text-muted-foreground">
+                        {format(new Date(property.vefa_availability_date), "dd MMMM yyyy", { locale: fr })}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
           <Card>
             <CardContent className="p-6">
               <h2 className="text-xl font-semibold mb-4">Localisation</h2>
