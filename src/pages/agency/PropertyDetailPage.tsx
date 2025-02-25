@@ -275,6 +275,12 @@ export default function AgencyPropertyDetailPage() {
                     </span>
                   </div>
                 )}
+                <div className="flex items-center gap-2">
+                  <strong className="text-sm">Meublé:</strong>
+                  <span className="text-muted-foreground">
+                    {property.is_furnished ? "Oui" : "Non"}
+                  </span>
+                </div>
                 {property.property_condition === "VEFA" && property.vefa_availability_date && (
                   <div className="flex items-center gap-2">
                     <strong className="text-sm">Date de disponibilité:</strong>
