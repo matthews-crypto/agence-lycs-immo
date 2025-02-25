@@ -1,4 +1,3 @@
-
 import {useEffect, useState} from "react";
 import {useForm} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -36,6 +35,9 @@ import { useAgencyContext } from "@/contexts/AgencyContext";
 import { useNavigate } from "react-router-dom";
 import { Checkbox } from "@/components/ui/checkbox";
 
+// Define the property condition type to match Supabase enum
+type PropertyCondition = "VEFA" | "NEUF" | "RENOVE" | "USAGE";
+
 const propertySchema = z.object({
   title: z.string().min(1, "Le titre est requis"),
   description: z.string().optional(),
@@ -49,7 +51,7 @@ const propertySchema = z.object({
   postal_code: z.string().optional(),
   is_furnished: z.boolean().optional(),
   property_offer_type: z.string(),
-  property_condition: z.string().optional(),
+  property_condition: z.enum(["VEFA", "NEUF", "RENOVE", "USAGE"] as const).optional(),
   vefa_availability_date: z.string().optional(),
 });
 
@@ -195,7 +197,7 @@ export function AddPropertyDialog() {
         is_available: true,
         is_furnished: data.is_furnished,
         property_offer_type: data.property_type === "TERRAIN" ? "VENTE" : data.property_offer_type,
-        property_condition: data.property_condition,
+        property_condition: data.property_condition as PropertyCondition | null,
         vefa_availability_date: data.property_condition === "VEFA" ? data.vefa_availability_date : null,
         amenities: [] as string[],
       };
@@ -562,4 +564,3 @@ export function AddPropertyDialog() {
     </Dialog>
   );
 }
-
