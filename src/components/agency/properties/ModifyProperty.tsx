@@ -112,7 +112,10 @@ export default function ModifyPropertyDialog({ open, onOpenChange, propertyId }:
           zone (
             id,
             nom,
-            region_id
+            region (
+              id,
+              nom
+            )
           )
         `)
         .eq("id", propertyId)
@@ -149,8 +152,8 @@ export default function ModifyPropertyDialog({ open, onOpenChange, propertyId }:
         setIsVente(property.property_offer_type === "VENTE");
 
         // Set selected region if available
-        if (property.zone?.region_id) {
-          setSelectedRegion(property.zone.region_id.toString());
+        if (property.zone?.region?.id) {
+          setSelectedRegion(property.zone.region.id.toString());
         }
       }
     };
