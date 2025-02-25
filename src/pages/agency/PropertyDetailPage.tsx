@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -175,17 +176,6 @@ export default function AgencyPropertyDetailPage() {
         </DialogContent>
       </Dialog>
 
-      {property.reference_number && (
-        <Card className="mb-6">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-2">
-              <h2 className="text-xl font-semibold">Référence</h2>
-              <span className="text-muted-foreground">{property.reference_number}</span>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="md:col-span-2 space-y-8">
           <Card>
@@ -263,39 +253,48 @@ export default function AgencyPropertyDetailPage() {
           )}
         </div>
 
-          <div className="space-y-6">
-            <Card>
-              <CardContent className="p-6">
-                <h2 className="text-xl font-semibold mb-4">Informations supplémentaires</h2>
-                <div className="space-y-2">
-                  {property.reference_number && (
-                    <div className="flex items-center gap-2">
-                      <strong className="text-sm">Référence:</strong>
-                      <span className="text-muted-foreground">{property.reference_number}</span>
-                    </div>
-                  )}
-                  {property.property_condition && (
-                    <div className="flex items-center gap-2">
-                      <strong className="text-sm">État du bien:</strong>
-                      <span className="text-muted-foreground">
-                        {property.property_condition === "VEFA" && "Vente en l'État Futur d'Achèvement"}
-                        {property.property_condition === "NEUF" && "Neuf"}
-                        {property.property_condition === "RENOVE" && "Rénové"}
-                        {property.property_condition === "USAGE" && "Usage"}
-                      </span>
-                    </div>
-                  )}
-                  {property.property_condition === "VEFA" && property.vefa_availability_date && (
-                    <div className="flex items-center gap-2">
-                      <strong className="text-sm">Date de disponibilité:</strong>
-                      <span className="text-muted-foreground">
-                        {format(new Date(property.vefa_availability_date), "dd MMMM yyyy", { locale: fr })}
-                      </span>
-                    </div>
-                  )}
+        <div className="space-y-6">
+          <Card>
+            <CardContent className="p-6">
+              <h2 className="text-xl font-semibold mb-4">Informations supplémentaires</h2>
+              <div className="space-y-2">
+                {property.reference_number && (
+                  <div className="flex items-center gap-2">
+                    <strong className="text-sm">Référence:</strong>
+                    <span className="text-muted-foreground">{property.reference_number}</span>
+                  </div>
+                )}
+                {property.property_condition && (
+                  <div className="flex items-center gap-2">
+                    <strong className="text-sm">État du bien:</strong>
+                    <span className="text-muted-foreground">
+                      {property.property_condition === "VEFA" && "Vente en l'État Futur d'Achèvement"}
+                      {property.property_condition === "NEUF" && "Neuf"}
+                      {property.property_condition === "RENOVE" && "Rénové"}
+                      {property.property_condition === "USAGE" && "Usage"}
+                    </span>
+                  </div>
+                )}
+                {property.property_condition === "VEFA" && property.vefa_availability_date && (
+                  <div className="flex items-center gap-2">
+                    <strong className="text-sm">Date de disponibilité:</strong>
+                    <span className="text-muted-foreground">
+                      {format(new Date(property.vefa_availability_date), "dd MMMM yyyy", { locale: fr })}
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 mt-4">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
+                    Ajouté le{" "}
+                    {format(new Date(property.created_at), "dd MMMM yyyy", {
+                      locale: fr,
+                    })}
+                  </span>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </CardContent>
+          </Card>
 
           <Card>
             <CardContent className="p-6">
@@ -314,22 +313,6 @@ export default function AgencyPropertyDetailPage() {
                     <strong>Coordonnées GPS</strong>: {property.zone.latitude}, {property.zone.longitude}
                   </p>
                 )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <h2 className="text-xl font-semibold mb-4">
-                Informations supplémentaires
-              </h2>
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">
-                  Ajouté le{" "}
-                  {format(new Date(property.created_at), "Pp", {
-                    locale: fr,
-                  })}
-                </p>
               </div>
             </CardContent>
           </Card>
