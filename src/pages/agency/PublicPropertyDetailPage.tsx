@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -5,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, StarIcon } from "lucide-react";
+import { ArrowLeft, StarIcon, BedDouble } from "lucide-react";
 import PropertyMap from "@/components/PropertyMap";
 import PropertyHeader from "@/components/property/PropertyHeader";
 import PropertyImageGallery from "@/components/property/PropertyImageGallery";
@@ -172,15 +173,16 @@ export default function PublicPropertyDetailPage() {
                   <span className="font-semibold">État du bien :</span>
                   <span>{getPropertyConditionLabel(property.property_condition)}</span>
                 </div>
-                <div className="flex items-center gap-2 text-gray-600">
-                  <span className="font-semibold">Meublé :</span>
-                  <span>{property.is_furnished ? "Oui" : "Non"}</span>
-                </div>
                 {property.property_condition === "VEFA" && property.vefa_availability_date && (
                   <div className="text-gray-600">
                     Date de disponibilité : {format(new Date(property.vefa_availability_date), 'dd MMMM yyyy', { locale: fr })}
                   </div>
                 )}
+                <div className="flex items-center gap-2 text-gray-600">
+                  <BedDouble className="h-5 w-5" />
+                  <span className="font-semibold">Meublé :</span>
+                  <span>{property.is_furnished ? "Oui" : "Non"}</span>
+                </div>
               </div>
             </CardContent>
           </Card>
