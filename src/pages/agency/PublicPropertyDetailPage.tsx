@@ -101,8 +101,6 @@ export default function PublicPropertyDetailPage() {
     }
   };
 
-  if (!property) return null;
-
   const getPropertyConditionLabel = (condition: string) => {
     switch (condition) {
       case "VEFA":
@@ -117,6 +115,8 @@ export default function PublicPropertyDetailPage() {
         return condition;
     }
   };
+
+  if (!property) return null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -171,6 +171,10 @@ export default function PublicPropertyDetailPage() {
                   <StarIcon className="h-5 w-5 text-yellow-500" />
                   <span className="font-semibold">État du bien :</span>
                   <span>{getPropertyConditionLabel(property.property_condition)}</span>
+                </div>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <span className="font-semibold">Meublé :</span>
+                  <span>{property.is_furnished ? "Oui" : "Non"}</span>
                 </div>
                 {property.property_condition === "VEFA" && property.vefa_availability_date && (
                   <div className="text-gray-600">
