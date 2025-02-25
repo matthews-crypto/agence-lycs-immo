@@ -49,11 +49,20 @@ const propertySchema = z.object({
   postal_code: z.string().optional(),
   is_furnished: z.boolean().optional(),
   property_offer_type: z.string(),
+  property_condition: z.string().optional(),
+  vefa_availability_date: z.string().optional(),
 });
 
 type PropertyFormValues = z.infer<typeof propertySchema>;
 type Region = { id: number; nom: string };
 type Zone = { id: number; nom: string };
+
+const propertyConditionTranslations = {
+  VEFA: "Vente en l'État Futur d'Achèvement (VEFA)",
+  NEUF: "Neuf",
+  RENOVE: "Récemment rénové",
+  USAGE: "Usagé",
+};
 
 export function AddPropertyDialog() {
   const [open, setOpen] = useState(false);
@@ -129,14 +138,19 @@ export function AddPropertyDialog() {
       postal_code: "",
       is_furnished: false,
       property_offer_type: "VENTE",
+      property_condition: undefined,
+      vefa_availability_date: undefined,
     },
   });
 
   const selectedPropertyType = form.watch("property_type");
+  const selectedPropertyCondition = form.watch("property_condition");
 
   const showBedroomsField = ["APPARTEMENT", "MAISON", "BUREAU"].includes(selectedPropertyType);
   const showFurnishedField = ["APPARTEMENT", "MAISON"].includes(selectedPropertyType);
   const showOfferTypeField = ["APPARTEMENT", "MAISON", "BUREAU"].includes(selectedPropertyType);
+  const showPropertyConditionField = ["APPARTEMENT", "MAISON", "BUREAU"].includes(selectedPropertyType);
+  const showVEFADateField = selectedPropertyCondition === "VEFA";
 
   const handleLocationChange = (checked: boolean) => {
     if (checked) {
@@ -181,6 +195,8 @@ export function AddPropertyDialog() {
         is_available: true,
         is_furnished: data.is_furnished,
         property_offer_type: data.property_type === "TERRAIN" ? "VENTE" : data.property_offer_type,
+        property_condition: data.property_condition,
+        vefa_availability_date: data.property_condition === "VEFA" ? data.vefa_availability_date : null,
         amenities: [] as string[],
       };
 
@@ -267,6 +283,50 @@ export function AddPropertyDialog() {
                   </FormItem>
                 )}
               />
+              {showPropertyConditionField && (
+                <FormField
+                  control={form.control}
+                  name="property_condition"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>État du bien</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sélectionnez l'état" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {Object.entries(propertyConditionTranslations).map(([value, label]) => (
+                            <SelectItem key={value} value={value}>
+                              {label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+              {showVEFADateField && (
+                <FormField
+                  control={form.control}
+                  name="vefa_availability_date"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Date de livraison prévue</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               <FormField
                 control={form.control}
                 name="surface_area"
@@ -502,3 +562,4 @@ export function AddPropertyDialog() {
     </Dialog>
   );
 }
+

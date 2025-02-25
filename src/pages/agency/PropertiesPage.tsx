@@ -23,6 +23,13 @@ export default function AgencyPropertiesPage() {
     Bureau: "Bureau",
   };
 
+  const propertyConditionTranslations: { [key: string]: string } = {
+    VEFA: "VEFA",
+    NEUF: "Neuf",
+    RENOVE: "Récemment rénové",
+    USAGE: "Usagé",
+  };
+
   const { data: properties, isLoading } = useQuery({
     queryKey: ["properties", agency?.id],
     queryFn: async () => {
@@ -110,6 +117,14 @@ export default function AgencyPropertiesPage() {
                           >
                             {property.property_offer_type === 'VENTE' ? 'À Vendre' : 'À Louer'}
                           </Badge>
+                          {property.property_condition && (
+                            <Badge 
+                              className="absolute top-4 left-4 bg-white text-black"
+                              variant="outline"
+                            >
+                              {propertyConditionTranslations[property.property_condition]}
+                            </Badge>
+                          )}
                         </div>
                         <CardHeader>
                           <CardTitle className="line-clamp-1">{property.title}</CardTitle>
@@ -148,4 +163,3 @@ export default function AgencyPropertiesPage() {
     </SidebarProvider>
   );
 }
-

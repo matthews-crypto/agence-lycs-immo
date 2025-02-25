@@ -359,6 +359,9 @@ export type Database = {
           postal_code: string | null
           preview_description: string | null
           price: number
+          property_condition:
+            | Database["public"]["Enums"]["property_condition"]
+            | null
           property_offer_type: string | null
           property_status: Database["public"]["Enums"]["property_status"] | null
           property_type: string
@@ -366,6 +369,7 @@ export type Database = {
           surface_area: number | null
           title: string
           updated_at: string
+          vefa_availability_date: string | null
           view_count: number | null
           virtual_tour_url: string | null
           year_built: number | null
@@ -389,6 +393,9 @@ export type Database = {
           postal_code?: string | null
           preview_description?: string | null
           price: number
+          property_condition?:
+            | Database["public"]["Enums"]["property_condition"]
+            | null
           property_offer_type?: string | null
           property_status?:
             | Database["public"]["Enums"]["property_status"]
@@ -398,6 +405,7 @@ export type Database = {
           surface_area?: number | null
           title: string
           updated_at?: string
+          vefa_availability_date?: string | null
           view_count?: number | null
           virtual_tour_url?: string | null
           year_built?: number | null
@@ -421,6 +429,9 @@ export type Database = {
           postal_code?: string | null
           preview_description?: string | null
           price?: number
+          property_condition?:
+            | Database["public"]["Enums"]["property_condition"]
+            | null
           property_offer_type?: string | null
           property_status?:
             | Database["public"]["Enums"]["property_status"]
@@ -430,6 +441,7 @@ export type Database = {
           surface_area?: number | null
           title?: string
           updated_at?: string
+          vefa_availability_date?: string | null
           view_count?: number | null
           virtual_tour_url?: string | null
           year_built?: number | null
@@ -638,6 +650,7 @@ export type Database = {
     }
     Enums: {
       appointment_status: "RESERVEE" | "ACHETEE" | "ANNULEE"
+      property_condition: "VEFA" | "NEUF" | "RENOVE" | "USAGE"
       property_status:
         | "DISPONIBLE"
         | "VENDUE"
