@@ -137,7 +137,7 @@ export default function ModifyPropertyDialog({ open, onOpenChange, propertyId }:
           surface_area: property.surface_area || undefined,
           address: property.address || "",
           zone_id: property.zone_id || undefined,
-          region: property.region || "",
+          region: property.region || "", // We'll update this when regions are loaded
           postal_code: property.postal_code || "",
           is_furnished: property.is_furnished || false,
           property_offer_type: property.property_offer_type || "VENTE",
@@ -175,10 +175,19 @@ export default function ModifyPropertyDialog({ open, onOpenChange, propertyId }:
       }
       
       setRegions(regionsData);
+
+      // If form has a region value, find its corresponding ID and set selectedRegion
+      const regionValue = form.getValues("region");
+      if (regionValue && regionsData) {
+        const matchingRegion = regionsData.find(r => r.nom === regionValue);
+        if (matchingRegion) {
+          setSelectedRegion(matchingRegion.id.toString());
+        }
+      }
     };
 
     fetchRegions();
-  }, []);
+  }, [form]);
 
   // Fetch cities when region changes
   useEffect(() => {
@@ -526,7 +535,7 @@ export default function ModifyPropertyDialog({ open, onOpenChange, propertyId }:
                           setSelectedRegion(value);
                         }
                       }}
-                      defaultValue={field.value}
+                      value={selectedRegion}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -552,8 +561,10 @@ export default function ModifyPropertyDialog({ open, onOpenChange, propertyId }:
                   <FormItem>
                     <FormLabel>Zone</FormLabel>
                     <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value?.toString()}
+                      onValueChange={(value) => {
+                        field.onChange(parseInt(value, 10));
+                      }}
+                      value={field.value?.toString()}
                       disabled={availableCities.length === 0}
                     >
                       <FormControl>
@@ -617,3 +628,4 @@ export default function ModifyPropertyDialog({ open, onOpenChange, propertyId }:
     </Dialog>
   );
 }
+
