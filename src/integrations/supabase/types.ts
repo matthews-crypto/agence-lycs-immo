@@ -365,6 +365,7 @@ export type Database = {
           property_offer_type: string | null
           property_status: Database["public"]["Enums"]["property_status"] | null
           property_type: string
+          reference_number: string | null
           region: string | null
           surface_area: number | null
           title: string
@@ -401,6 +402,7 @@ export type Database = {
             | Database["public"]["Enums"]["property_status"]
             | null
           property_type: string
+          reference_number?: string | null
           region?: string | null
           surface_area?: number | null
           title: string
@@ -437,6 +439,7 @@ export type Database = {
             | Database["public"]["Enums"]["property_status"]
             | null
           property_type?: string
+          reference_number?: string | null
           region?: string | null
           surface_area?: number | null
           title?: string

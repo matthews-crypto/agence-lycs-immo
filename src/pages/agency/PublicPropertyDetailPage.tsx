@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -155,9 +154,14 @@ export default function PublicPropertyDetailPage() {
         </div>
 
         <h1 className="text-3xl font-bold text-gray-900 mb-2">{property.title}</h1>
-        <p className="text-gray-600 mb-6">
+        <p className="text-gray-600 mb-2">
           {property.zone?.nom}
         </p>
+        {property.reference_number && (
+          <p className="text-sm text-muted-foreground mb-6">
+            Référence : {property.reference_number}
+          </p>
+        )}
 
         {property.property_condition && (
           <Card className="mb-6">
@@ -271,4 +275,3 @@ export default function PublicPropertyDetailPage() {
     </div>
   );
 }
-

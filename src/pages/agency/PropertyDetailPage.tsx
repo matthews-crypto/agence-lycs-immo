@@ -175,6 +175,17 @@ export default function AgencyPropertyDetailPage() {
         </DialogContent>
       </Dialog>
 
+      {property.reference_number && (
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-semibold">Référence</h2>
+              <span className="text-muted-foreground">{property.reference_number}</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="md:col-span-2 space-y-8">
           <Card>
