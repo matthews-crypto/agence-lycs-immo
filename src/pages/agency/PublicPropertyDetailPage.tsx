@@ -6,13 +6,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, StarIcon } from "lucide-react";
 import PropertyMap from "@/components/PropertyMap";
 import PropertyHeader from "@/components/property/PropertyHeader";
 import PropertyImageGallery from "@/components/property/PropertyImageGallery";
 import PropertyStats from "@/components/property/PropertyStats";
 import SimilarProperties from "@/components/property/SimilarProperties";
 import PropertyMetaTags from "@/components/property/PropertyMetaTags";
+import { Card, CardContent } from "@/components/ui/card";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 export default function PublicPropertyDetailPage() {
   const navigate = useNavigate();
@@ -101,6 +104,21 @@ export default function PublicPropertyDetailPage() {
 
   if (!property) return null;
 
+  const getPropertyConditionLabel = (condition: string) => {
+    switch (condition) {
+      case "VEFA":
+        return "Vente en l'État Futur d'Achèvement";
+      case "NEUF":
+        return "Neuf";
+      case "RENOVE":
+        return "Rénové";
+      case "USAGE":
+        return "Usage";
+      default:
+        return condition;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <PropertyMetaTags
@@ -140,6 +158,25 @@ export default function PublicPropertyDetailPage() {
         <p className="text-gray-600 mb-6">
           {property.zone?.nom}
         </p>
+
+        {property.property_condition && (
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <StarIcon className="h-5 w-5 text-yellow-500" />
+                  <span className="font-semibold">État du bien :</span>
+                  <span>{getPropertyConditionLabel(property.property_condition)}</span>
+                </div>
+                {property.property_condition === "VEFA" && property.vefa_availability_date && (
+                  <div className="text-gray-600">
+                    Date de disponibilité : {format(new Date(property.vefa_availability_date), 'dd MMMM yyyy', { locale: fr })}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <div>
