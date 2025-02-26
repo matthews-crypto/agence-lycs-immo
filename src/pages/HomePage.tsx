@@ -138,14 +138,14 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Navbar */}
-      <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <nav style={{ backgroundColor: '#aa1ca0' }} className="border-b">
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
-            <div className="text-xl font-semibold">
-              ImmoLoc
+            <div className="text-xl font-semibold text-white">
+              LycsImmo
             </div>
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" onClick={() => setIsRegistrationOpen(true)}>
+              <Button variant="ghost" onClick={() => setIsRegistrationOpen(true)} className="text-white hover:text-white/90">
                 <User className="h-4 w-4 mr-2" />
                 Inscription Agence
               </Button>
