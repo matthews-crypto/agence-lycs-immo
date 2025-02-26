@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MapPin, User, BedDouble, ChevronUp } from "lucide-react";
+import { MapPin, User, BedDouble, ChevronUp, Phone, Mail } from "lucide-react";
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { useNavigate } from "react-router-dom";
 import { AuthDrawer } from "@/components/agency/AuthDrawer";
@@ -22,6 +22,8 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 const propertyTypeLabels: { [key: string]: string } = {
   "APARTMENT": "Appartement",
@@ -510,6 +512,164 @@ export default function AgencyHomePage() {
         open={isAuthOpen} 
         onOpenChange={setIsAuthOpen}
       />
+      {/* Footer */}
+      <footer 
+        className="mt-16 py-12"
+        style={{ backgroundColor: agency?.primary_color || '#000000' }}
+      >
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            {/* Address Column */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-white" />
+                <h3 
+                  className="text-lg font-medium"
+                  style={{ color: agency?.secondary_color || '#ffffff' }}
+                >
+                  ADRESSE
+                </h3>
+              </div>
+              <p className="text-white">
+                {agency?.address}<br />
+                {agency?.city} {agency?.postal_code}
+              </p>
+            </div>
+
+            {/* Phone Column */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Phone className="w-5 h-5 text-white" />
+                <h3 
+                  className="text-lg font-medium"
+                  style={{ color: agency?.secondary_color || '#ffffff' }}
+                >
+                  TÉLÉPHONE
+                </h3>
+              </div>
+              <p className="text-white">
+                {agency?.contact_phone}
+              </p>
+            </div>
+
+            {/* Email Column */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Mail className="w-5 h-5 text-white" />
+                <h3 
+                  className="text-lg font-medium"
+                  style={{ color: agency?.secondary_color || '#ffffff' }}
+                >
+                  E-MAIL
+                </h3>
+              </div>
+              <p className="text-white">
+                {agency?.contact_email}
+              </p>
+            </div>
+
+            {/* Logo Column */}
+            <div className="flex justify-center md:justify-end">
+              {agency?.logo_url && (
+                <img 
+                  src={agency.logo_url} 
+                  alt={agency.agency_name}
+                  className="h-24 object-contain"
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <div className="mt-12 border-t border-white/20 pt-8">
+            <h3 
+              className="text-lg font-medium mb-4"
+              style={{ color: agency?.secondary_color || '#ffffff' }}
+            >
+              NAVIGATION
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {propertyTypeGroups && Object.keys(propertyTypeGroups).map((type) => (
+                propertyTypeGroups[type].length > 0 && (
+                  <button
+                    key={type}
+                    onClick={() => scrollToSection(`section-${type}`)}
+                    className="text-white text-left hover:text-white/90 transition-colors"
+                  >
+                    {propertyTypeLabels[type] || type}
+                  </button>
+                )
+              ))}
+            </div>
+          </div>
+
+          {/* Contact Form */}
+          <div className="mt-12 border-t border-white/20 pt-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+              <div className="space-y-6">
+                <h3 
+                  className="text-lg font-medium"
+                  style={{ color: agency?.secondary_color || '#ffffff' }}
+                >
+                  CONTACTEZ-NOUS
+                </h3>
+                <form className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="text-white">Nom</Label>
+                    <Input id="name" placeholder="Votre nom" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-white">Email</Label>
+                    <Input id="email" type="email" placeholder="Votre email" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="message" className="text-white">Message</Label>
+                    <Textarea 
+                      id="message" 
+                      placeholder="Votre message"
+                      className="min-h-[100px]"
+                    />
+                  </div>
+                  <Button 
+                    type="submit"
+                    className="w-full"
+                    style={{
+                      backgroundColor: agency?.secondary_color || '#ffffff',
+                      color: agency?.primary_color || '#000000',
+                    }}
+                  >
+                    Envoyer
+                  </Button>
+                </form>
+                <Button
+                  className="w-full flex items-center justify-center gap-2"
+                  onClick={() => {
+                    if (agency?.contact_phone) {
+                      window.location.href = `tel:${agency.contact_phone}`;
+                    }
+                  }}
+                  style={{
+                    backgroundColor: agency?.secondary_color || '#ffffff',
+                    color: agency?.primary_color || '#000000',
+                  }}
+                >
+                  <Phone className="w-5 h-5" />
+                  Appelez
+                </Button>
+              </div>
+              <div className="hidden md:flex justify-end">
+                {agency?.logo_url && (
+                  <img 
+                    src={agency.logo_url} 
+                    alt={agency.agency_name}
+                    className="h-48 object-contain"
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
