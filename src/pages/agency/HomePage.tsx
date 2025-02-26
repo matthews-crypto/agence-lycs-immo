@@ -142,28 +142,45 @@ export default function AgencyHomePage() {
 
   const loopedProperties = [...(properties || []), ...(properties || [])];
 
+  const scrollToSection = (type: string) => {
+    const section = document.getElementById(`section-${type}`);
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Navbar */}
-      <nav className="border-b" style={{ backgroundColor: agency?.primary_color || '#000000' }}>
-        <div className="container mx-auto py-4 px-4 flex justify-between items-center">
-          <div className="flex-1" />
-          <div className="flex-1 flex justify-center">
-            {agency?.logo_url ? (
-              <img 
-                src={agency.logo_url} 
-                alt={agency.agency_name}
-                className="h-16 object-contain rounded-full"
-              />
-            ) : (
-              <h1 
-                className="text-2xl font-light text-white"
-              >
-                {agency?.agency_name}
-              </h1>
-            )}
-          </div>
-          <div className="flex-1 flex justify-end">
+      <nav className="border-b sticky top-0 z-50" style={{ backgroundColor: agency?.primary_color || '#000000' }}>
+        <div className="container mx-auto py-4 px-4">
+          <div className="flex items-center justify-between">
+            <div className="flex-shrink-0">
+              {agency?.logo_url ? (
+                <img 
+                  src={agency.logo_url} 
+                  alt={agency.agency_name}
+                  className="h-16 object-contain rounded-full"
+                />
+              ) : (
+                <h1 className="text-2xl font-light text-white">
+                  {agency?.agency_name}
+                </h1>
+              )}
+            </div>
+
+            <div className="hidden md:flex space-x-8">
+              {Object.keys(propertyTypeLabels).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => scrollToSection(type)}
+                  className="text-white hover:text-gray-200 transition-colors"
+                >
+                  {propertyTypeLabels[type]}
+                </button>
+              ))}
+            </div>
+
             <Button
               variant="ghost"
               onClick={() => setIsAuthOpen(true)}
@@ -458,7 +475,7 @@ export default function AgencyHomePage() {
             return acc;
           }, {} as { [key: string]: typeof properties })
         ).map(([type, typeProperties]) => (
-          <div key={type} className="mb-16">
+          <div key={type} id={`section-${type}`} className="mb-16">
             <h3 className="text-2xl font-light mb-8">
               {propertyTypeLabels[type] || type}
             </h3>
