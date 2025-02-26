@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,7 +45,7 @@ const propertyTypes = [
 export default function AgencyHomePage() {
   const { agency } = useAgencyContext();
   const navigate = useNavigate();
-  const [selectedCity, setSelectedCity] = useState<string>("all");
+  const [selectedZone, setSelectedZone] = useState<string>("all");
   const [selectedType, setSelectedType] = useState<string>("all");
   const [selectedRegion, setSelectedRegion] = useState<string>("all");
   const [minBudget, setMinBudget] = useState<string>("");
@@ -71,7 +72,16 @@ export default function AgencyHomePage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("properties")
-        .select("*")
+        .select(`
+          *,
+          zone (
+            id,
+            nom,
+            latitude,
+            longitude,
+            circle_radius
+          )
+        `)
         .eq("agency_id", agency?.id)
         .eq("is_available", true)
         .order("created_at", { ascending: false });
@@ -110,18 +120,18 @@ export default function AgencyHomePage() {
   }, [heroApi, propertiesApi]);
 
   const filteredProperties = properties?.filter(property => {
-    const matchesCity = selectedCity === "all" || property.city === selectedCity;
+    const matchesZone = selectedZone === "all" || property.zone?.nom === selectedZone;
     const matchesType = selectedType === "all" || property.property_type === selectedType;
     const matchesRegion = selectedRegion === "all" || property.region === selectedRegion;
     const matchesMinBudget = !minBudget || property.price >= parseInt(minBudget);
     const matchesMaxBudget = !maxBudget || property.price <= parseInt(maxBudget);
-    return matchesCity && matchesType && matchesRegion && matchesMinBudget && matchesMaxBudget;
+    return matchesZone && matchesType && matchesRegion && matchesMinBudget && matchesMaxBudget;
   });
 
-  const cities = [...new Set(properties?.map(p => p.city).filter(Boolean))];
+  const zones = [...new Set(properties?.map(p => p.zone?.nom).filter(Boolean))];
 
   const handleSearch = () => {
-    if (!selectedCity && !minBudget && !maxBudget && selectedType === "all" && selectedRegion === "all") {
+    if (!selectedZone && !minBudget && !maxBudget && selectedType === "all" && selectedRegion === "all") {
       toast.warning("Veuillez sélectionner au moins un critère de recherche");
       return;
     }
@@ -203,7 +213,7 @@ export default function AgencyHomePage() {
                         {property.title}
                       </h2>
                       <p className="text-white/80 mt-2">
-                        {property.city}
+                        {property.zone?.nom}
                       </p>
                     </div>
                   </div>
@@ -217,17 +227,17 @@ export default function AgencyHomePage() {
         <div className="mt-8 max-w-4xl mx-auto">
           <div className="bg-white rounded-lg shadow-lg p-4 flex flex-col md:flex-row gap-4">
             <Select 
-              value={selectedCity} 
-              onValueChange={setSelectedCity}
+              value={selectedZone} 
+              onValueChange={setSelectedZone}
             >
               <SelectTrigger className="w-full md:w-[200px] text-base font-medium">
-                <SelectValue placeholder="Ville" />
+                <SelectValue placeholder="Zone" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all" className="text-base">Villes</SelectItem>
-                {cities.map((city) => (
-                  <SelectItem key={city} value={city} className="text-base">
-                    {city}
+                <SelectItem value="all" className="text-base">Zones</SelectItem>
+                {zones.map((zone) => (
+                  <SelectItem key={zone} value={zone || ''} className="text-base">
+                    {zone}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -298,7 +308,7 @@ export default function AgencyHomePage() {
       </div>
 
       {/* Filtered Properties */}
-      {filteredProperties && filteredProperties.length > 0 && (selectedCity !== "all" || minBudget || maxBudget || selectedType !== "all") && (
+      {filteredProperties && filteredProperties.length > 0 && (selectedZone !== "all" || minBudget || maxBudget || selectedType !== "all") && (
         <div className="container mx-auto px-4 mt-16">
           <h2 className="text-2xl font-light mb-8">Résultats de votre recherche</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -334,7 +344,7 @@ export default function AgencyHomePage() {
                   <h3 className="text-xl font-light">{property.title}</h3>
                   <div className="flex items-center gap-2 text-gray-600 mt-2">
                     <MapPin className="w-4 h-4" />
-                    <p className="text-sm">{property.city}</p>
+                    <p className="text-sm">{property.zone?.nom}</p>
                   </div>
                   <div className="mt-2 flex justify-between items-center">
                     <p className="text-lg">
@@ -408,7 +418,7 @@ export default function AgencyHomePage() {
                       <h3 className="text-xl font-light">{property.title}</h3>
                       <div className="flex items-center gap-2 text-gray-600 mt-2">
                         <MapPin className="w-4 h-4" />
-                        <p className="text-sm">{property.city}</p>
+                        <p className="text-sm">{property.zone?.nom}</p>
                       </div>
                       <div className="mt-2 flex justify-between items-center">
                         <p className="text-lg">

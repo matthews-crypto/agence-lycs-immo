@@ -7,6 +7,7 @@ interface SimilarPropertyProps {
   bedrooms: number;
   surfaceArea: number;
   region: string;
+  propertyOfferType: string;
   primaryColor?: string;
   onClick: (id: string) => void;
 }
@@ -32,11 +33,19 @@ export default function SimilarProperties({
             onClick={() => prop.onClick(prop.id)}
             className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
           >
-            <img
-              src={prop.photos?.[0]}
-              alt={prop.title}
-              className="w-full h-48 object-cover"
-            />
+            <div className="relative">
+              <img
+                src={prop.photos?.[0]}
+                alt={prop.title}
+                className="w-full h-48 object-cover"
+              />
+              <div 
+                className="absolute top-4 right-4 px-3 py-1 rounded text-white text-sm"
+                style={{ backgroundColor: agencyPrimaryColor }}
+              >
+                {prop.propertyOfferType === 'VENTE' ? 'À Vendre' : 'À Louer'}
+              </div>
+            </div>
             <div className="p-4">
               <h3 className="font-bold text-lg mb-2">{prop.title}</h3>
               <div className="flex justify-between items-center text-gray-600 mb-2">

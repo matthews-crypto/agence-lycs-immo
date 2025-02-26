@@ -1,5 +1,5 @@
 import {useEffect, useState} from "react";
-import {useForm, useFormContext} from "react-hook-form";
+import {useForm} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
@@ -15,7 +15,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -34,65 +33,97 @@ import { PlusCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { useNavigate } from "react-router-dom";
+import { Checkbox } from "@/components/ui/checkbox";
+
+// Define the property condition type to match Supabase enum
+type PropertyCondition = "VEFA" | "NEUF" | "RENOVE" | "USAGE";
 
 const propertySchema = z.object({
   title: z.string().min(1, "Le titre est requis"),
   description: z.string().optional(),
   property_type: z.string().min(1, "Le type de bien est requis"),
-  bedrooms: z.coerce.number().min(1, "Le nombre de pièces est requis"),
+  bedrooms: z.coerce.number().optional(),
   price: z.coerce.number().min(1, "Le prix est requis"),
   surface_area: z.coerce.number().optional(),
-  address: z.string().min(1, "L'adresse est requise"),
-  city: z.string().optional(),
-  location_lat: z.coerce.number().min(-90,"la latitude doit etre compris entre -90 et 90").max(90,"la latitude doit etre compris entre -90 et 90").nullable(),
-  location_lng: z.coerce.number().min(-180,"la longitude doit etre compris entre -180 et 180").max(180,"la longitude doit etre compris entre -180 et 180").nullable(),
+  address: z.string().optional(),
+  zone_id: z.coerce.number().min(1, "La zone est requise"),
   region: z.string().min(1, "La région est requise"),
   postal_code: z.string().optional(),
+  is_furnished: z.boolean().optional(),
+  property_offer_type: z.string(),
+  property_condition: z.enum(["VEFA", "NEUF", "RENOVE", "USAGE"] as const).optional(),
+  vefa_availability_date: z.string().optional(),
 });
 
-const citiesByRegion: Record<string, string[]> = {
-    Dakar: ["Dakar", "Pikine", "Guédiawaye", "Rufisque",  'Bargny',
-        'Diamniadio', 'Sébikotane', 'Sangalkam', 'Yène', 'Jaxaay-Parcelles'],
-    Diourbel: ['Diourbel', 'Bambey', 'Mbacké', 'Touba', 'Ndindy',
-        'Ndoulo', 'Ngoye', 'Lambaye', 'Taïf', 'Dankh Sène'],
-    Fatick: ['Fatick', 'Foundiougne', 'Gossas', 'Diofior', 'Sokone',
-        'Passy', 'Diakhao', 'Diaoule', 'Niakhar', 'Tattaguine'],
-    Kaffrine: [ 'Kaffrine', 'Koungheul', 'Malem Hodar', 'Birkelane', 'Nganda',
-        'Diamagadio', 'Kathiote', 'Médinatoul Salam', 'Gniby', 'Boulel'],
-    Kaolack: ['Kaolack', 'Guinguinéo', 'Nioro du Rip', 'Gandiaye', 'Kahone',
-        'Ndoffane', 'Sibassor', 'Keur Madiabel', 'Ndiédieng', 'Thiaré'],
-    Kedougou: ['Kédougou', 'Salémata', 'Saraya', 'Bandafassi', 'Fongolimbi',
-        'Dimboli', 'Ninéfécha', 'Tomboronkoto', 'Dindefelo', 'Khossanto'],
-    Kolda: ['Kolda', 'Vélingara', 'Médina Yoro Foulah', 'Dabo', 'Salikégné',
-        'Saré Yoba Diéga', 'Tankanto Escale', 'Kounkané', 'Dioulacolon', 'Mampatim'],
-    Sédhiou: [
-        'Sédhiou', 'Bounkiling', 'Goudomp', 'Marsassoum', 'Diannah Malary',
-        'Bambaly', 'Djiredji', 'Tankon', 'Diattacounda', 'Samine'
-    ],
-    Louga: ['Louga', 'Kébémer', 'Linguère', 'Dahra', 'Guéoul',
-        'Ndiagne', 'Sakal', 'Niomré', 'Ngueune Sarr', 'Keur Momar Sarr'],
-    Matam: ['Matam', 'Kanel', 'Ranérou', 'Ourossogui', 'Thilogne',
-        'Waoundé', 'Agnam Civol', 'Bokidiawé', 'Nabadji Civol', 'Sinthiou Bamambé'],
-    "Saint-Louis": [ 'Saint-Louis', 'Dagana', 'Richard Toll', 'Rosso', 'Podor',
-        'Mpal', 'Rao', 'Ndiébène Gandiol', 'Gandon', 'Fass Ngom'],
-    Tambacounda: ['Tambacounda', 'Bakel', 'Goudiry', 'Kidira', 'Koumpentoum',
-        'Malème Niani', 'Dialacoto', 'Missirah', 'Kothiary', 'Maka'],
-    Thies: [ 'Thiès', 'Mbour', 'Tivaouane', 'Joal-Fadiouth', 'Kayar',
-        'Pout', 'Khombole', 'Meckhe', 'Ngoundiane', 'Tassette'],
-    Ziguinchor: ['Ziguinchor', 'Bignona', 'Oussouye', 'Thionck Essyl', 'Diouloulou',
-        'Kafountine', 'Diembéring', 'Mlomp', 'Santhiaba Manjack', 'Niaguis'],
-};
-
 type PropertyFormValues = z.infer<typeof propertySchema>;
+type Region = { id: number; nom: string };
+type Zone = { id: number; nom: string };
+
+const propertyConditionTranslations = {
+  VEFA: "Vente en l'État Futur d'Achèvement (VEFA)",
+  NEUF: "Neuf",
+  RENOVE: "Récemment rénové",
+  USAGE: "Usagé",
+};
 
 export function AddPropertyDialog() {
   const [open, setOpen] = useState(false);
-  const [uploading, setUploading] = useState(false)
   const [selectedRegion, setSelectedRegion] = useState<string>("");
-  const [availableCities, setAvailableCities] = useState<string[]>([]);
+  const [regions, setRegions] = useState<Region[]>([]);
+  const [availableCities, setAvailableCities] = useState<Zone[]>([]);
+  const [isLocation, setIsLocation] = useState(false);
+  const [isVente, setIsVente] = useState(true);
   const { toast } = useToast();
   const { agency } = useAgencyContext();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchRegions = async () => {
+      const { data: regionsData, error } = await supabase
+        .from('region')
+        .select('*')
+        .order('nom');
+      
+      if (error) {
+        console.error('Error fetching regions:', error);
+        return;
+      }
+      
+      setRegions(regionsData);
+    };
+
+    fetchRegions();
+  }, []);
+
+  useEffect(() => {
+    const fetchCities = async (regionId: string) => {
+      const numericRegionId = parseInt(regionId, 10);
+      
+      if (isNaN(numericRegionId)) {
+        console.error('Invalid region ID:', regionId);
+        return;
+      }
+
+      const { data: citiesData, error } = await supabase
+        .from('zone')
+        .select('*')
+        .eq('region_id', numericRegionId)
+        .order('nom');
+      
+      if (error) {
+        console.error('Error fetching cities:', error);
+        return;
+      }
+      
+      setAvailableCities(citiesData);
+    };
+
+    if (selectedRegion) {
+      fetchCities(selectedRegion);
+    } else {
+      setAvailableCities([]);
+    }
+  }, [selectedRegion]);
 
   const form = useForm<PropertyFormValues>({
     resolver: zodResolver(propertySchema),
@@ -103,24 +134,43 @@ export function AddPropertyDialog() {
       bedrooms: undefined,
       price: undefined,
       surface_area: undefined,
-      location_lat: undefined,
-      location_lng: undefined,
       address: "",
-      city: "",
+      zone_id: undefined,
       region: "",
       postal_code: "",
+      is_furnished: false,
+      property_offer_type: "VENTE",
+      property_condition: undefined,
+      vefa_availability_date: undefined,
     },
   });
-    useEffect(() => {
-        // Met à jour les villes disponibles lorsque la région change
-        if (selectedRegion) {
-            setAvailableCities(citiesByRegion[selectedRegion] || []);
-        } else {
-            setAvailableCities([]);
-        }
-    }, [selectedRegion]);
 
-    const onSubmit = async (data: PropertyFormValues) => {
+  const selectedPropertyType = form.watch("property_type");
+  const selectedPropertyCondition = form.watch("property_condition");
+
+  const showBedroomsField = ["APPARTEMENT", "MAISON", "BUREAU"].includes(selectedPropertyType);
+  const showFurnishedField = ["APPARTEMENT", "MAISON"].includes(selectedPropertyType);
+  const showOfferTypeField = ["APPARTEMENT", "MAISON", "BUREAU"].includes(selectedPropertyType);
+  const showPropertyConditionField = ["APPARTEMENT", "MAISON", "BUREAU"].includes(selectedPropertyType);
+  const showVEFADateField = selectedPropertyCondition === "VEFA";
+
+  const handleLocationChange = (checked: boolean) => {
+    if (checked) {
+      setIsLocation(true);
+      setIsVente(false);
+      form.setValue("property_offer_type", "LOCATION");
+    }
+  };
+
+  const handleVenteChange = (checked: boolean) => {
+    if (checked) {
+      setIsVente(true);
+      setIsLocation(false);
+      form.setValue("property_offer_type", "VENTE");
+    }
+  };
+
+  const onSubmit = async (data: PropertyFormValues) => {
     if (!agency?.id) {
       toast({
         variant: "destructive",
@@ -131,7 +181,6 @@ export function AddPropertyDialog() {
     }
 
     try {
-
       const propertyData = {
         title: data.title,
         description: data.description,
@@ -140,14 +189,16 @@ export function AddPropertyDialog() {
         price: data.price,
         surface_area: data.surface_area,
         address: data.address,
-        city: data.city,
+        zone_id: data.zone_id,
         region: data.region,
         postal_code: data.postal_code,
-        location_lat: data.location_lat,
-        location_lng: data.location_lng,
         agency_id: agency.id,
         property_status: "DISPONIBLE" as const,
         is_available: true,
+        is_furnished: data.is_furnished,
+        property_offer_type: data.property_type === "TERRAIN" ? "VENTE" : data.property_offer_type,
+        property_condition: data.property_condition as PropertyCondition | null,
+        vefa_availability_date: data.property_condition === "VEFA" ? data.vefa_availability_date : null,
         amenities: [] as string[],
       };
 
@@ -166,7 +217,6 @@ export function AddPropertyDialog() {
       setOpen(false);
       form.reset();
       
-      // Redirection vers la page de gestion des images
       navigate(`/${agency.slug}/properties/${newProperty.id}/images`);
     } catch (error) {
       console.error("Error adding property:", error);
@@ -203,7 +253,7 @@ export function AddPropertyDialog() {
                   <FormItem>
                     <FormLabel>Titre</FormLabel>
                     <FormControl>
-                      <Input placeholder="Titre de l'offre                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  " {...field} />
+                      <Input placeholder="Titre de l'offre" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -235,6 +285,50 @@ export function AddPropertyDialog() {
                   </FormItem>
                 )}
               />
+              {showPropertyConditionField && (
+                <FormField
+                  control={form.control}
+                  name="property_condition"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>État du bien</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sélectionnez l'état" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {Object.entries(propertyConditionTranslations).map(([value, label]) => (
+                            <SelectItem key={value} value={value}>
+                              {label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+              {showVEFADateField && (
+                <FormField
+                  control={form.control}
+                  name="vefa_availability_date"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Date de livraison prévue</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               <FormField
                 control={form.control}
                 name="surface_area"
@@ -252,42 +346,100 @@ export function AddPropertyDialog() {
                   </FormItem>
                 )}
               />
+              {showBedroomsField && (
+                <FormField
+                  control={form.control}
+                  name="bedrooms"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nombre de pièces</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          placeholder="Nombre de pièces"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
+
+            {showOfferTypeField && (
+              <div className="flex flex-col space-y-4">
+                <FormLabel>Type d'offre</FormLabel>
+                <div className="flex space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      checked={isLocation}
+                      onCheckedChange={handleLocationChange}
+                      id="location"
+                    />
+                    <label
+                      htmlFor="location"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      Location
+                    </label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      checked={isVente}
+                      onCheckedChange={handleVenteChange}
+                      id="vente"
+                    />
+                    <label
+                      htmlFor="vente"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      Vente
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {showFurnishedField && (
               <FormField
                 control={form.control}
-                name="bedrooms"
+                name="is_furnished"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nombre de pièces</FormLabel>
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                     <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="Nombre de pièces"
-                        {...field}
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
                       />
                     </FormControl>
-                    <FormMessage />
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>
+                        Meublé
+                      </FormLabel>
+                    </div>
                   </FormItem>
                 )}
               />
-            </div>
+            )}
 
-              <FormField
-                  control={form.control}
-                  name="price"
-                  render={({ field }) => (
-                      <FormItem>
-                          <FormLabel>Prix (CFA)</FormLabel>
-                          <FormControl>
-                              <Input
-                                  type="number"
-                                  placeholder="Prix en FCFA"
-                                  {...field}
-                              />
-                          </FormControl>
-                          <FormMessage />
-                      </FormItem>
-                  )}
-              />
+            <FormField
+                control={form.control}
+                name="price"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Prix (CFA)</FormLabel>
+                        <FormControl>
+                            <Input
+                                type="number"
+                                placeholder="Prix en FCFA"
+                                {...field}
+                            />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
 
             <FormField
               control={form.control}
@@ -308,123 +460,92 @@ export function AddPropertyDialog() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
+                  control={form.control}
+                  name="region"
+                  render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Région</FormLabel>
+                          <Select
+                              onValueChange={(value) => {
+                                  const selectedRegion = regions.find(r => r.id.toString() === value);
+                                  if (selectedRegion) {
+                                      field.onChange(selectedRegion.nom);
+                                      setSelectedRegion(value);
+                                  }
+                              }}
+                              defaultValue={field.value}
+                          >
+                              <FormControl>
+                                  <SelectTrigger>
+                                      <SelectValue placeholder="Sélectionnez une région" />
+                                  </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                  {regions.map((region) => (
+                                      <SelectItem key={region.id} value={region.id.toString()}>
+                                          {region.nom}
+                                      </SelectItem>
+                                  ))}
+                              </SelectContent>
+                          </Select>
+                          <FormMessage />
+                      </FormItem>
+                  )}
+              />
+              <FormField
                 control={form.control}
-                name="address"
+                name="zone_id"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Adresse</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Adresse du bien" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+                    <FormItem>
+                        <FormLabel>Zone</FormLabel>
+                        <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value?.toString()}
+                            disabled={availableCities.length === 0}
+                        >
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Sélectionnez une zone" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {availableCities.map((city) => (
+                                    <SelectItem key={city.id} value={city.id.toString()}>
+                                        {city.nom}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
                 )}
               />
-                <FormField
-                    control={form.control}
-                    name="postal_code"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Code postal</FormLabel>
-                            <FormControl>
-                                <Input placeholder="Code postal" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="region"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Région</FormLabel>
-                            <Select
-                                onValueChange={(value) => {
-                                    field.onChange(value);
-                                    setSelectedRegion(value);
-                                }}
-                                defaultValue={field.value}
-                            >
-                                <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Sélectionnez une région" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {Object.keys(citiesByRegion).map((region) => (
-                                        <SelectItem key={region} value={region}>
-                                            {region}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="city"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Ville</FormLabel>
-                            <Select
-                                onValueChange={field.onChange}
-                                defaultValue={field.value}
-                                disabled={availableCities.length === 0}
-                            >
-                                <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Sélectionnez une ville" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {availableCities.map((city) => (
-                                        <SelectItem key={city} value={city}>
-                                            {city}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="location_lat"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Latitude</FormLabel>
-                            <FormControl>
-                                <Input
-                                    type="number"
-                                    placeholder="Latitude"
-                                    {...field}
-                                />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="location_lng"
-                    render={({ field }) => (
-                        <FormItem>
-                                <FormLabel>Longitude</FormLabel>
-                            <FormControl>
-                                <Input
-                                    type="number"
-                                    placeholder="Longitude"
-                                    {...field}
-                                />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+              <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Adresse complémentaire</FormLabel>
+                          <FormControl>
+                              <Input placeholder="Adresse complémentaire" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                      </FormItem>
+                  )}
+              />
+              <FormField
+                  control={form.control}
+                  name="postal_code"
+                  render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Code postal</FormLabel>
+                          <FormControl>
+                              <Input placeholder="Code postal" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                      </FormItem>
+                  )}
+              />
             </div>
 
             <div className="flex justify-end space-x-4">
@@ -443,4 +564,3 @@ export function AddPropertyDialog() {
     </Dialog>
   );
 }
-

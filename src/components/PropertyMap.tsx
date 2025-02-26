@@ -6,38 +6,40 @@ import 'leaflet/dist/leaflet.css';
 interface PropertyMapProps {
   latitude: number | null;
   longitude: number | null;
+  radius?: number | null;
   className?: string;
 }
 
-const PropertyMap = ({ latitude, longitude, className = "" }: PropertyMapProps) => {
+const PropertyMap = ({ latitude, longitude, radius = 5000, className = "" }: PropertyMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
-  const markerRef = useRef<L.Marker | null>(null);
+  const circleRef = useRef<L.Circle | null>(null);
 
   useEffect(() => {
     if (!latitude || !longitude) return;
 
-    // Fix for the marker icon not showing
-    const defaultIcon = L.icon({
-      iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-      iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-      shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-      shadowSize: [41, 41]
-    });
-
     // Initialize map if it doesn't exist
     if (!mapRef.current) {
-      mapRef.current = L.map(`map-${latitude}-${longitude}`).setView([latitude, longitude], 15);
+      mapRef.current = L.map(`map-${latitude}-${longitude}`).setView([latitude, longitude], 13);
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
       }).addTo(mapRef.current);
 
-      // Add marker with custom popup
-      markerRef.current = L.marker([latitude, longitude], { icon: defaultIcon })
-        .addTo(mapRef.current)
+      // Add circle with radius
+      circleRef.current = L.circle([latitude, longitude], {
+        color: '#0066FF',
+        fillColor: '#0066FF',
+        fillOpacity: 0.2,
+        radius: radius // in meters
+      }).addTo(mapRef.current);
+
+      // Add a small center marker
+      L.circleMarker([latitude, longitude], {
+        color: '#0066FF',
+        fillColor: '#0066FF',
+        fillOpacity: 1,
+        radius: 5
+      }).addTo(mapRef.current)
         .bindPopup(`
           <div style="text-align: center;">
             <a 
@@ -59,19 +61,13 @@ const PropertyMap = ({ latitude, longitude, className = "" }: PropertyMapProps) 
           </div>
         `, {
           closeButton: false
-        });
+        })
+        .openPopup();
 
-      // Open popup immediately after initialization
-      markerRef.current.openPopup();
-
-      // Simple toggle popup on click
-      markerRef.current.on('click', function() {
-        if (this.getPopup().isOpen()) {
-          this.closePopup();
-        } else {
-          this.openPopup();
-        }
-      });
+      // Fit bounds to circle
+      if (circleRef.current) {
+        mapRef.current.fitBounds(circleRef.current.getBounds());
+      }
     }
 
     // Cleanup
@@ -80,12 +76,12 @@ const PropertyMap = ({ latitude, longitude, className = "" }: PropertyMapProps) 
         mapRef.current.remove();
         mapRef.current = null;
       }
-      if (markerRef.current) {
-        markerRef.current.remove();
-        markerRef.current = null;
+      if (circleRef.current) {
+        circleRef.current.remove();
+        circleRef.current = null;
       }
     };
-  }, [latitude, longitude]);
+  }, [latitude, longitude, radius]);
 
   if (!latitude || !longitude) return null;
 
@@ -93,7 +89,7 @@ const PropertyMap = ({ latitude, longitude, className = "" }: PropertyMapProps) 
     <div 
       id={`map-${latitude}-${longitude}`} 
       className={`h-full min-h-[300px] rounded-lg ${className}`}
-      style={{ zIndex: 1 }} // Ensure map stays below the dialog
+      style={{ zIndex: 1 }}
     />
   );
 };
