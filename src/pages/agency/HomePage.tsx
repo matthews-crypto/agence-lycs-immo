@@ -578,83 +578,101 @@ export default function AgencyHomePage() {
               </div>
             </div>
 
-            {/* Second Row: Contact Form + Navigation */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mt-8">
-              {/* Contact Form */}
-              <div>
-                <h3 
-                  className="text-lg font-medium mb-4"
-                  style={{ color: agency?.secondary_color || '#ffffff' }}
-                >
-                  CONTACTEZ-NOUS
-                </h3>
-                <form className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name" className="text-white">Nom</Label>
-                    <Input id="name" placeholder="Votre nom" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="text-white">Email</Label>
-                    <Input id="email" type="email" placeholder="Votre email" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="message" className="text-white">Message</Label>
-                    <Textarea 
-                      id="message" 
-                      placeholder="Votre message"
-                      className="min-h-[100px]"
-                    />
-                  </div>
-                  <Button 
-                    type="submit"
-                    className="w-full"
-                    style={{
-                      backgroundColor: agency?.secondary_color || '#ffffff',
-                      color: agency?.primary_color || '#000000',
-                    }}
-                  >
-                    Envoyer
-                  </Button>
-                </form>
-                <Button
-                  className="w-full mt-4 flex items-center justify-center gap-2"
-                  onClick={() => {
-                    if (agency?.contact_phone) {
-                      window.location.href = `tel:${agency.contact_phone}`;
+            {/* Contact Form */}
+            <div className="max-w-lg mx-auto w-full mt-8">
+              <h3 
+                className="text-lg font-medium mb-4 text-center"
+                style={{ color: agency?.secondary_color || '#ffffff' }}
+              >
+                CONTACTEZ-NOUS
+              </h3>
+              <form className="space-y-4" onSubmit={async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                const data = {
+                  name: formData.get('name') as string,
+                  email: formData.get('email') as string,
+                  message: formData.get('message') as string,
+                };
+
+                if (!agency?.id) {
+                  toast.error("Une erreur s'est produite");
+                  return;
+                }
+
+                const { error } = await supabase
+                  .from('contact_messages')
+                  .insert([
+                    {
+                      agency_id: agency.id,
+                      ...data
                     }
-                  }}
+                  ]);
+
+                if (error) {
+                  console.error('Error sending message:', error);
+                  toast.error("Une erreur s'est produite lors de l'envoi du message");
+                  return;
+                }
+
+                toast.success("Message envoyé avec succès");
+                e.currentTarget.reset();
+              }}>
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-white">Nom</Label>
+                  <Input 
+                    id="name" 
+                    name="name" 
+                    placeholder="Votre nom"
+                    required 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-white">Email</Label>
+                  <Input 
+                    id="email" 
+                    name="email" 
+                    type="email" 
+                    placeholder="Votre email"
+                    required 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="message" className="text-white">Message</Label>
+                  <Textarea 
+                    id="message" 
+                    name="message"
+                    placeholder="Votre message"
+                    className="min-h-[100px]"
+                    required
+                  />
+                </div>
+                <Button 
+                  type="submit"
+                  className="w-full"
                   style={{
                     backgroundColor: agency?.secondary_color || '#ffffff',
                     color: agency?.primary_color || '#000000',
                   }}
                 >
-                  <Phone className="w-5 h-5" />
-                  Appelez
+                  Envoyer
                 </Button>
-              </div>
-
-              {/* Navigation */}
-              <div className="md:pl-8">
-                <h3 
-                  className="text-lg font-medium mb-6"
-                  style={{ color: agency?.secondary_color || '#ffffff' }}
-                >
-                  NAVIGATION
-                </h3>
-                <div className="flex flex-col space-y-4">
-                  {propertyTypeGroups && Object.keys(propertyTypeGroups).map((type) => (
-                    propertyTypeGroups[type].length > 0 && (
-                      <button
-                        key={type}
-                        onClick={() => scrollToSection(`section-${type}`)}
-                        className="text-white text-left hover:text-white/90 transition-colors"
-                      >
-                        {propertyTypeLabels[type] || type}
-                      </button>
-                    )
-                  ))}
-                </div>
-              </div>
+              </form>
+              <Button
+                className="w-full mt-4 flex items-center justify-center gap-2"
+                onClick={() => {
+                  if (agency?.contact_phone) {
+                    window.location.href = `tel:${agency.contact_phone}`;
+                  }
+                }}
+                style={{
+                  backgroundColor: agency?.secondary_color || '#ffffff',
+                  color: agency?.primary_color || '#000000',
+                }}
+              >
+                <Phone className="w-5 h-5" />
+                Appelez
+              </Button>
             </div>
           </div>
         </div>
