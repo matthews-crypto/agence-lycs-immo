@@ -259,6 +259,44 @@ export type Database = {
           },
         ]
       }
+      contact_messages: {
+        Row: {
+          agency_id: string
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_messages_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       demande_inscription: {
         Row: {
           address: string | null
