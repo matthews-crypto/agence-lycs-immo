@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -92,10 +91,8 @@ export default function AgencyHomePage() {
     enabled: !!agency?.id,
   });
 
-  // Get unique regions from agency properties
   const agencyRegions = [...new Set(properties?.map(p => p.region).filter(Boolean))];
 
-  // Filter regions to only show those where the agency has properties
   const filteredRegions = regions?.filter(region => 
     agencyRegions.includes(region.nom)
   );
@@ -130,6 +127,22 @@ export default function AgencyHomePage() {
 
   const zones = [...new Set(properties?.map(p => p.zone?.nom).filter(Boolean))];
 
+  const propertyTypeGroups = properties?.reduce((groups: { [key: string]: any[] }, property) => {
+    const type = property.property_type;
+    if (!groups[type]) {
+      groups[type] = [];
+    }
+    groups[type].push(property);
+    return groups;
+  }, {});
+
+  const scrollToSection = (sectionId: string) => {
+    const section = document.getElementById(sectionId);
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   const handleSearch = () => {
     if (!selectedZone && !minBudget && !maxBudget && selectedType === "all" && selectedRegion === "all") {
       toast.warning("Veuillez sélectionner au moins un critère de recherche");
@@ -147,11 +160,9 @@ export default function AgencyHomePage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Navbar */}
       <nav className="border-b" style={{ backgroundColor: agency?.primary_color || '#000000' }}>
         <div className="container mx-auto py-4 px-4 flex justify-between items-center">
-          <div className="flex-1" />
-          <div className="flex-1 flex justify-center">
+          <div className="flex items-center">
             {agency?.logo_url ? (
               <img 
                 src={agency.logo_url} 
@@ -159,14 +170,25 @@ export default function AgencyHomePage() {
                 className="h-16 object-contain rounded-full"
               />
             ) : (
-              <h1 
-                className="text-2xl font-light text-white"
-              >
+              <h1 className="text-2xl font-light text-white">
                 {agency?.agency_name}
               </h1>
             )}
           </div>
-          <div className="flex-1 flex justify-end">
+          <div className="flex items-center gap-8">
+            {propertyTypeGroups && Object.keys(propertyTypeGroups).map((type) => (
+              propertyTypeGroups[type].length > 0 && (
+                <button
+                  key={type}
+                  onClick={() => scrollToSection(`section-${type}`)}
+                  className="text-white hover:text-white/90 transition-colors"
+                >
+                  {propertyTypeLabels[type] || type}
+                </button>
+              )
+            ))}
+          </div>
+          <div className="flex justify-end">
             <Button
               variant="ghost"
               onClick={() => setIsAuthOpen(true)}
@@ -179,7 +201,6 @@ export default function AgencyHomePage() {
         </div>
       </nav>
 
-      {/* Hero Carousel */}
       <div className="container mx-auto px-4 mt-8">
         <div className="relative h-[40vh] max-w-5xl mx-auto bg-gray-100 rounded-lg overflow-hidden">
           <Carousel 
@@ -223,7 +244,6 @@ export default function AgencyHomePage() {
           </Carousel>
         </div>
 
-        {/* Search Bar */}
         <div className="mt-8 max-w-4xl mx-auto">
           <div className="bg-white rounded-lg shadow-lg p-4 flex flex-col md:flex-row gap-4">
             <Select 
@@ -307,67 +327,71 @@ export default function AgencyHomePage() {
         </div>
       </div>
 
-      {/* Filtered Properties */}
-      {filteredProperties && filteredProperties.length > 0 && (selectedZone !== "all" || minBudget || maxBudget || selectedType !== "all") && (
-        <div className="container mx-auto px-4 mt-16">
-          <h2 className="text-2xl font-light mb-8">Résultats de votre recherche</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredProperties.map((property) => (
-              <div 
-                key={property.id} 
-                className="cursor-pointer"
-                onClick={() => handlePropertyClick(property.id)}
-              >
-                <div className="aspect-[4/3] overflow-hidden rounded-lg relative">
-                  {property.photos?.[0] ? (
-                    <img
-                      src={property.photos[0]}
-                      alt={property.title}
-                      className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                      <BedDouble className="w-12 h-12 text-gray-400" />
-                    </div>
-                  )}
-                  <div 
-                    className="absolute top-4 left-4 px-3 py-1 rounded-full text-sm font-medium"
-                    style={{
-                      backgroundColor: agency?.primary_color || '#000000',
-                      color: 'white',
-                    }}
-                  >
-                    {propertyTypeLabels[property.property_type] || property.property_type}
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <h3 className="text-xl font-light">{property.title}</h3>
-                  <div className="flex items-center gap-2 text-gray-600 mt-2">
-                    <MapPin className="w-4 h-4" />
-                    <p className="text-sm">{property.zone?.nom}</p>
-                  </div>
-                  <div className="mt-2 flex justify-between items-center">
-                    <p className="text-lg">
-                      {property.price.toLocaleString('fr-FR')} FCFA
-                    </p>
-                    <div className="flex items-center gap-1 text-gray-600">
-                      <span>{property.surface_area} m²</span>
-                      {property.bedrooms && (
-                        <div className="flex items-center gap-1 ml-2">
-                          <BedDouble className="w-4 h-4" />
-                          <span>{property.bedrooms}</span>
-                        </div>
-                      )}
+      {propertyTypeGroups && Object.entries(propertyTypeGroups).map(([type, typeProperties]) => (
+        typeProperties.length > 0 && (
+          <div 
+            key={type}
+            id={`section-${type}`}
+            className="container mx-auto px-4 mt-16"
+          >
+            <h2 className="text-2xl font-light mb-8">{propertyTypeLabels[type] || type}</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {typeProperties.map((property) => (
+                <div 
+                  key={property.id} 
+                  className="cursor-pointer"
+                  onClick={() => handlePropertyClick(property.id)}
+                >
+                  <div className="aspect-[4/3] overflow-hidden rounded-lg relative">
+                    {property.photos?.[0] ? (
+                      <img
+                        src={property.photos[0]}
+                        alt={property.title}
+                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                        <BedDouble className="w-12 h-12 text-gray-400" />
+                      </div>
+                    )}
+                    <div 
+                      className="absolute top-4 left-4 px-3 py-1 rounded-full text-sm font-medium"
+                      style={{
+                        backgroundColor: agency?.primary_color || '#000000',
+                        color: 'white',
+                      }}
+                    >
+                      {property.property_offer_type === 'VENTE' ? 'À Vendre' : 'À Louer'}
                     </div>
                   </div>
+                  <div className="mt-4">
+                    <h3 className="text-xl font-light">{property.title}</h3>
+                    <div className="flex items-center gap-2 text-gray-600 mt-2">
+                      <MapPin className="w-4 h-4" />
+                      <p className="text-sm">{property.zone?.nom}</p>
+                    </div>
+                    <div className="mt-2 flex justify-between items-center">
+                      <p className="text-lg">
+                        {property.price.toLocaleString('fr-FR')} FCFA
+                      </p>
+                      <div className="flex items-center gap-1 text-gray-600">
+                        <span>{property.surface_area} m²</span>
+                        {property.bedrooms && (
+                          <div className="flex items-center gap-1 ml-2">
+                            <BedDouble className="w-4 h-4" />
+                            <span>{property.bedrooms}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )
+      ))}
 
-      {/* Properties Carousel */}
       <div className="py-32 container mx-auto px-4">
         <h2 className="text-3xl font-light mb-12 text-center">
           Notre sélection d'annonces immobilières
@@ -411,7 +435,7 @@ export default function AgencyHomePage() {
                           color: 'white',
                         }}
                       >
-                        {propertyTypeLabels[property.property_type] || property.property_type}
+                        {property.property_offer_type === 'VENTE' ? 'À Vendre' : 'À Louer'}
                       </div>
                     </div>
                     <div className="mt-4">
@@ -445,7 +469,6 @@ export default function AgencyHomePage() {
         </div>
       </div>
 
-      {/* Auth Drawer */}
       <AuthDrawer 
         open={isAuthOpen} 
         onOpenChange={setIsAuthOpen}
