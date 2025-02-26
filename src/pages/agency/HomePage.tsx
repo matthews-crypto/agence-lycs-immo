@@ -525,31 +525,73 @@ export default function AgencyHomePage() {
         style={{ backgroundColor: agency?.primary_color || '#000000' }}
       >
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Navigation et Contact Column */}
-            <div className="space-y-8">
-              <div>
-                <h3 
-                  className="text-lg font-medium mb-4"
-                  style={{ color: agency?.secondary_color || '#ffffff' }}
-                >
-                  NAVIGATION
-                </h3>
-                <div className="flex flex-col space-y-2">
-                  {propertyTypeGroups && Object.keys(propertyTypeGroups).map((type) => (
-                    propertyTypeGroups[type].length > 0 && (
-                      <button
-                        key={type}
-                        onClick={() => scrollToSection(`section-${type}`)}
-                        className="text-white text-left hover:text-white/90 transition-colors"
-                      >
-                        {propertyTypeLabels[type] || type}
-                      </button>
-                    )
-                  ))}
+          <div className="flex flex-col space-y-8">
+            {/* First Row: Contact Info + Logo */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+              {/* Address */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-white" />
+                  <h3 
+                    className="text-lg font-medium"
+                    style={{ color: agency?.secondary_color || '#ffffff' }}
+                  >
+                    ADRESSE
+                  </h3>
                 </div>
+                <p className="text-white">
+                  {agency?.address}<br />
+                  {agency?.city} {agency?.postal_code}
+                </p>
               </div>
 
+              {/* Phone */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Phone className="w-5 h-5 text-white" />
+                  <h3 
+                    className="text-lg font-medium"
+                    style={{ color: agency?.secondary_color || '#ffffff' }}
+                  >
+                    TÉLÉPHONE
+                  </h3>
+                </div>
+                <p className="text-white">
+                  {agency?.contact_phone}
+                </p>
+              </div>
+
+              {/* Email */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Mail className="w-5 h-5 text-white" />
+                  <h3 
+                    className="text-lg font-medium"
+                    style={{ color: agency?.secondary_color || '#ffffff' }}
+                  >
+                    E-MAIL
+                  </h3>
+                </div>
+                <p className="text-white">
+                  {agency?.contact_email}
+                </p>
+              </div>
+
+              {/* Logo */}
+              {agency?.logo_url && (
+                <div className="flex justify-center md:justify-end items-center">
+                  <img 
+                    src={agency.logo_url} 
+                    alt={agency.agency_name}
+                    className="h-32 object-contain"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Second Row: Contact Form + Navigation */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Contact Form */}
               <div>
                 <h3 
                   className="text-lg font-medium mb-4"
@@ -601,61 +643,29 @@ export default function AgencyHomePage() {
                   Appelez
                 </Button>
               </div>
-            </div>
 
-            {/* Address Column with Logo */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-white" />
+              {/* Navigation */}
+              <div>
                 <h3 
-                  className="text-lg font-medium"
+                  className="text-lg font-medium mb-4"
                   style={{ color: agency?.secondary_color || '#ffffff' }}
                 >
-                  ADRESSE
+                  NAVIGATION
                 </h3>
-              </div>
-              <p className="text-white">
-                {agency?.address}<br />
-                {agency?.city} {agency?.postal_code}
-              </p>
-
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Phone className="w-5 h-5 text-white" />
-                  <h3 
-                    className="text-lg font-medium"
-                    style={{ color: agency?.secondary_color || '#ffffff' }}
-                  >
-                    TÉLÉPHONE
-                  </h3>
+                <div className="flex flex-col space-y-2">
+                  {propertyTypeGroups && Object.keys(propertyTypeGroups).map((type) => (
+                    propertyTypeGroups[type].length > 0 && (
+                      <button
+                        key={type}
+                        onClick={() => scrollToSection(`section-${type}`)}
+                        className="text-white text-left hover:text-white/90 transition-colors"
+                      >
+                        {propertyTypeLabels[type] || type}
+                      </button>
+                    )
+                  ))}
                 </div>
-                <p className="text-white">
-                  {agency?.contact_phone}
-                </p>
               </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Mail className="w-5 h-5 text-white" />
-                  <h3 
-                    className="text-lg font-medium"
-                    style={{ color: agency?.secondary_color || '#ffffff' }}
-                  >
-                    E-MAIL
-                  </h3>
-                </div>
-                <p className="text-white">
-                  {agency?.contact_email}
-                </p>
-              </div>
-
-              {agency?.logo_url && (
-                <img 
-                  src={agency.logo_url} 
-                  alt={agency.agency_name}
-                  className="h-32 object-contain mt-8"
-                />
-              )}
             </div>
           </div>
         </div>
