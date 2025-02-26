@@ -52,6 +52,7 @@ export default function AgencyHomePage() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [heroApi, setHeroApi] = useState<any>();
   const [propertiesApi, setPropertiesApi] = useState<any>();
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   const { data: regions } = useQuery({
     queryKey: ["regions"],
@@ -115,6 +116,26 @@ export default function AgencyHomePage() {
       clearInterval(propertiesAutoplay);
     };
   }, [heroApi, propertiesApi]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const nav = document.querySelector('nav');
+      if (nav) {
+        const navBottom = nav.getBoundingClientRect().bottom;
+        setShowScrollTop(navBottom < 0);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
 
   const filteredProperties = properties?.filter(property => {
     const matchesZone = selectedZone === "all" || property.zone?.nom === selectedZone;
@@ -468,6 +489,18 @@ export default function AgencyHomePage() {
           </Carousel>
         </div>
       </div>
+
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-8 right-8 p-3 rounded-full transition-all hover:scale-110 z-50"
+          style={{
+            backgroundColor: agency?.secondary_color || '#000000'
+          }}
+        >
+          <ChevronUp className="w-6 h-6 text-white" />
+        </button>
+      )}
 
       <AuthDrawer 
         open={isAuthOpen} 

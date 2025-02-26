@@ -35,10 +35,8 @@ export function AgencySidebar() {
 
   useEffect(() => {
     if (agency?.secondary_color) {
-      document.documentElement.style.setProperty('--sidebar-background', agency.secondary_color);
-    }
-    if (agency?.primary_color) {
-      document.documentElement.style.setProperty('--sidebar-primary', agency.primary_color);
+      document.documentElement.style.setProperty('--sidebar-background', agency.primary_color);
+      document.documentElement.style.setProperty('--sidebar-primary', agency.secondary_color);
     }
   }, [agency?.secondary_color, agency?.primary_color]);
 
