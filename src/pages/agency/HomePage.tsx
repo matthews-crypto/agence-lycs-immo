@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -91,8 +92,10 @@ export default function AgencyHomePage() {
     enabled: !!agency?.id,
   });
 
+  // Get unique regions from agency properties
   const agencyRegions = [...new Set(properties?.map(p => p.region).filter(Boolean))];
 
+  // Filter regions to only show those where the agency has properties
   const filteredRegions = regions?.filter(region => 
     agencyRegions.includes(region.nom)
   );
@@ -142,45 +145,28 @@ export default function AgencyHomePage() {
 
   const loopedProperties = [...(properties || []), ...(properties || [])];
 
-  const scrollToSection = (type: string) => {
-    const section = document.getElementById(`section-${type}`);
-    if (section) {
-      section.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
   return (
     <div className="min-h-screen bg-white">
       {/* Navbar */}
-      <nav className="border-b sticky top-0 z-50" style={{ backgroundColor: agency?.primary_color || '#000000' }}>
-        <div className="container mx-auto py-4 px-4">
-          <div className="flex items-center justify-between">
-            <div className="flex-shrink-0">
-              {agency?.logo_url ? (
-                <img 
-                  src={agency.logo_url} 
-                  alt={agency.agency_name}
-                  className="h-16 object-contain rounded-full"
-                />
-              ) : (
-                <h1 className="text-2xl font-light text-white">
-                  {agency?.agency_name}
-                </h1>
-              )}
-            </div>
-
-            <div className="hidden md:flex space-x-8">
-              {Object.keys(propertyTypeLabels).map((type) => (
-                <button
-                  key={type}
-                  onClick={() => scrollToSection(type)}
-                  className="text-white hover:text-gray-200 transition-colors"
-                >
-                  {propertyTypeLabels[type]}
-                </button>
-              ))}
-            </div>
-
+      <nav className="border-b" style={{ backgroundColor: agency?.primary_color || '#000000' }}>
+        <div className="container mx-auto py-4 px-4 flex justify-between items-center">
+          <div className="flex-1" />
+          <div className="flex-1 flex justify-center">
+            {agency?.logo_url ? (
+              <img 
+                src={agency.logo_url} 
+                alt={agency.agency_name}
+                className="h-16 object-contain rounded-full"
+              />
+            ) : (
+              <h1 
+                className="text-2xl font-light text-white"
+              >
+                {agency?.agency_name}
+              </h1>
+            )}
+          </div>
+          <div className="flex-1 flex justify-end">
             <Button
               variant="ghost"
               onClick={() => setIsAuthOpen(true)}
@@ -457,91 +443,6 @@ export default function AgencyHomePage() {
             <CarouselNext />
           </Carousel>
         </div>
-      </div>
-
-      {/* Properties Gallery by Type */}
-      <div className="pb-32 container mx-auto px-4">
-        <h2 className="text-3xl font-light mb-12 text-center">
-          Tous nos biens par catégorie
-        </h2>
-
-        {Object.entries(
-          properties?.reduce((acc, property) => {
-            const type = property.property_type;
-            if (!acc[type]) {
-              acc[type] = [];
-            }
-            acc[type].push(property);
-            return acc;
-          }, {} as { [key: string]: typeof properties })
-        ).map(([type, typeProperties]) => (
-          <div key={type} id={`section-${type}`} className="mb-16">
-            <h3 className="text-2xl font-light mb-8">
-              {propertyTypeLabels[type] || type}
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {typeProperties.map((property) => (
-                <div 
-                  key={property.id}
-                  className="cursor-pointer"
-                  onClick={() => handlePropertyClick(property.id)}
-                >
-                  <div className="aspect-[4/3] overflow-hidden rounded-lg relative">
-                    {property.photos?.[0] ? (
-                      <img
-                        src={property.photos[0]}
-                        alt={property.title}
-                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                        <BedDouble className="w-12 h-12 text-gray-400" />
-                      </div>
-                    )}
-                    <div 
-                      className="absolute top-4 right-4 px-3 py-1 rounded-full text-sm font-medium text-white"
-                      style={{
-                        backgroundColor: agency?.primary_color || '#000000',
-                      }}
-                    >
-                      {property.property_offer_type === 'VENTE' ? 'À Vendre' : 'À Louer'}
-                    </div>
-                    <div 
-                      className="absolute top-4 left-4 px-3 py-1 rounded-full text-sm font-medium"
-                      style={{
-                        backgroundColor: agency?.primary_color || '#000000',
-                        color: 'white',
-                      }}
-                    >
-                      {propertyTypeLabels[property.property_type] || property.property_type}
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <h3 className="text-xl font-light">{property.title}</h3>
-                    <div className="flex items-center gap-2 text-gray-600 mt-2">
-                      <MapPin className="w-4 h-4" />
-                      <p className="text-sm">{property.zone?.nom}</p>
-                    </div>
-                    <div className="mt-2 flex justify-between items-center">
-                      <p className="text-lg">
-                        {property.price.toLocaleString('fr-FR')} FCFA
-                      </p>
-                      <div className="flex items-center gap-1 text-gray-600">
-                        <span>{property.surface_area} m²</span>
-                        {property.bedrooms && (
-                          <div className="flex items-center gap-1 ml-2">
-                            <BedDouble className="w-4 h-4" />
-                            <span>{property.bedrooms}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
       </div>
 
       {/* Auth Drawer */}
