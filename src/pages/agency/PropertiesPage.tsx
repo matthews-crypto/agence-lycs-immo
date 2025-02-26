@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Home, Euro, Bath, BedDouble, ArrowRight } from "lucide-react";
+import { Search, Home, Bath, BedDouble, ArrowRight } from "lucide-react";
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { Link } from "react-router-dom";
 import { AgencySidebar } from "@/components/agency/AgencySidebar";
@@ -134,12 +134,18 @@ export default function AgencyPropertiesPage() {
                             <Home className="h-4 w-4" />
                             <span>{propertyTypeTranslations[property.property_type] || property.property_type}</span>
                           </div>
-                          {(property.bedrooms || property.bedrooms) && (
+                          {(property.bedrooms || property.bathrooms) && (
                             <div className="flex space-x-4">
                               {property.bedrooms && (
                                 <div className="flex items-center space-x-1">
                                   <BedDouble className="h-4 w-4" />
                                   <span>{property.bedrooms}</span>
+                                </div>
+                              )}
+                              {property.bathrooms && (
+                                <div className="flex items-center space-x-1">
+                                  <Bath className="h-4 w-4" />
+                                  <span>{property.bathrooms}</span>
                                 </div>
                               )}
                             </div>

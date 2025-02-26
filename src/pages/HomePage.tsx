@@ -137,6 +137,23 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Navbar */}
+      <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-4">
+          <div className="flex h-16 items-center justify-between">
+            <div className="text-xl font-semibold">
+              ImmoLoc
+            </div>
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" onClick={() => setIsRegistrationOpen(true)}>
+                <User className="h-4 w-4 mr-2" />
+                Inscription Agence
+              </Button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
       {/* Hero Carousel */}
       <div className="container mx-auto px-4 mt-8">
         <div className="relative h-[40vh] max-w-5xl mx-auto bg-gray-100 rounded-lg overflow-hidden">
