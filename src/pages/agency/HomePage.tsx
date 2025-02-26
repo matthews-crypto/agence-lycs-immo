@@ -526,8 +526,8 @@ export default function AgencyHomePage() {
       >
         <div className="container mx-auto px-4">
           <div className="flex flex-col space-y-8">
-            {/* First Row: Contact Info + Logo */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            {/* First Row: Contact Info */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {/* Address */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
@@ -576,21 +576,10 @@ export default function AgencyHomePage() {
                   {agency?.contact_email}
                 </p>
               </div>
-
-              {/* Logo */}
-              {agency?.logo_url && (
-                <div className="flex justify-center md:justify-end items-center">
-                  <img 
-                    src={agency.logo_url} 
-                    alt={agency.agency_name}
-                    className="h-32 object-contain"
-                  />
-                </div>
-              )}
             </div>
 
             {/* Second Row: Contact Form + Navigation */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mt-8">
               {/* Contact Form */}
               <div>
                 <h3 
@@ -645,14 +634,14 @@ export default function AgencyHomePage() {
               </div>
 
               {/* Navigation */}
-              <div>
+              <div className="md:pl-8">
                 <h3 
-                  className="text-lg font-medium mb-4"
+                  className="text-lg font-medium mb-6"
                   style={{ color: agency?.secondary_color || '#ffffff' }}
                 >
                   NAVIGATION
                 </h3>
-                <div className="flex flex-col space-y-2">
+                <div className="flex flex-col space-y-4">
                   {propertyTypeGroups && Object.keys(propertyTypeGroups).map((type) => (
                     propertyTypeGroups[type].length > 0 && (
                       <button
