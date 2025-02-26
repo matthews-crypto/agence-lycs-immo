@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -70,6 +71,12 @@ export default function PublicPropertyDetailPage() {
       propertyId: string;
       agencyId: string;
     }) => {
+      // First, get a reservation number from the database function
+      const { data: reservationNumberData, error: reservationNumberError } = await supabase
+        .rpc('generate_reservation_number');
+
+      if (reservationNumberError) throw reservationNumberError;
+
       const { data: client, error: clientError } = await supabase
         .from("clients")
         .upsert(
@@ -95,6 +102,8 @@ export default function PublicPropertyDetailPage() {
           client_phone: phone,
           property_id: propertyId,
           agency_id: agencyId,
+          reservation_number: reservationNumberData,
+          type: 'VENTE'
         })
         .select("reservation_number")
         .single();
