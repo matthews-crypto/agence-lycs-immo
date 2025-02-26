@@ -529,6 +529,57 @@ export type Database = {
         }
         Relationships: []
       }
+      reservations: {
+        Row: {
+          agency_id: string
+          client_phone: string
+          created_at: string
+          id: string
+          property_id: string
+          reservation_number: string
+          status: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          client_phone: string
+          created_at?: string
+          id?: string
+          property_id: string
+          reservation_number: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          client_phone?: string
+          created_at?: string
+          id?: string
+          property_id?: string
+          reservation_number?: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reservations_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reservations_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       search_criteria: {
         Row: {
           city: string | null
@@ -642,6 +693,10 @@ export type Database = {
           primary_color: string
           secondary_color: string
         }
+        Returns: string
+      }
+      generate_reservation_number: {
+        Args: Record<PropertyKey, never>
         Returns: string
       }
       is_admin: {

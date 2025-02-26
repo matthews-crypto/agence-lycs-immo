@@ -1,12 +1,14 @@
-
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, StarIcon, BedDouble } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 import PropertyMap from "@/components/PropertyMap";
 import PropertyHeader from "@/components/property/PropertyHeader";
 import PropertyImageGallery from "@/components/property/PropertyImageGallery";
@@ -22,6 +24,13 @@ export default function PublicPropertyDetailPage() {
   const { agencySlug, propertyId } = useParams();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
+  const [isReservationOpen, setIsReservationOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    phone: "",
+  });
+  const { toast } = useToast();
 
   const { data: property } = useQuery({
     queryKey: ["property", propertyId],
@@ -46,6 +55,85 @@ export default function PublicPropertyDetailPage() {
       return data;
     },
   });
+
+  const createReservation = useMutation({
+    mutationFn: async ({
+      firstName,
+      lastName,
+      phone,
+      propertyId,
+      agencyId,
+    }: {
+      firstName: string;
+      lastName: string;
+      phone: string;
+      propertyId: string;
+      agencyId: string;
+    }) => {
+      const { data: client, error: clientError } = await supabase
+        .from("clients")
+        .upsert(
+          {
+            first_name: firstName,
+            last_name: lastName,
+            phone_number: phone,
+            agency_id: agencyId,
+          },
+          {
+            onConflict: "phone_number",
+            ignoreDuplicates: false,
+          }
+        )
+        .select()
+        .single();
+
+      if (clientError) throw clientError;
+
+      const { data: reservation, error: reservationError } = await supabase
+        .from("reservations")
+        .insert({
+          client_phone: phone,
+          property_id: propertyId,
+          agency_id: agencyId,
+        })
+        .select("reservation_number")
+        .single();
+
+      if (reservationError) throw reservationError;
+
+      return { 
+        client,
+        reservation_number: reservation.reservation_number 
+      };
+    },
+    onSuccess: ({ reservation_number }) => {
+      toast({
+        title: "Réservation confirmée !",
+        description: `Votre numéro de réservation est : ${reservation_number}`,
+      });
+      setIsReservationOpen(false);
+      setFormData({ firstName: "", lastName: "", phone: "" });
+    },
+    onError: (error) => {
+      console.error("Reservation error:", error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la réservation. Veuillez réessayer.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleReservationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!property?.agencies?.id) return;
+
+    createReservation.mutate({
+      ...formData,
+      propertyId: property.id,
+      agencyId: property.agencies.id,
+    });
+  };
 
   const { data: similarProperties } = useQuery({
     queryKey: ["similar-properties", property?.property_type, property?.price, property?.zone?.id, property?.property_offer_type],
@@ -154,7 +242,17 @@ export default function PublicPropertyDetailPage() {
           </Badge>
         </div>
 
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">{property.title}</h1>
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-3xl font-bold text-gray-900">{property.title}</h1>
+          <Button
+            onClick={() => setIsReservationOpen(true)}
+            style={{ backgroundColor: property.agencies?.primary_color }}
+            className="text-white"
+          >
+            Réserver ce bien
+          </Button>
+        </div>
+
         <p className="text-gray-600 mb-2">
           {property.zone?.nom}
         </p>
@@ -276,6 +374,57 @@ export default function PublicPropertyDetailPage() {
               </Button>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isReservationOpen} onOpenChange={setIsReservationOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Réserver ce bien</DialogTitle>
+            <DialogDescription>
+              Remplissez le formulaire ci-dessous pour réserver ce bien immobilier.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleReservationSubmit} className="space-y-4">
+            <div>
+              <Label htmlFor="firstName">Prénom</Label>
+              <Input
+                id="firstName"
+                value={formData.firstName}
+                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="lastName">Nom</Label>
+              <Input
+                id="lastName"
+                value={formData.lastName}
+                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="phone">Numéro de téléphone</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                required
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="submit"
+                disabled={createReservation.isPending}
+                style={{ backgroundColor: property.agencies?.primary_color }}
+                className="text-white"
+              >
+                {createReservation.isPending ? "En cours..." : "Réserver"}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
