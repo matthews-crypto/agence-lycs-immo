@@ -574,6 +574,8 @@ export type Database = {
           created_at: string
           id: string
           property_id: string
+          rental_end_date: string | null
+          rental_start_date: string | null
           reservation_number: string
           status: string
           type: string
@@ -585,6 +587,8 @@ export type Database = {
           created_at?: string
           id?: string
           property_id: string
+          rental_end_date?: string | null
+          rental_start_date?: string | null
           reservation_number: string
           status?: string
           type?: string
@@ -596,6 +600,8 @@ export type Database = {
           created_at?: string
           id?: string
           property_id?: string
+          rental_end_date?: string | null
+          rental_start_date?: string | null
           reservation_number?: string
           status?: string
           type?: string
