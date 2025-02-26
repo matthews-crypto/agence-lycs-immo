@@ -70,7 +70,6 @@ export default function PublicPropertyDetailPage() {
       propertyId: string;
       agencyId: string;
     }) => {
-      // First, get a reservation number from the database function
       const { data: reservationNumberData, error: reservationNumberError } = await supabase
         .rpc('generate_reservation_number');
 
@@ -93,7 +92,10 @@ export default function PublicPropertyDetailPage() {
         .select()
         .single();
 
-      if (clientError) throw clientError;
+      if (clientError) {
+        console.error("Client error:", clientError);
+        throw clientError;
+      }
 
       const { data: reservation, error: reservationError } = await supabase
         .from("reservations")
@@ -107,7 +109,10 @@ export default function PublicPropertyDetailPage() {
         .select("reservation_number")
         .single();
 
-      if (reservationError) throw reservationError;
+      if (reservationError) {
+        console.error("Reservation error:", reservationError);
+        throw reservationError;
+      }
 
       return { 
         client,
@@ -136,11 +141,20 @@ export default function PublicPropertyDetailPage() {
     e.preventDefault();
     if (!property?.agencies?.id) return;
 
-    createReservation.mutate({
-      ...formData,
-      propertyId: property.id,
-      agencyId: property.agencies.id,
-    });
+    try {
+      createReservation.mutate({
+        ...formData,
+        propertyId: property.id,
+        agencyId: property.agencies.id,
+      });
+    } catch (error) {
+      console.error("Form submission error:", error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la soumission du formulaire. Veuillez réessayer.",
+        variant: "destructive",
+      });
+    }
   };
 
   const { data: similarProperties } = useQuery({
@@ -420,6 +434,10 @@ export default function PublicPropertyDetailPage() {
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 required
+                pattern="[0-9]*"
+                minLength={9}
+                maxLength={15}
+                placeholder="Ex: 777777777"
               />
             </div>
             <DialogFooter>
