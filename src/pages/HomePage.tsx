@@ -141,8 +141,12 @@ export default function HomePage() {
       <nav style={{ backgroundColor: '#aa1ca0' }} className="border-b">
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
-            <div className="text-xl font-semibold text-white">
-              LycsImmo
+            <div>
+              <img 
+                src="/lovable-uploads/4ba55583-9b92-4de1-9e56-db4c7b893b4d.png"
+                alt="LycsImmo Logo"
+                className="h-12 w-auto rounded-full"
+              />
             </div>
             <div className="flex items-center space-x-4">
               <Button variant="ghost" onClick={() => setIsRegistrationOpen(true)} className="text-white hover:text-white/90">
