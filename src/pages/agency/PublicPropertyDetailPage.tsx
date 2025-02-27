@@ -95,26 +95,36 @@ export default function PublicPropertyDetailPage() {
 
       if (reservationNumberError) throw reservationNumberError;
 
-      const { data: client, error: clientError } = await supabase
+      const { data: existingClient, error: clientCheckError } = await supabase
         .from("clients")
-        .upsert(
-          {
+        .select("*")
+        .eq("phone_number", phone)
+        .single();
+
+      let client;
+
+      if (clientCheckError?.code === "PGRST116") {
+        const { data: newClient, error: insertError } = await supabase
+          .from("clients")
+          .insert({
             first_name: firstName,
             last_name: lastName,
             phone_number: phone,
             agency_id: agencyId,
-          },
-          {
-            onConflict: "phone_number",
-            ignoreDuplicates: false,
-          }
-        )
-        .select()
-        .single();
+          })
+          .select()
+          .single();
 
-      if (clientError) {
-        console.error("Client error:", clientError);
-        throw clientError;
+        if (insertError) {
+          console.error("Client error:", insertError);
+          throw insertError;
+        }
+        
+        client = newClient;
+      } else if (clientCheckError) {
+        throw clientCheckError;
+      } else {
+        client = existingClient;
       }
 
       const isRental = property?.property_offer_type === 'LOCATION';
