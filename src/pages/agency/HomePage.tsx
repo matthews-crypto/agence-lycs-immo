@@ -1,10 +1,9 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MapPin, User, BedDouble } from "lucide-react";
+import { MapPin, User, BedDouble, ChevronUp, Phone, Mail } from "lucide-react";
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { useNavigate } from "react-router-dom";
 import { AuthDrawer } from "@/components/agency/AuthDrawer";
@@ -23,6 +22,8 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 const propertyTypeLabels: { [key: string]: string } = {
   "APARTMENT": "Appartement",
@@ -53,6 +54,7 @@ export default function AgencyHomePage() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [heroApi, setHeroApi] = useState<any>();
   const [propertiesApi, setPropertiesApi] = useState<any>();
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   const { data: regions } = useQuery({
     queryKey: ["regions"],
@@ -92,10 +94,8 @@ export default function AgencyHomePage() {
     enabled: !!agency?.id,
   });
 
-  // Get unique regions from agency properties
   const agencyRegions = [...new Set(properties?.map(p => p.region).filter(Boolean))];
 
-  // Filter regions to only show those where the agency has properties
   const filteredRegions = regions?.filter(region => 
     agencyRegions.includes(region.nom)
   );
@@ -119,6 +119,26 @@ export default function AgencyHomePage() {
     };
   }, [heroApi, propertiesApi]);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      const nav = document.querySelector('nav');
+      if (nav) {
+        const navBottom = nav.getBoundingClientRect().bottom;
+        setShowScrollTop(navBottom < 0);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
+
   const filteredProperties = properties?.filter(property => {
     const matchesZone = selectedZone === "all" || property.zone?.nom === selectedZone;
     const matchesType = selectedType === "all" || property.property_type === selectedType;
@@ -129,6 +149,22 @@ export default function AgencyHomePage() {
   });
 
   const zones = [...new Set(properties?.map(p => p.zone?.nom).filter(Boolean))];
+
+  const propertyTypeGroups = properties?.reduce((groups: { [key: string]: any[] }, property) => {
+    const type = property.property_type;
+    if (!groups[type]) {
+      groups[type] = [];
+    }
+    groups[type].push(property);
+    return groups;
+  }, {});
+
+  const scrollToSection = (sectionId: string) => {
+    const section = document.getElementById(sectionId);
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   const handleSearch = () => {
     if (!selectedZone && !minBudget && !maxBudget && selectedType === "all" && selectedRegion === "all") {
@@ -150,8 +186,7 @@ export default function AgencyHomePage() {
       {/* Navbar */}
       <nav className="border-b" style={{ backgroundColor: agency?.primary_color || '#000000' }}>
         <div className="container mx-auto py-4 px-4 flex justify-between items-center">
-          <div className="flex-1" />
-          <div className="flex-1 flex justify-center">
+          <div className="flex items-center">
             {agency?.logo_url ? (
               <img 
                 src={agency.logo_url} 
@@ -159,14 +194,31 @@ export default function AgencyHomePage() {
                 className="h-16 object-contain rounded-full"
               />
             ) : (
-              <h1 
-                className="text-2xl font-light text-white"
-              >
+              <h1 className="text-2xl font-light text-white">
                 {agency?.agency_name}
               </h1>
             )}
           </div>
-          <div className="flex-1 flex justify-end">
+          <div className="flex items-center gap-8">
+            {propertyTypeGroups && Object.keys(propertyTypeGroups).map((type) => (
+              propertyTypeGroups[type].length > 0 && (
+                <button
+                  key={type}
+                  onClick={() => scrollToSection(`section-${type}`)}
+                  className="text-white hover:text-white/90 transition-colors"
+                >
+                  {propertyTypeLabels[type] || type}
+                </button>
+              )
+            ))}
+            <button
+              onClick={() => scrollToSection('about')}
+              className="text-white hover:text-white/90 transition-colors"
+            >
+              À propos
+            </button>
+          </div>
+          <div className="flex justify-end">
             <Button
               variant="ghost"
               onClick={() => setIsAuthOpen(true)}
@@ -179,7 +231,7 @@ export default function AgencyHomePage() {
         </div>
       </nav>
 
-      {/* Hero Carousel */}
+      {/* Property Search Section */}
       <div className="container mx-auto px-4 mt-8">
         <div className="relative h-[40vh] max-w-5xl mx-auto bg-gray-100 rounded-lg overflow-hidden">
           <Carousel 
@@ -223,7 +275,6 @@ export default function AgencyHomePage() {
           </Carousel>
         </div>
 
-        {/* Search Bar */}
         <div className="mt-8 max-w-4xl mx-auto">
           <div className="bg-white rounded-lg shadow-lg p-4 flex flex-col md:flex-row gap-4">
             <Select 
@@ -307,68 +358,8 @@ export default function AgencyHomePage() {
         </div>
       </div>
 
-      {/* Filtered Properties */}
-      {filteredProperties && filteredProperties.length > 0 && (selectedZone !== "all" || minBudget || maxBudget || selectedType !== "all") && (
-        <div className="container mx-auto px-4 mt-16">
-          <h2 className="text-2xl font-light mb-8">Résultats de votre recherche</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredProperties.map((property) => (
-              <div 
-                key={property.id} 
-                className="cursor-pointer"
-                onClick={() => handlePropertyClick(property.id)}
-              >
-                <div className="aspect-[4/3] overflow-hidden rounded-lg relative">
-                  {property.photos?.[0] ? (
-                    <img
-                      src={property.photos[0]}
-                      alt={property.title}
-                      className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                      <BedDouble className="w-12 h-12 text-gray-400" />
-                    </div>
-                  )}
-                  <div 
-                    className="absolute top-4 left-4 px-3 py-1 rounded-full text-sm font-medium"
-                    style={{
-                      backgroundColor: agency?.primary_color || '#000000',
-                      color: 'white',
-                    }}
-                  >
-                    {propertyTypeLabels[property.property_type] || property.property_type}
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <h3 className="text-xl font-light">{property.title}</h3>
-                  <div className="flex items-center gap-2 text-gray-600 mt-2">
-                    <MapPin className="w-4 h-4" />
-                    <p className="text-sm">{property.zone?.nom}</p>
-                  </div>
-                  <div className="mt-2 flex justify-between items-center">
-                    <p className="text-lg">
-                      {property.price.toLocaleString('fr-FR')} FCFA
-                    </p>
-                    <div className="flex items-center gap-1 text-gray-600">
-                      <span>{property.surface_area} m²</span>
-                      {property.bedrooms && (
-                        <div className="flex items-center gap-1 ml-2">
-                          <BedDouble className="w-4 h-4" />
-                          <span>{property.bedrooms}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Properties Carousel */}
-      <div className="py-32 container mx-auto px-4">
+      <div className="py-16 container mx-auto px-4">
         <h2 className="text-3xl font-light mb-12 text-center">
           Notre sélection d'annonces immobilières
         </h2>
@@ -411,7 +402,7 @@ export default function AgencyHomePage() {
                           color: 'white',
                         }}
                       >
-                        {propertyTypeLabels[property.property_type] || property.property_type}
+                        {property.property_offer_type === 'VENTE' ? 'À Vendre' : 'À Louer'}
                       </div>
                     </div>
                     <div className="mt-4">
@@ -445,11 +436,247 @@ export default function AgencyHomePage() {
         </div>
       </div>
 
-      {/* Auth Drawer */}
+      {/* Property Type Sections */}
+      {propertyTypeGroups && Object.entries(propertyTypeGroups).map(([type, typeProperties]) => (
+        typeProperties.length > 0 && (
+          <div 
+            key={type}
+            id={`section-${type}`}
+            className="container mx-auto px-4 mt-16"
+          >
+            <h2 className="text-2xl font-light mb-8">{propertyTypeLabels[type] || type}</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {typeProperties.map((property) => (
+                <div 
+                  key={property.id} 
+                  className="cursor-pointer"
+                  onClick={() => handlePropertyClick(property.id)}
+                >
+                  <div className="aspect-[4/3] overflow-hidden rounded-lg relative">
+                    {property.photos?.[0] ? (
+                      <img
+                        src={property.photos[0]}
+                        alt={property.title}
+                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                        <BedDouble className="w-12 h-12 text-gray-400" />
+                      </div>
+                    )}
+                    <div 
+                      className="absolute top-4 left-4 px-3 py-1 rounded-full text-sm font-medium"
+                      style={{
+                        backgroundColor: agency?.primary_color || '#000000',
+                        color: 'white',
+                      }}
+                    >
+                      {property.property_offer_type === 'VENTE' ? 'À Vendre' : 'À Louer'}
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <h3 className="text-xl font-light">{property.title}</h3>
+                    <div className="flex items-center gap-2 text-gray-600 mt-2">
+                      <MapPin className="w-4 h-4" />
+                      <p className="text-sm">{property.zone?.nom}</p>
+                    </div>
+                    <div className="mt-2 flex justify-between items-center">
+                      <p className="text-lg">
+                        {property.price.toLocaleString('fr-FR')} FCFA
+                      </p>
+                      <div className="flex items-center gap-1 text-gray-600">
+                        <span>{property.surface_area} m²</span>
+                        {property.bedrooms && (
+                          <div className="flex items-center gap-1 ml-2">
+                            <BedDouble className="w-4 h-4" />
+                            <span>{property.bedrooms}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      ))}
+
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-8 right-8 p-3 rounded-full transition-all hover:scale-110 z-50"
+          style={{
+            backgroundColor: agency?.primary_color || '#000000'
+          }}
+        >
+          <ChevronUp className="w-6 h-6 text-white" />
+        </button>
+      )}
+
       <AuthDrawer 
         open={isAuthOpen} 
         onOpenChange={setIsAuthOpen}
       />
+      {/* Footer */}
+      <footer 
+        id="about"
+        className="mt-16 py-12"
+        style={{ backgroundColor: agency?.primary_color || '#000000' }}
+      >
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col space-y-8">
+            {/* First Row: Contact Info */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* Address */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-white" />
+                  <h3 
+                    className="text-lg font-medium"
+                    style={{ color: agency?.secondary_color || '#ffffff' }}
+                  >
+                    ADRESSE
+                  </h3>
+                </div>
+                <p className="text-white">
+                  {agency?.address}<br />
+                  {agency?.city} {agency?.postal_code}
+                </p>
+              </div>
+
+              {/* Phone */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Phone className="w-5 h-5 text-white" />
+                  <h3 
+                    className="text-lg font-medium"
+                    style={{ color: agency?.secondary_color || '#ffffff' }}
+                  >
+                    TÉLÉPHONE
+                  </h3>
+                </div>
+                <p className="text-white">
+                  {agency?.contact_phone}
+                </p>
+              </div>
+
+              {/* Email */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Mail className="w-5 h-5 text-white" />
+                  <h3 
+                    className="text-lg font-medium"
+                    style={{ color: agency?.secondary_color || '#ffffff' }}
+                  >
+                    E-MAIL
+                  </h3>
+                </div>
+                <p className="text-white">
+                  {agency?.contact_email}
+                </p>
+              </div>
+            </div>
+
+            {/* Contact Form */}
+            <div className="max-w-lg mx-auto w-full mt-8">
+              <h3 
+                className="text-lg font-medium mb-4 text-center"
+                style={{ color: agency?.secondary_color || '#ffffff' }}
+              >
+                CONTACTEZ-NOUS
+              </h3>
+              <form className="space-y-4" onSubmit={async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                const data = {
+                  name: formData.get('name') as string,
+                  email: formData.get('email') as string,
+                  message: formData.get('message') as string,
+                };
+
+                if (!agency?.id) {
+                  toast.error("Une erreur s'est produite");
+                  return;
+                }
+
+                const { error } = await supabase
+                  .from('contact_messages')
+                  .insert([
+                    {
+                      agency_id: agency.id,
+                      ...data
+                    }
+                  ]);
+
+                if (error) {
+                  console.error('Error sending message:', error);
+                  toast.error("Une erreur s'est produite lors de l'envoi du message");
+                  return;
+                }
+
+                toast.success("Message envoyé avec succès");
+                e.currentTarget.reset();
+              }}>
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-white">Nom</Label>
+                  <Input 
+                    id="name" 
+                    name="name" 
+                    placeholder="Votre nom"
+                    required 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-white">Email</Label>
+                  <Input 
+                    id="email" 
+                    name="email" 
+                    type="email" 
+                    placeholder="Votre email"
+                    required 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="message" className="text-white">Message</Label>
+                  <Textarea 
+                    id="message" 
+                    name="message"
+                    placeholder="Votre message"
+                    className="min-h-[100px]"
+                    required
+                  />
+                </div>
+                <Button 
+                  type="submit"
+                  className="w-full"
+                  style={{
+                    backgroundColor: agency?.secondary_color || '#ffffff',
+                    color: agency?.primary_color || '#000000',
+                  }}
+                >
+                  Envoyer
+                </Button>
+              </form>
+              <Button
+                className="w-full mt-4 flex items-center justify-center gap-2"
+                onClick={() => {
+                  if (agency?.contact_phone) {
+                    window.location.href = `tel:${agency.contact_phone}`;
+                  }
+                }}
+                style={{
+                  backgroundColor: agency?.secondary_color || '#ffffff',
+                  color: agency?.primary_color || '#000000',
+                }}
+              >
+                <Phone className="w-5 h-5" />
+                Appelez
+              </Button>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

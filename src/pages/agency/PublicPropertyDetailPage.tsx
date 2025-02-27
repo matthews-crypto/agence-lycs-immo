@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, StarIcon, BedDouble } from "lucide-react";
+import { ArrowLeft, StarIcon, BedDouble, Calendar } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -29,6 +29,8 @@ export default function PublicPropertyDetailPage() {
     firstName: "",
     lastName: "",
     phone: "",
+    startDate: "",
+    endDate: "",
   });
   const { toast } = useToast();
 
@@ -63,49 +65,82 @@ export default function PublicPropertyDetailPage() {
       phone,
       propertyId,
       agencyId,
+      startDate,
+      endDate,
     }: {
       firstName: string;
       lastName: string;
       phone: string;
       propertyId: string;
       agencyId: string;
+      startDate?: string;
+      endDate?: string;
     }) => {
+      const { data: existingReservation, error: reservationCheckError } = await supabase
+        .from("reservations")
+        .select("*")
+        .eq("property_id", propertyId)
+        .eq("client_phone", phone)
+        .single();
+
+      if (reservationCheckError?.code !== "PGRST116") {
+        if (existingReservation) {
+          throw new Error("Vous avez déjà réservé ce bien");
+        }
+        if (reservationCheckError) throw reservationCheckError;
+      }
+
       const { data: reservationNumberData, error: reservationNumberError } = await supabase
         .rpc('generate_reservation_number');
 
       if (reservationNumberError) throw reservationNumberError;
 
-      const { data: client, error: clientError } = await supabase
+      const { data: existingClient, error: clientCheckError } = await supabase
         .from("clients")
-        .upsert(
-          {
+        .select("*")
+        .eq("phone_number", phone)
+        .single();
+
+      let client;
+
+      if (clientCheckError?.code === "PGRST116") {
+        const { data: newClient, error: insertError } = await supabase
+          .from("clients")
+          .insert({
             first_name: firstName,
             last_name: lastName,
             phone_number: phone,
             agency_id: agencyId,
-          },
-          {
-            onConflict: "phone_number",
-            ignoreDuplicates: false,
-          }
-        )
-        .select()
-        .single();
+          })
+          .select()
+          .single();
 
-      if (clientError) {
-        console.error("Client error:", clientError);
-        throw clientError;
+        if (insertError) {
+          console.error("Client error:", insertError);
+          throw insertError;
+        }
+        
+        client = newClient;
+      } else if (clientCheckError) {
+        throw clientCheckError;
+      } else {
+        client = existingClient;
       }
+
+      const isRental = property?.property_offer_type === 'LOCATION';
+      const reservationData = {
+        client_phone: phone,
+        property_id: propertyId,
+        agency_id: agencyId,
+        reservation_number: reservationNumberData,
+        type: isRental ? 'LOCATION' : 'VENTE',
+        rental_start_date: isRental ? startDate : null,
+        rental_end_date: isRental ? endDate : null
+      };
 
       const { data: reservation, error: reservationError } = await supabase
         .from("reservations")
-        .insert({
-          client_phone: phone,
-          property_id: propertyId,
-          agency_id: agencyId,
-          reservation_number: reservationNumberData,
-          type: 'VENTE'
-        })
+        .insert(reservationData)
         .select("reservation_number")
         .single();
 
@@ -125,13 +160,19 @@ export default function PublicPropertyDetailPage() {
         description: `Votre numéro de réservation est : ${reservation_number}`,
       });
       setIsReservationOpen(false);
-      setFormData({ firstName: "", lastName: "", phone: "" });
+      setFormData({ 
+        firstName: "", 
+        lastName: "", 
+        phone: "", 
+        startDate: "", 
+        endDate: "" 
+      });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error("Reservation error:", error);
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue lors de la réservation. Veuillez réessayer.",
+        description: error.message || "Une erreur est survenue lors de la réservation. Veuillez réessayer.",
         variant: "destructive",
       });
     },
@@ -140,6 +181,16 @@ export default function PublicPropertyDetailPage() {
   const handleReservationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!property?.agencies?.id) return;
+
+    const isRental = property.property_offer_type === 'LOCATION';
+    if (isRental && (!formData.startDate || !formData.endDate)) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez sélectionner les dates de location",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       createReservation.mutate({
@@ -228,6 +279,8 @@ export default function PublicPropertyDetailPage() {
   };
 
   if (!property) return null;
+
+  const isRental = property.property_offer_type === 'LOCATION';
 
   return (
     <div className="min-h-screen bg-background">
@@ -440,6 +493,38 @@ export default function PublicPropertyDetailPage() {
                 placeholder="Ex: 777777777"
               />
             </div>
+            {isRental && (
+              <>
+                <div>
+                  <Label htmlFor="startDate">Date de début</Label>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-gray-400" />
+                    <Input
+                      id="startDate"
+                      type="date"
+                      value={formData.startDate}
+                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                      required
+                      min={format(new Date(), 'yyyy-MM-dd')}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="endDate">Date de fin</Label>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-gray-400" />
+                    <Input
+                      id="endDate"
+                      type="date"
+                      value={formData.endDate}
+                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                      required
+                      min={formData.startDate || format(new Date(), 'yyyy-MM-dd')}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
             <DialogFooter>
               <Button
                 type="submit"

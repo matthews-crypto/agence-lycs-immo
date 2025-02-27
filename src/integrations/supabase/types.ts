@@ -259,6 +259,44 @@ export type Database = {
           },
         ]
       }
+      contact_messages: {
+        Row: {
+          agency_id: string
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_messages_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       demande_inscription: {
         Row: {
           address: string | null
@@ -536,6 +574,8 @@ export type Database = {
           created_at: string
           id: string
           property_id: string
+          rental_end_date: string | null
+          rental_start_date: string | null
           reservation_number: string
           status: string
           type: string
@@ -547,6 +587,8 @@ export type Database = {
           created_at?: string
           id?: string
           property_id: string
+          rental_end_date?: string | null
+          rental_start_date?: string | null
           reservation_number: string
           status?: string
           type?: string
@@ -558,6 +600,8 @@ export type Database = {
           created_at?: string
           id?: string
           property_id?: string
+          rental_end_date?: string | null
+          rental_start_date?: string | null
           reservation_number?: string
           status?: string
           type?: string
