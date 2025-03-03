@@ -489,7 +489,7 @@ export default function AgencyHomePage() {
       </div>
 
       {propertyTypeGroups && Object.entries(propertyTypeGroups).map(([type, typeProperties]) => {
-        const [sectionRef, isSectionVisible] = useIntersectionObserver<HTMLDivElement>();
+        const { ref: sectionRef, isVisible: isSectionVisible } = useIntersectionObserver<HTMLDivElement>();
         
         return typeProperties.length > 0 && (
           <div 

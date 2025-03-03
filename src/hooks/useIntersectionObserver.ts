@@ -7,7 +7,14 @@ interface IntersectionObserverOptions {
   threshold?: number | number[];
 }
 
-export function useIntersectionObserver<T extends Element>(options: IntersectionObserverOptions = {}): [RefObject<T>, boolean] {
+interface IntersectionObserverResult<T extends Element> {
+  ref: RefObject<T>;
+  isVisible: boolean;
+}
+
+export function useIntersectionObserver<T extends Element>(
+  options: IntersectionObserverOptions = {}
+): IntersectionObserverResult<T> {
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<T>(null);
 
@@ -32,5 +39,5 @@ export function useIntersectionObserver<T extends Element>(options: Intersection
     };
   }, [options.root, options.rootMargin, options.threshold]);
 
-  return [ref, isVisible];
+  return { ref, isVisible };
 }
