@@ -43,7 +43,6 @@ const propertyTypes = [
   { value: "OTHER", label: "Autre" },
 ];
 
-// Hook personnalisé pour l'animation
 function useIntersectionObserver(options = {}) {
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef(null);
@@ -52,7 +51,6 @@ function useIntersectionObserver(options = {}) {
     const observer = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting) {
         setIsVisible(true);
-        // Une fois visible, on peut arrêter d'observer
         if (ref.current) observer.unobserve(ref.current);
       }
     }, { threshold: 0.1, ...options });
@@ -72,7 +70,6 @@ function useIntersectionObserver(options = {}) {
   return { ref, isVisible };
 }
 
-// Composant séparé pour chaque section de catégorie
 function PropertyCategorySection({ type, properties, propertyTypeLabels, agency, handlePropertyClick }) {
   const { ref, isVisible } = useIntersectionObserver();
   
@@ -165,6 +162,7 @@ export default function AgencyHomePage() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showCategoryMenu, setShowCategoryMenu] = useState(false);
   const categoryMenuRef = useRef<HTMLDivElement>(null);
+  const [formSubmitted, setFormSubmitted] = useState(false);
 
   const { data: regions } = useQuery({
     queryKey: ["regions"],
@@ -622,7 +620,6 @@ export default function AgencyHomePage() {
               </p>
             </div>
             
-            {/* Formulaire de contact déplacé ici */}
             <div className="max-w-lg mx-auto w-full mt-8 bg-white p-8 rounded-lg shadow-lg">
               <h3 
                 className="text-lg font-medium mb-4 text-center"
@@ -630,78 +627,109 @@ export default function AgencyHomePage() {
               >
                 CONTACTEZ-NOUS
               </h3>
-              <form className="space-y-4" onSubmit={async (e) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                const data = {
-                  name: formData.get('name') as string,
-                  email: formData.get('email') as string,
-                  message: formData.get('message') as string,
-                };
-
-                if (!agency?.id) {
-                  toast.error("Une erreur s'est produite");
-                  return;
-                }
-
-                const { error } = await supabase
-                  .from('contact_messages')
-                  .insert([
-                    {
-                      agency_id: agency.id,
-                      ...data
-                    }
-                  ]);
-
-                if (error) {
-                  console.error('Error sending message:', error);
-                  toast.error("Une erreur s'est produite lors de l'envoi du message");
-                  return;
-                }
-
-                toast.success("Message envoyé avec succès");
-                e.currentTarget.reset();
-              }}>
-                <div className="space-y-2">
-                  <Label htmlFor="name" className="text-gray-700">Nom</Label>
-                  <Input 
-                    id="name" 
-                    name="name" 
-                    placeholder="Votre nom"
-                    required 
-                  />
+              
+              {formSubmitted ? (
+                <div className="text-center py-8">
+                  <p className="text-lg text-gray-700">
+                    Cher(e) client votre demande est prise en compte nos agents vous contacterons dans les plus brief délais.
+                  </p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-gray-700">Email</Label>
-                  <Input 
-                    id="email" 
-                    name="email" 
-                    type="email" 
-                    placeholder="Votre email"
-                    required 
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="message" className="text-gray-700">Message</Label>
-                  <Textarea 
-                    id="message" 
-                    name="message"
-                    placeholder="Votre message"
-                    className="min-h-[100px]"
-                    required
-                  />
-                </div>
-                <Button 
-                  type="submit"
-                  className="w-full"
-                  style={{
-                    backgroundColor: agency?.primary_color || '#000000',
-                    color: 'white',
-                  }}
-                >
-                  Envoyer
-                </Button>
-              </form>
+              ) : (
+                <form className="space-y-4" onSubmit={async (e) => {
+                  e.preventDefault();
+                  const formData = new FormData(e.currentTarget);
+                  const data = {
+                    name: formData.get('name') as string,
+                    firstname: formData.get('firstname') as string,
+                    email: formData.get('email') as string,
+                    phone: formData.get('phone') as string,
+                    message: formData.get('message') as string,
+                  };
+
+                  if (!agency?.id) {
+                    toast.error("Une erreur s'est produite");
+                    return;
+                  }
+
+                  const { error } = await supabase
+                    .from('contact_messages')
+                    .insert([
+                      {
+                        agency_id: agency.id,
+                        ...data
+                      }
+                    ]);
+
+                  if (error) {
+                    console.error('Error sending message:', error);
+                    toast.error("Une erreur s'est produite lors de l'envoi du message");
+                    return;
+                  }
+
+                  toast.success("Message envoyé avec succès");
+                  setFormSubmitted(true);
+                  e.currentTarget.reset();
+                }}>
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="text-gray-700">Nom</Label>
+                    <Input 
+                      id="name" 
+                      name="name" 
+                      placeholder="Votre nom"
+                      required 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="firstname" className="text-gray-700">Prénom</Label>
+                    <Input 
+                      id="firstname" 
+                      name="firstname" 
+                      placeholder="Votre prénom"
+                      required 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-gray-700">Email</Label>
+                    <Input 
+                      id="email" 
+                      name="email" 
+                      type="email" 
+                      placeholder="Votre email"
+                      required 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="text-gray-700">Téléphone</Label>
+                    <Input 
+                      id="phone" 
+                      name="phone" 
+                      type="tel" 
+                      placeholder="Votre téléphone"
+                      required 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="message" className="text-gray-700">Message</Label>
+                    <Textarea 
+                      id="message" 
+                      name="message"
+                      placeholder="Votre message"
+                      className="min-h-[100px]"
+                      required
+                    />
+                  </div>
+                  <Button 
+                    type="submit"
+                    className="w-full"
+                    style={{
+                      backgroundColor: agency?.primary_color || '#000000',
+                      color: 'white',
+                    }}
+                  >
+                    Envoyer
+                  </Button>
+                </form>
+              )}
               <Button
                 className="w-full mt-4 flex items-center justify-center gap-2"
                 onClick={() => {
@@ -739,7 +767,6 @@ export default function AgencyHomePage() {
         onOpenChange={setIsAuthOpen}
       />
       
-      {/* Footer modifié avec logo à la place du formulaire */}
       <footer 
         id="about"
         className="py-12"
@@ -795,7 +822,6 @@ export default function AgencyHomePage() {
               </div>
             </div>
 
-            {/* Logo de l'agence */}
             <div className="flex justify-center mt-8">
               {agency?.logo_url ? (
                 <img 
