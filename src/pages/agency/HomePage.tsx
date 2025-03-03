@@ -680,7 +680,8 @@ export default function AgencyHomePage() {
               </h3>
               <form className="space-y-4" onSubmit={async (e) => {
                 e.preventDefault();
-                const formData = new FormData(e.currentTarget);
+                const form = e.currentTarget;
+                const formData = new FormData(form);
                 const data = {
                   name: formData.get('name') as string,
                   firstname: formData.get('firstname') as string,
@@ -710,7 +711,13 @@ export default function AgencyHomePage() {
                 }
 
                 toast.success("Cher(e) client votre demande est prise en compte nos agents vous contacterons dans les plus brief délais.");
-                e.currentTarget.reset();
+                
+                form.reset();
+                
+                const inputs = form.querySelectorAll('input, textarea');
+                inputs.forEach((input: HTMLInputElement | HTMLTextAreaElement) => {
+                  input.value = '';
+                });
               }}>
                 <div className="space-y-2">
                   <Label htmlFor="name" className="text-gray-700">Nom</Label>
