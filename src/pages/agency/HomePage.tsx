@@ -852,17 +852,6 @@ export default function AgencyHomePage() {
           </div>
         </div>
       </footer>
-
-      <style jsx>{`
-        @keyframes reveal-text {
-          0% {
-            transform: scaleX(1);
-          }
-          100% {
-            transform: scaleX(0);
-          }
-        }
-      `}</style>
     </div>
   );
 }
