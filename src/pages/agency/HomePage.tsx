@@ -72,7 +72,87 @@ function useIntersectionObserver(options = {}) {
   return { ref, isVisible };
 }
 
+// Composant séparé pour chaque section de catégorie
+function PropertyCategorySection({ type, properties, propertyTypeLabels, agency, handlePropertyClick }) {
+  const { ref, isVisible } = useIntersectionObserver();
+  
+  return (
+    <div 
+      id={`section-${type}`}
+      ref={ref}
+      className={`container mx-auto px-4 mt-16 transition-all duration-1000 ease-out ${
+        isVisible 
+          ? 'opacity-100 transform-none' 
+          : 'opacity-0 transform scale-95'
+      }`}
+    >
+      <h2 className="text-2xl font-light mb-8">{propertyTypeLabels[type] || type}</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {properties.map((property, index) => (
+          <div 
+            key={property.id} 
+            className={`cursor-pointer transition-all duration-700 ease-out ${
+              isVisible 
+                ? 'opacity-100 transform-none' 
+                : 'opacity-0 transform scale-95'
+            }`}
+            style={{ 
+              transitionDelay: isVisible ? `${index * 100}ms` : '0ms'
+            }}
+            onClick={() => handlePropertyClick(property.id)}
+          >
+            <div className="aspect-[4/3] overflow-hidden rounded-lg relative">
+              {property.photos?.[0] ? (
+                <img
+                  src={property.photos[0]}
+                  alt={property.title}
+                  className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                />
+              ) : (
+                <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                  <BedDouble className="w-12 h-12 text-gray-400" />
+                </div>
+              )}
+              <div 
+                className="absolute top-4 left-4 px-3 py-1 rounded-full text-sm font-medium"
+                style={{
+                  backgroundColor: agency?.primary_color || '#000000',
+                  color: 'white',
+                }}
+              >
+                {property.property_offer_type === 'VENTE' ? 'À Vendre' : 'À Louer'}
+              </div>
+            </div>
+            <div className="mt-4">
+              <h3 className="text-xl font-light">{property.title}</h3>
+              <div className="flex items-center gap-2 text-gray-600 mt-2">
+                <MapPin className="w-4 h-4" />
+                <p className="text-sm">{property.zone?.nom}</p>
+              </div>
+              <div className="mt-2 flex justify-between items-center">
+                <p className="text-lg">
+                  {property.price.toLocaleString('fr-FR')} FCFA
+                </p>
+                <div className="flex items-center gap-1 text-gray-600">
+                  <span>{property.surface_area} m²</span>
+                  {property.bedrooms && (
+                    <div className="flex items-center gap-1 ml-2">
+                      <BedDouble className="w-4 h-4" />
+                      <span>{property.bedrooms}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function AgencyHomePage() {
+  // ... keep existing code (state variables, query hooks, effects)
   const { agency } = useAgencyContext();
   const navigate = useNavigate();
   const [selectedZone, setSelectedZone] = useState<string>("all");
@@ -228,7 +308,7 @@ export default function AgencyHomePage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Navbar */}
+      {/* ... keep existing code (navbar) */}
       <nav className="border-b relative" style={{ backgroundColor: agency?.primary_color || '#000000' }}>
         <div className="container mx-auto py-4 px-4 flex justify-between items-center">
           <div className="flex items-center">
@@ -518,89 +598,19 @@ export default function AgencyHomePage() {
         </div>
       </div>
 
-      {/* Property Type Sections avec animations Fade In & Scale */}
-      {propertyTypeGroups && Object.entries(propertyTypeGroups).map(([type, typeProperties]) => {
-        // Utilisation du hook personnalisé pour chaque section
-        const { ref: sectionRef, isVisible: isSectionVisible } = useIntersectionObserver();
-        
-        return typeProperties.length > 0 && (
-          <div 
+      {/* Property Type Sections avec animations Fade In & Scale - Version révisée avec composant séparé */}
+      {propertyTypeGroups && Object.entries(propertyTypeGroups).map(([type, typeProperties]) => 
+        typeProperties.length > 0 && (
+          <PropertyCategorySection
             key={type}
-            id={`section-${type}`}
-            ref={sectionRef}
-            className={`container mx-auto px-4 mt-16 transition-all duration-1000 ease-out ${
-              isSectionVisible 
-                ? 'opacity-100 transform-none' 
-                : 'opacity-0 transform scale-95'
-            }`}
-          >
-            <h2 className="text-2xl font-light mb-8">{propertyTypeLabels[type] || type}</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {typeProperties.map((property, index) => {
-                // Animation en cascade pour chaque propriété avec un délai progressif
-                return (
-                  <div 
-                    key={property.id} 
-                    className={`cursor-pointer transition-all duration-700 ease-out ${
-                      isSectionVisible 
-                        ? 'opacity-100 transform-none' 
-                        : 'opacity-0 transform scale-95'
-                    }`}
-                    style={{ 
-                      transitionDelay: isSectionVisible ? `${index * 100}ms` : '0ms'
-                    }}
-                    onClick={() => handlePropertyClick(property.id)}
-                  >
-                    <div className="aspect-[4/3] overflow-hidden rounded-lg relative">
-                      {property.photos?.[0] ? (
-                        <img
-                          src={property.photos[0]}
-                          alt={property.title}
-                          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                          <BedDouble className="w-12 h-12 text-gray-400" />
-                        </div>
-                      )}
-                      <div 
-                        className="absolute top-4 left-4 px-3 py-1 rounded-full text-sm font-medium"
-                        style={{
-                          backgroundColor: agency?.primary_color || '#000000',
-                          color: 'white',
-                        }}
-                      >
-                        {property.property_offer_type === 'VENTE' ? 'À Vendre' : 'À Louer'}
-                      </div>
-                    </div>
-                    <div className="mt-4">
-                      <h3 className="text-xl font-light">{property.title}</h3>
-                      <div className="flex items-center gap-2 text-gray-600 mt-2">
-                        <MapPin className="w-4 h-4" />
-                        <p className="text-sm">{property.zone?.nom}</p>
-                      </div>
-                      <div className="mt-2 flex justify-between items-center">
-                        <p className="text-lg">
-                          {property.price.toLocaleString('fr-FR')} FCFA
-                        </p>
-                        <div className="flex items-center gap-1 text-gray-600">
-                          <span>{property.surface_area} m²</span>
-                          {property.bedrooms && (
-                            <div className="flex items-center gap-1 ml-2">
-                              <BedDouble className="w-4 h-4" />
-                              <span>{property.bedrooms}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
+            type={type}
+            properties={typeProperties}
+            propertyTypeLabels={propertyTypeLabels}
+            agency={agency}
+            handlePropertyClick={handlePropertyClick}
+          />
+        )
+      )}
 
       {/* ... keep existing code (scroll to top button, auth drawer, and footer) */}
       {showScrollTop && (
