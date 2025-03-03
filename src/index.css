@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -97,5 +98,15 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Text reveal animation */
+@keyframes reveal-text {
+  0% {
+    transform: scaleX(1);
+  }
+  100% {
+    transform: scaleX(0);
   }
 }
