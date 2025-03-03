@@ -8,7 +8,7 @@ interface IntersectionObserverOptions {
 }
 
 interface UseIntersectionObserverReturn {
-  ref: RefObject<HTMLElement>;
+  ref: RefObject<HTMLDivElement>; // Changed from HTMLElement to HTMLDivElement
   isVisible: boolean;
 }
 
@@ -20,7 +20,7 @@ const useIntersectionObserver = (
   }
 ): UseIntersectionObserverReturn => {
   const [isVisible, setIsVisible] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement>(null); // Specifically using HTMLDivElement
 
   useEffect(() => {
     const observer = new IntersectionObserver(

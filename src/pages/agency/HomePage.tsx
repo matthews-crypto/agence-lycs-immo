@@ -9,6 +9,20 @@ import AgencyNavbar from '@/components/agency/AgencyNavbar';
 import useIntersectionObserver from '@/hooks/useIntersectionObserver';
 import ContactForm from '@/components/agency/ContactForm';
 
+// Define a type for the property to fix the 'length' error
+interface Property {
+  id: string;
+  title: string;
+  photos?: string[];
+  property_offer_type?: string;
+  address?: string;
+  region?: string;
+  price: number;
+  surface_area?: number;
+  bedrooms?: number;
+  property_type: string;
+}
+
 function PropertyCategorySection({ type, properties, propertyTypeLabels, agency, handlePropertyClick }) {
   const { ref, isVisible } = useIntersectionObserver();
   
@@ -108,8 +122,8 @@ const HomePage = () => {
     },
   });
 
-  // Fetch properties for the agency
-  const { data: properties, isLoading: isPropertiesLoading } = useQuery({
+  // Fetch properties for the agency and specify the return type
+  const { data: properties, isLoading: isPropertiesLoading } = useQuery<Property[]>({
     queryKey: ['properties', agency?.id],
     queryFn: async () => {
       if (!agency?.id) return [];
@@ -148,8 +162,8 @@ const HomePage = () => {
     navigate(`/${slug}/property/${propertyId}`);
   };
 
-  // Group properties by type
-  const propertyTypeGroups = properties?.reduce((groups, property) => {
+  // Group properties by type with proper type checking
+  const propertyTypeGroups = properties?.reduce<Record<string, Property[]>>((groups, property) => {
     const type = property.property_type || 'Autre';
     if (!groups[type]) {
       groups[type] = [];
