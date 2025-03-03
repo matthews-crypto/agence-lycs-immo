@@ -1,28 +1,78 @@
+import { useState, useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { MapPin, User, BedDouble, ChevronUp, Phone, Mail, ChevronDown, Briefcase } from "lucide-react";
+import { useAgencyContext } from "@/contexts/AgencyContext";
+import { useNavigate } from "react-router-dom";
+import { AuthDrawer } from "@/components/agency/AuthDrawer";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { BedDouble, MapPin } from 'lucide-react';
-import AgencyFooter from '@/components/agency/AgencyFooter';
-import AgencyNavbar from '@/components/agency/AgencyNavbar';
-import useIntersectionObserver from '@/hooks/useIntersectionObserver';
-import ContactForm from '@/components/agency/ContactForm';
+const propertyTypeLabels: { [key: string]: string } = {
+  "APARTMENT": "Appartement",
+  "HOUSE": "Maison",
+  "LAND": "Terrain",
+  "COMMERCIAL": "Local commercial",
+  "OFFICE": "Bureau",
+  "OTHER": "Autre"
+};
 
-// Define a type for the property to fix the 'length' error
-interface Property {
-  id: string;
-  title: string;
-  photos?: string[];
-  property_offer_type?: string;
-  address?: string;
-  region?: string;
-  price: number;
-  surface_area?: number;
-  bedrooms?: number;
-  property_type: string;
+const propertyTypes = [
+  { value: "APARTMENT", label: "Appartement" },
+  { value: "HOUSE", label: "Maison" },
+  { value: "LAND", label: "Terrain" },
+  { value: "COMMERCIAL", label: "Local commercial" },
+  { value: "OFFICE", label: "Bureau" },
+  { value: "OTHER", label: "Autre" },
+];
+
+// Hook personnalisé pour l'animation
+function useIntersectionObserver(options = {}) {
+  const [isVisible, setIsVisible] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setIsVisible(true);
+        // Une fois visible, on peut arrêter d'observer
+        if (ref.current) observer.unobserve(ref.current);
+      }
+    }, { threshold: 0.1, ...options });
+
+    const currentRef = ref.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [options]);
+
+  return { ref, isVisible };
 }
 
+// Composant séparé pour chaque section de catégorie
 function PropertyCategorySection({ type, properties, propertyTypeLabels, agency, handlePropertyClick }) {
   const { ref, isVisible } = useIntersectionObserver();
   
@@ -77,7 +127,7 @@ function PropertyCategorySection({ type, properties, propertyTypeLabels, agency,
               <h3 className="text-xl font-light">{property.title}</h3>
               <div className="flex items-center gap-2 text-gray-600 mt-2">
                 <MapPin className="w-4 h-4" />
-                <p className="text-sm">{property.address || property.region || 'Emplacement non spécifié'}</p>
+                <p className="text-sm">{property.zone?.nom}</p>
               </div>
               <div className="mt-2 flex justify-between items-center">
                 <p className="text-lg">
@@ -101,70 +151,130 @@ function PropertyCategorySection({ type, properties, propertyTypeLabels, agency,
   );
 }
 
-const HomePage = () => {
-  const { slug } = useParams<{ slug: string }>();
+export default function AgencyHomePage() {
+  const { agency } = useAgencyContext();
   const navigate = useNavigate();
-  const [heroImage, setHeroImage] = useState<string | null>(null);
-  const { ref: heroRef, isVisible: isHeroVisible } = useIntersectionObserver();
+  const [selectedZone, setSelectedZone] = useState<string>("all");
+  const [selectedType, setSelectedType] = useState<string>("all");
+  const [selectedRegion, setSelectedRegion] = useState<string>("all");
+  const [minBudget, setMinBudget] = useState<string>("");
+  const [maxBudget, setMaxBudget] = useState<string>("");
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [heroApi, setHeroApi] = useState<any>();
+  const [propertiesApi, setPropertiesApi] = useState<any>();
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [showCategoryMenu, setShowCategoryMenu] = useState(false);
+  const categoryMenuRef = useRef<HTMLDivElement>(null);
 
-  // Fetch agency data
-  const { data: agency, isLoading: isAgencyLoading } = useQuery({
-    queryKey: ['agency', slug],
+  const { data: regions } = useQuery({
+    queryKey: ["regions"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('agencies')
-        .select('*')
-        .eq('slug', slug)
-        .single();
-      
+        .from("region")
+        .select("*")
+        .order("nom");
+
       if (error) throw error;
       return data;
     },
   });
 
-  // Fetch properties for the agency and specify the return type
-  const { data: properties, isLoading: isPropertiesLoading } = useQuery<Property[]>({
-    queryKey: ['properties', agency?.id],
+  const { data: properties } = useQuery({
+    queryKey: ["agency-properties", agency?.id],
     queryFn: async () => {
-      if (!agency?.id) return [];
-      
       const { data, error } = await supabase
-        .from('properties')
+        .from("properties")
         .select(`
           *,
-          zone:zone_id (
+          zone (
             id,
-            nom
+            nom,
+            latitude,
+            longitude,
+            circle_radius
           )
         `)
-        .eq('agency_id', agency.id)
-        .eq('is_available', true);
-      
+        .eq("agency_id", agency?.id)
+        .eq("is_available", true)
+        .order("created_at", { ascending: false });
+
       if (error) throw error;
-      return data || [];
+      return data;
     },
     enabled: !!agency?.id,
   });
 
-  useEffect(() => {
-    // Set a hero image from properties if available
-    if (properties && Array.isArray(properties) && properties.length > 0) {
-      for (const property of properties) {
-        if (property.photos && property.photos.length > 0) {
-          setHeroImage(property.photos[0]);
-          break;
-        }
-      }
-    }
-  }, [properties]);
+  const agencyRegions = [...new Set(properties?.map(p => p.region).filter(Boolean))];
 
-  const handlePropertyClick = (propertyId: string) => {
-    navigate(`/${slug}/property/${propertyId}`);
+  const filteredRegions = regions?.filter(region => 
+    agencyRegions.includes(region.nom)
+  );
+
+  useEffect(() => {
+    if (!heroApi || !propertiesApi) return;
+
+    const heroAutoplay = setInterval(() => {
+      if (heroApi.canScrollNext()) heroApi.scrollNext();
+      else heroApi.scrollTo(0);
+    }, 5000);
+
+    const propertiesAutoplay = setInterval(() => {
+      if (propertiesApi.canScrollNext()) propertiesApi.scrollNext();
+      else propertiesApi.scrollTo(0);
+    }, 3000);
+
+    return () => {
+      clearInterval(heroAutoplay);
+      clearInterval(propertiesAutoplay);
+    };
+  }, [heroApi, propertiesApi]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const nav = document.querySelector('nav');
+      if (nav) {
+        const navBottom = nav.getBoundingClientRect().bottom;
+        setShowScrollTop(navBottom < 0);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (categoryMenuRef.current && !categoryMenuRef.current.contains(event.target as Node)) {
+        setShowCategoryMenu(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
   };
 
-  // Group properties by type with proper type checking
-  const propertyTypeGroups = properties?.reduce<Record<string, Property[]>>((groups, property) => {
-    const type = property.property_type || 'Autre';
+  const filteredProperties = properties?.filter(property => {
+    const matchesZone = selectedZone === "all" || property.zone?.nom === selectedZone;
+    const matchesType = selectedType === "all" || property.property_type === selectedType;
+    const matchesRegion = selectedRegion === "all" || property.region === selectedRegion;
+    const matchesMinBudget = !minBudget || property.price >= parseInt(minBudget);
+    const matchesMaxBudget = !maxBudget || property.price <= parseInt(maxBudget);
+    return matchesZone && matchesType && matchesRegion && matchesMinBudget && matchesMaxBudget;
+  });
+
+  const zones = [...new Set(properties?.map(p => p.zone?.nom).filter(Boolean))];
+
+  const propertyTypeGroups = properties?.reduce((groups: { [key: string]: any[] }, property) => {
+    const type = property.property_type;
     if (!groups[type]) {
       groups[type] = [];
     }
@@ -172,58 +282,319 @@ const HomePage = () => {
     return groups;
   }, {});
 
-  const propertyTypeLabels = {
-    APPARTEMENT: 'Appartements',
-    MAISON: 'Maisons',
-    VILLA: 'Villas',
-    TERRAIN: 'Terrains',
-    BUREAU: 'Bureaux',
-    COMMERCE: 'Commerces',
-    IMMEUBLE: 'Immeubles',
-    PARKING: 'Parkings',
-    AUTRE: 'Autres'
+  const scrollToSection = (sectionId: string) => {
+    setShowCategoryMenu(false);
+    const section = document.getElementById(sectionId);
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
-  if (isAgencyLoading) {
-    return <div className="flex items-center justify-center h-screen">Chargement...</div>;
-  }
+  const handleSearch = () => {
+    if (!selectedZone && !minBudget && !maxBudget && selectedType === "all" && selectedRegion === "all") {
+      toast.warning("Veuillez sélectionner au moins un critère de recherche");
+      return;
+    }
+    toast.success("Recherche effectuée avec succès");
+  };
 
-  if (!agency) {
-    return <div className="flex items-center justify-center h-screen">Agence non trouvée</div>;
-  }
+  const handlePropertyClick = (propertyId: string) => {
+    if (!agency?.slug) return;
+    navigate(`/${agency.slug}/properties/${propertyId}/public`);
+  };
+
+  const loopedProperties = [...(properties || []), ...(properties || [])];
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <AgencyNavbar agency={agency} />
-      
-      {/* Hero Section */}
-      <div 
-        ref={heroRef}
-        className={`h-[70vh] relative overflow-hidden transition-all duration-1000 ease-out ${
-          isHeroVisible ? 'opacity-100' : 'opacity-0'
-        }`}
-      >
-        <div 
-          className="w-full h-full bg-cover bg-center"
-          style={{ 
-            backgroundImage: heroImage ? `url(${heroImage})` : 'none',
-            backgroundColor: heroImage ? undefined : '#f3f4f6'
-          }}
-        >
-          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <div className="text-center text-white px-4">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-light mb-6">
-                {agency.agency_name}
+    <div className="min-h-screen bg-white">
+      <nav className="border-b relative" style={{ backgroundColor: agency?.primary_color || '#000000' }}>
+        <div className="container mx-auto py-4 px-4 flex justify-between items-center">
+          <div className="flex items-center">
+            {agency?.logo_url ? (
+              <img 
+                src={agency.logo_url} 
+                alt={agency.agency_name}
+                className="h-16 object-contain rounded-full"
+              />
+            ) : (
+              <h1 className="text-2xl font-light text-white">
+                {agency?.agency_name}
               </h1>
-              <p className="text-xl md:text-2xl max-w-2xl mx-auto font-light">
-                Votre partenaire de confiance pour tous vos projets immobiliers
-              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-8">
+            <button
+              onClick={() => scrollToTop()}
+              className="text-white hover:text-white/90 transition-colors"
+            >
+              Accueil
+            </button>
+            
+            <div className="relative" ref={categoryMenuRef}>
+              <button
+                onClick={() => setShowCategoryMenu(!showCategoryMenu)}
+                className="text-white hover:text-white/90 transition-colors flex items-center gap-1"
+              >
+                <span>Catégorie Offre</span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${showCategoryMenu ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {showCategoryMenu && (
+                <div 
+                  className="absolute left-0 right-0 mt-2 py-4 bg-white shadow-lg rounded-b-lg w-[30rem] -left-1/2"
+                  style={{ zIndex: 50 }}
+                >
+                  <div className="grid grid-cols-2 gap-4 p-4">
+                    {propertyTypeGroups && Object.entries(propertyTypeGroups).map(([type, typeProperties]) => (
+                      typeProperties.length > 0 && (
+                        <div key={type} className="flex flex-col" onClick={() => scrollToSection(`section-${type}`)}>
+                          <h3 className="font-medium mb-2" style={{ color: agency?.primary_color || '#000000' }}>
+                            {propertyTypeLabels[type] || type}
+                          </h3>
+                          {typeProperties[0]?.photos?.[0] ? (
+                            <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden cursor-pointer">
+                              <img 
+                                src={typeProperties[0].photos[0]} 
+                                alt={propertyTypeLabels[type]} 
+                                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-full aspect-[4/3] bg-gray-200 flex items-center justify-center rounded-lg cursor-pointer">
+                              <BedDouble className="w-12 h-12 text-gray-400" />
+                            </div>
+                          )}
+                        </div>
+                      )
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
+            
+            <button
+              onClick={() => scrollToSection('services')}
+              className="text-white hover:text-white/90 transition-colors"
+            >
+              À propos
+            </button>
+          </div>
+          <div className="flex justify-end">
+            <Button
+              variant="ghost"
+              onClick={() => setIsAuthOpen(true)}
+              className="flex items-center gap-2 text-white"
+            >
+              <span>Compte</span>
+              <User className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+      </nav>
+
+      <div className="container mx-auto px-4 mt-8">
+        <div className="relative h-[40vh] max-w-5xl mx-auto bg-gray-100 rounded-lg overflow-hidden">
+          <Carousel 
+            className="h-full" 
+            opts={{ 
+              loop: true,
+              align: "start",
+            }}
+            setApi={setHeroApi}
+          >
+            <CarouselContent className="h-full">
+              {properties?.slice(0, 3).map((property) => (
+                <CarouselItem 
+                  key={property.id} 
+                  className="h-full"
+                >
+                  <div className="relative h-full">
+                    {property.photos?.[0] ? (
+                      <img
+                        src={property.photos[0]}
+                        alt={property.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                        <BedDouble className="w-12 h-12 text-gray-400" />
+                      </div>
+                    )}
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-8">
+                      <h2 className="text-white text-2xl font-light">
+                        {property.title}
+                      </h2>
+                      <p className="text-white/80 mt-2">
+                        {property.zone?.nom}
+                      </p>
+                    </div>
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+          </Carousel>
+        </div>
+
+        <div className="mt-8 max-w-4xl mx-auto">
+          <div className="bg-white rounded-lg shadow-lg p-4 flex flex-col md:flex-row gap-4">
+            <Select 
+              value={selectedZone} 
+              onValueChange={setSelectedZone}
+            >
+              <SelectTrigger className="w-full md:w-[200px] text-base font-medium">
+                <SelectValue placeholder="Zone" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-base">Zones</SelectItem>
+                {zones.map((zone) => (
+                  <SelectItem key={zone} value={zone || ''} className="text-base">
+                    {zone}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select 
+              value={selectedType} 
+              onValueChange={setSelectedType}
+            >
+              <SelectTrigger className="w-full md:w-[200px] text-base font-medium">
+                <SelectValue placeholder="Type de bien" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-base">Types</SelectItem>
+                {propertyTypes.map((type) => (
+                  <SelectItem key={type.value} value={type.value} className="text-base">
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select 
+              value={selectedRegion} 
+              onValueChange={setSelectedRegion}
+            >
+              <SelectTrigger className="w-full md:w-[200px] text-base font-medium">
+                <SelectValue placeholder="Région" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-base">Toutes les régions</SelectItem>
+                {filteredRegions?.map((region) => (
+                  <SelectItem key={region.id} value={region.nom} className="text-base">
+                    {region.nom}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <div className="flex flex-col md:flex-row gap-4 flex-1">
+              <input
+                type="number"
+                placeholder="Budget min"
+                className="flex-1 px-3 py-2 border rounded-md text-base font-medium"
+                value={minBudget}
+                onChange={(e) => setMinBudget(e.target.value)}
+              />
+              <input
+                type="number"
+                placeholder="Budget max"
+                className="flex-1 px-3 py-2 border rounded-md text-base font-medium"
+                value={maxBudget}
+                onChange={(e) => setMaxBudget(e.target.value)}
+              />
+            </div>
+
+            <Button 
+              className="w-full md:w-auto px-8"
+              style={{
+                backgroundColor: agency?.primary_color || '#000000',
+              }}
+              onClick={handleSearch}
+            >
+              Rechercher
+            </Button>
           </div>
         </div>
       </div>
-      
-      {/* Property Type Sections with animations Fade In & Scale */}
+
+      <div className="py-16 container mx-auto px-4">
+        <h2 className="text-3xl font-light mb-12 text-center">
+          Notre sélection d'annonces immobilières
+        </h2>
+        
+        <div className="max-w-5xl mx-auto">
+          <Carousel 
+            className="w-full" 
+            opts={{
+              align: "start",
+              loop: true,
+            }}
+            setApi={setPropertiesApi}
+          >
+            <CarouselContent>
+              {loopedProperties.map((property, index) => (
+                <CarouselItem 
+                  key={`${property.id}-${index}`} 
+                  className="md:basis-1/2 lg:basis-1/3"
+                >
+                  <div 
+                    className="relative group cursor-pointer"
+                    onClick={() => handlePropertyClick(property.id)}
+                  >
+                    <div className="aspect-[4/3] overflow-hidden rounded-lg relative">
+                      {property.photos?.[0] ? (
+                        <img
+                          src={property.photos[0]}
+                          alt={property.title}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                          <BedDouble className="w-12 h-12 text-gray-400" />
+                        </div>
+                      )}
+                      <div 
+                        className="absolute top-4 left-4 px-3 py-1 rounded-full text-sm font-medium"
+                        style={{
+                          backgroundColor: agency?.primary_color || '#000000',
+                          color: 'white',
+                        }}
+                      >
+                        {property.property_offer_type === 'VENTE' ? 'À Vendre' : 'À Louer'}
+                      </div>
+                    </div>
+                    <div className="mt-4">
+                      <h3 className="text-xl font-light">{property.title}</h3>
+                      <div className="flex items-center gap-2 text-gray-600 mt-2">
+                        <MapPin className="w-4 h-4" />
+                        <p className="text-sm">{property.zone?.nom}</p>
+                      </div>
+                      <div className="mt-2 flex justify-between items-center">
+                        <p className="text-lg">
+                          {property.price.toLocaleString('fr-FR')} FCFA
+                        </p>
+                        <div className="flex items-center gap-1 text-gray-600">
+                          <span>{property.surface_area} m²</span>
+                          {property.bedrooms && (
+                            <div className="flex items-center gap-1 ml-2">
+                              <BedDouble className="w-4 h-4" />
+                              <span>{property.bedrooms}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious />
+            <CarouselNext />
+          </Carousel>
+        </div>
+      </div>
+
       {propertyTypeGroups && Object.entries(propertyTypeGroups).map(([type, typeProperties]) => 
         typeProperties.length > 0 && (
           <PropertyCategorySection
@@ -237,25 +608,210 @@ const HomePage = () => {
         )
       )}
 
-      {/* Nos Services Section */}
-      <div id="nos-services" className="container mx-auto px-4 mt-24 py-16 bg-gray-50">
-        <h2 className="text-3xl font-light text-center mb-8">Nos Services</h2>
-        <div className="max-w-3xl mx-auto text-center mb-12">
-          <p className="text-lg text-gray-700">
-            Chez {agency.agency_name}, nous vous accompagnons dans toutes les étapes de votre projet immobilier, que ce soit pour acheter ou louer un bien.
-          </p>
-        </div>
-        
-        {/* Contact Form */}
-        <div className="max-w-xl mx-auto bg-white rounded-lg shadow-sm p-8">
-          <h3 className="text-2xl font-light mb-6 text-center">Contactez-nous</h3>
-          <ContactForm agencyId={agency.id} />
+      {/* Section Nos services */}
+      <div id="services" className="py-16 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-12">
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <Briefcase className="w-8 h-8" style={{ color: agency?.primary_color || '#000000' }} />
+                <h2 className="text-3xl font-light">Nos Services</h2>
+              </div>
+              <p className="text-lg text-gray-700 max-w-3xl mx-auto">
+                Chez {agency?.agency_name}, nous vous accompagnons dans toutes les étapes de votre projet immobilier, que ce soit pour acheter ou louer un bien.
+              </p>
+            </div>
+            
+            {/* Formulaire de contact déplacé ici */}
+            <div className="max-w-lg mx-auto w-full mt-8 bg-white p-8 rounded-lg shadow-lg">
+              <h3 
+                className="text-lg font-medium mb-4 text-center"
+                style={{ color: agency?.primary_color || '#000000' }}
+              >
+                CONTACTEZ-NOUS
+              </h3>
+              <form className="space-y-4" onSubmit={async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                const data = {
+                  name: formData.get('name') as string,
+                  email: formData.get('email') as string,
+                  message: formData.get('message') as string,
+                };
+
+                if (!agency?.id) {
+                  toast.error("Une erreur s'est produite");
+                  return;
+                }
+
+                const { error } = await supabase
+                  .from('contact_messages')
+                  .insert([
+                    {
+                      agency_id: agency.id,
+                      ...data
+                    }
+                  ]);
+
+                if (error) {
+                  console.error('Error sending message:', error);
+                  toast.error("Une erreur s'est produite lors de l'envoi du message");
+                  return;
+                }
+
+                toast.success("Message envoyé avec succès");
+                e.currentTarget.reset();
+              }}>
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-gray-700">Nom</Label>
+                  <Input 
+                    id="name" 
+                    name="name" 
+                    placeholder="Votre nom"
+                    required 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-gray-700">Email</Label>
+                  <Input 
+                    id="email" 
+                    name="email" 
+                    type="email" 
+                    placeholder="Votre email"
+                    required 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="message" className="text-gray-700">Message</Label>
+                  <Textarea 
+                    id="message" 
+                    name="message"
+                    placeholder="Votre message"
+                    className="min-h-[100px]"
+                    required
+                  />
+                </div>
+                <Button 
+                  type="submit"
+                  className="w-full"
+                  style={{
+                    backgroundColor: agency?.primary_color || '#000000',
+                    color: 'white',
+                  }}
+                >
+                  Envoyer
+                </Button>
+              </form>
+              <Button
+                className="w-full mt-4 flex items-center justify-center gap-2"
+                onClick={() => {
+                  if (agency?.contact_phone) {
+                    window.location.href = `tel:${agency.contact_phone}`;
+                  }
+                }}
+                style={{
+                  backgroundColor: agency?.secondary_color || '#ffffff',
+                  color: agency?.primary_color || '#000000',
+                }}
+              >
+                <Phone className="w-5 h-5" />
+                Appelez
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
+
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-8 right-8 p-3 rounded-full transition-all hover:scale-110 z-50"
+          style={{
+            backgroundColor: agency?.primary_color || '#000000'
+          }}
+        >
+          <ChevronUp className="w-6 h-6 text-white" />
+        </button>
+      )}
+
+      <AuthDrawer 
+        open={isAuthOpen} 
+        onOpenChange={setIsAuthOpen}
+      />
       
-      <AgencyFooter agency={agency} />
+      {/* Footer modifié avec logo à la place du formulaire */}
+      <footer 
+        id="about"
+        className="py-12"
+        style={{ backgroundColor: agency?.primary_color || '#000000' }}
+      >
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-white" />
+                  <h3 
+                    className="text-lg font-medium"
+                    style={{ color: agency?.secondary_color || '#ffffff' }}
+                  >
+                    ADRESSE
+                  </h3>
+                </div>
+                <p className="text-white">
+                  {agency?.address}<br />
+                  {agency?.city} {agency?.postal_code}
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Phone className="w-5 h-5 text-white" />
+                  <h3 
+                    className="text-lg font-medium"
+                    style={{ color: agency?.secondary_color || '#ffffff' }}
+                  >
+                    TÉLÉPHONE
+                  </h3>
+                </div>
+                <p className="text-white">
+                  {agency?.contact_phone}
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Mail className="w-5 h-5 text-white" />
+                  <h3 
+                    className="text-lg font-medium"
+                    style={{ color: agency?.secondary_color || '#ffffff' }}
+                  >
+                    E-MAIL
+                  </h3>
+                </div>
+                <p className="text-white">
+                  {agency?.contact_email}
+                </p>
+              </div>
+            </div>
+
+            {/* Logo de l'agence */}
+            <div className="flex justify-center mt-8">
+              {agency?.logo_url ? (
+                <img 
+                  src={agency.logo_url} 
+                  alt={agency.agency_name}
+                  className="h-20 object-contain rounded-full bg-white p-2"
+                />
+              ) : (
+                <h2 className="text-2xl font-light text-white">
+                  {agency?.agency_name}
+                </h2>
+              )}
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
-};
-
-export default HomePage;
+}
