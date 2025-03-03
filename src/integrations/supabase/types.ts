@@ -264,27 +264,33 @@ export type Database = {
           agency_id: string
           created_at: string
           email: string
+          firstname: string | null
           id: string
           message: string
           name: string
+          phone: string | null
           updated_at: string
         }
         Insert: {
           agency_id: string
           created_at?: string
           email: string
+          firstname?: string | null
           id?: string
           message: string
           name: string
+          phone?: string | null
           updated_at?: string
         }
         Update: {
           agency_id?: string
           created_at?: string
           email?: string
+          firstname?: string | null
           id?: string
           message?: string
           name?: string
+          phone?: string | null
           updated_at?: string
         }
         Relationships: [
