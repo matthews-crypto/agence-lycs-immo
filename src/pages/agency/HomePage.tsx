@@ -163,6 +163,7 @@ export default function AgencyHomePage() {
   const [showCategoryMenu, setShowCategoryMenu] = useState(false);
   const categoryMenuRef = useRef<HTMLDivElement>(null);
   const [scrollY, setScrollY] = useState(0);
+  const servicesRef = useRef<HTMLDivElement>(null);
 
   const { data: regions } = useQuery({
     queryKey: ["regions"],
@@ -234,6 +235,8 @@ export default function AgencyHomePage() {
         const navBottom = nav.getBoundingClientRect().bottom;
         setShowScrollTop(navBottom < 0);
       }
+      
+      setScrollY(window.scrollY);
     };
 
     window.addEventListener('scroll', handleScroll);
@@ -606,12 +609,12 @@ export default function AgencyHomePage() {
         )
       )}
 
-      <div id="services" className="py-16 bg-gray-50 relative overflow-hidden">
+      <div id="services" ref={servicesRef} className="py-16 bg-gray-50 relative overflow-hidden">
         <div className="container mx-auto px-4">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-12">
               <div 
-                className="flex items-center justify-center gap-2 mb-4 transition-transform"
+                className="flex items-center justify-center gap-2 mb-4 transition-transform duration-700"
                 style={{ 
                   transform: `translateY(${scrollY * 0.05}px)`,
                 }}
@@ -620,7 +623,7 @@ export default function AgencyHomePage() {
                 <h2 className="text-3xl font-light">Nos Services</h2>
               </div>
               <p 
-                className="text-lg text-gray-700 max-w-3xl mx-auto transition-transform"
+                className="text-lg text-gray-700 max-w-3xl mx-auto transition-transform duration-700"
                 style={{ 
                   transform: `translateY(${scrollY * 0.02}px)`,
                 }}
