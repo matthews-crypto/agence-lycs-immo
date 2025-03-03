@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MapPin, User, BedDouble, ChevronUp, Phone, Mail } from "lucide-react";
+import { MapPin, User, BedDouble, ChevronUp, Phone, Mail, ChevronDown } from "lucide-react";
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { useNavigate } from "react-router-dom";
 import { AuthDrawer } from "@/components/agency/AuthDrawer";
@@ -43,7 +43,116 @@ const propertyTypes = [
   { value: "OTHER", label: "Autre" },
 ];
 
+// Hook personnalisé pour l'animation
+function useIntersectionObserver(options = {}) {
+  const [isVisible, setIsVisible] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setIsVisible(true);
+        // Une fois visible, on peut arrêter d'observer
+        if (ref.current) observer.unobserve(ref.current);
+      }
+    }, { threshold: 0.1, ...options });
+
+    const currentRef = ref.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [options]);
+
+  return { ref, isVisible };
+}
+
+// Composant séparé pour chaque section de catégorie
+function PropertyCategorySection({ type, properties, propertyTypeLabels, agency, handlePropertyClick }) {
+  const { ref, isVisible } = useIntersectionObserver();
+  
+  return (
+    <div 
+      id={`section-${type}`}
+      ref={ref}
+      className={`container mx-auto px-4 mt-16 transition-all duration-1000 ease-out ${
+        isVisible 
+          ? 'opacity-100 transform-none' 
+          : 'opacity-0 transform scale-95'
+      }`}
+    >
+      <h2 className="text-2xl font-light mb-8">{propertyTypeLabels[type] || type}</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {properties.map((property, index) => (
+          <div 
+            key={property.id} 
+            className={`cursor-pointer transition-all duration-700 ease-out ${
+              isVisible 
+                ? 'opacity-100 transform-none' 
+                : 'opacity-0 transform scale-95'
+            }`}
+            style={{ 
+              transitionDelay: isVisible ? `${index * 100}ms` : '0ms'
+            }}
+            onClick={() => handlePropertyClick(property.id)}
+          >
+            <div className="aspect-[4/3] overflow-hidden rounded-lg relative">
+              {property.photos?.[0] ? (
+                <img
+                  src={property.photos[0]}
+                  alt={property.title}
+                  className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                />
+              ) : (
+                <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                  <BedDouble className="w-12 h-12 text-gray-400" />
+                </div>
+              )}
+              <div 
+                className="absolute top-4 left-4 px-3 py-1 rounded-full text-sm font-medium"
+                style={{
+                  backgroundColor: agency?.primary_color || '#000000',
+                  color: 'white',
+                }}
+              >
+                {property.property_offer_type === 'VENTE' ? 'À Vendre' : 'À Louer'}
+              </div>
+            </div>
+            <div className="mt-4">
+              <h3 className="text-xl font-light">{property.title}</h3>
+              <div className="flex items-center gap-2 text-gray-600 mt-2">
+                <MapPin className="w-4 h-4" />
+                <p className="text-sm">{property.zone?.nom}</p>
+              </div>
+              <div className="mt-2 flex justify-between items-center">
+                <p className="text-lg">
+                  {property.price.toLocaleString('fr-FR')} FCFA
+                </p>
+                <div className="flex items-center gap-1 text-gray-600">
+                  <span>{property.surface_area} m²</span>
+                  {property.bedrooms && (
+                    <div className="flex items-center gap-1 ml-2">
+                      <BedDouble className="w-4 h-4" />
+                      <span>{property.bedrooms}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function AgencyHomePage() {
+  // ... keep existing code (state variables, query hooks, effects)
   const { agency } = useAgencyContext();
   const navigate = useNavigate();
   const [selectedZone, setSelectedZone] = useState<string>("all");
@@ -55,6 +164,8 @@ export default function AgencyHomePage() {
   const [heroApi, setHeroApi] = useState<any>();
   const [propertiesApi, setPropertiesApi] = useState<any>();
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [showCategoryMenu, setShowCategoryMenu] = useState(false);
+  const categoryMenuRef = useRef<HTMLDivElement>(null);
 
   const { data: regions } = useQuery({
     queryKey: ["regions"],
@@ -132,6 +243,19 @@ export default function AgencyHomePage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (categoryMenuRef.current && !categoryMenuRef.current.contains(event.target as Node)) {
+        setShowCategoryMenu(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
@@ -160,6 +284,7 @@ export default function AgencyHomePage() {
   }, {});
 
   const scrollToSection = (sectionId: string) => {
+    setShowCategoryMenu(false);
     const section = document.getElementById(sectionId);
     if (section) {
       section.scrollIntoView({ behavior: 'smooth' });
@@ -183,8 +308,8 @@ export default function AgencyHomePage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Navbar */}
-      <nav className="border-b" style={{ backgroundColor: agency?.primary_color || '#000000' }}>
+      {/* ... keep existing code (navbar) */}
+      <nav className="border-b relative" style={{ backgroundColor: agency?.primary_color || '#000000' }}>
         <div className="container mx-auto py-4 px-4 flex justify-between items-center">
           <div className="flex items-center">
             {agency?.logo_url ? (
@@ -200,17 +325,55 @@ export default function AgencyHomePage() {
             )}
           </div>
           <div className="flex items-center gap-8">
-            {propertyTypeGroups && Object.keys(propertyTypeGroups).map((type) => (
-              propertyTypeGroups[type].length > 0 && (
-                <button
-                  key={type}
-                  onClick={() => scrollToSection(`section-${type}`)}
-                  className="text-white hover:text-white/90 transition-colors"
+            <button
+              onClick={() => scrollToTop()}
+              className="text-white hover:text-white/90 transition-colors"
+            >
+              Accueil
+            </button>
+            
+            <div className="relative" ref={categoryMenuRef}>
+              <button
+                onClick={() => setShowCategoryMenu(!showCategoryMenu)}
+                className="text-white hover:text-white/90 transition-colors flex items-center gap-1"
+              >
+                <span>Catégorie Offre</span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${showCategoryMenu ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {showCategoryMenu && (
+                <div 
+                  className="absolute left-0 right-0 mt-2 py-4 bg-white shadow-lg rounded-b-lg w-[30rem] -left-1/2"
+                  style={{ zIndex: 50 }}
                 >
-                  {propertyTypeLabels[type] || type}
-                </button>
-              )
-            ))}
+                  <div className="grid grid-cols-2 gap-4 p-4">
+                    {propertyTypeGroups && Object.entries(propertyTypeGroups).map(([type, typeProperties]) => (
+                      typeProperties.length > 0 && (
+                        <div key={type} className="flex flex-col" onClick={() => scrollToSection(`section-${type}`)}>
+                          <h3 className="font-medium mb-2" style={{ color: agency?.primary_color || '#000000' }}>
+                            {propertyTypeLabels[type] || type}
+                          </h3>
+                          {typeProperties[0]?.photos?.[0] ? (
+                            <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden cursor-pointer">
+                              <img 
+                                src={typeProperties[0].photos[0]} 
+                                alt={propertyTypeLabels[type]} 
+                                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-full aspect-[4/3] bg-gray-200 flex items-center justify-center rounded-lg cursor-pointer">
+                              <BedDouble className="w-12 h-12 text-gray-400" />
+                            </div>
+                          )}
+                        </div>
+                      )
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            
             <button
               onClick={() => scrollToSection('about')}
               className="text-white hover:text-white/90 transition-colors"
@@ -231,7 +394,7 @@ export default function AgencyHomePage() {
         </div>
       </nav>
 
-      {/* Property Search Section */}
+      {/* ... keep existing code (search section and property carousel) */}
       <div className="container mx-auto px-4 mt-8">
         <div className="relative h-[40vh] max-w-5xl mx-auto bg-gray-100 rounded-lg overflow-hidden">
           <Carousel 
@@ -358,7 +521,6 @@ export default function AgencyHomePage() {
         </div>
       </div>
 
-      {/* Properties Carousel */}
       <div className="py-16 container mx-auto px-4">
         <h2 className="text-3xl font-light mb-12 text-center">
           Notre sélection d'annonces immobilières
@@ -436,72 +598,21 @@ export default function AgencyHomePage() {
         </div>
       </div>
 
-      {/* Property Type Sections */}
-      {propertyTypeGroups && Object.entries(propertyTypeGroups).map(([type, typeProperties]) => (
+      {/* Property Type Sections avec animations Fade In & Scale - Version révisée avec composant séparé */}
+      {propertyTypeGroups && Object.entries(propertyTypeGroups).map(([type, typeProperties]) => 
         typeProperties.length > 0 && (
-          <div 
+          <PropertyCategorySection
             key={type}
-            id={`section-${type}`}
-            className="container mx-auto px-4 mt-16"
-          >
-            <h2 className="text-2xl font-light mb-8">{propertyTypeLabels[type] || type}</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {typeProperties.map((property) => (
-                <div 
-                  key={property.id} 
-                  className="cursor-pointer"
-                  onClick={() => handlePropertyClick(property.id)}
-                >
-                  <div className="aspect-[4/3] overflow-hidden rounded-lg relative">
-                    {property.photos?.[0] ? (
-                      <img
-                        src={property.photos[0]}
-                        alt={property.title}
-                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                        <BedDouble className="w-12 h-12 text-gray-400" />
-                      </div>
-                    )}
-                    <div 
-                      className="absolute top-4 left-4 px-3 py-1 rounded-full text-sm font-medium"
-                      style={{
-                        backgroundColor: agency?.primary_color || '#000000',
-                        color: 'white',
-                      }}
-                    >
-                      {property.property_offer_type === 'VENTE' ? 'À Vendre' : 'À Louer'}
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <h3 className="text-xl font-light">{property.title}</h3>
-                    <div className="flex items-center gap-2 text-gray-600 mt-2">
-                      <MapPin className="w-4 h-4" />
-                      <p className="text-sm">{property.zone?.nom}</p>
-                    </div>
-                    <div className="mt-2 flex justify-between items-center">
-                      <p className="text-lg">
-                        {property.price.toLocaleString('fr-FR')} FCFA
-                      </p>
-                      <div className="flex items-center gap-1 text-gray-600">
-                        <span>{property.surface_area} m²</span>
-                        {property.bedrooms && (
-                          <div className="flex items-center gap-1 ml-2">
-                            <BedDouble className="w-4 h-4" />
-                            <span>{property.bedrooms}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+            type={type}
+            properties={typeProperties}
+            propertyTypeLabels={propertyTypeLabels}
+            agency={agency}
+            handlePropertyClick={handlePropertyClick}
+          />
         )
-      ))}
+      )}
 
+      {/* ... keep existing code (scroll to top button, auth drawer, and footer) */}
       {showScrollTop && (
         <button
           onClick={scrollToTop}
@@ -518,7 +629,6 @@ export default function AgencyHomePage() {
         open={isAuthOpen} 
         onOpenChange={setIsAuthOpen}
       />
-      {/* Footer */}
       <footer 
         id="about"
         className="mt-16 py-12"
@@ -526,9 +636,7 @@ export default function AgencyHomePage() {
       >
         <div className="container mx-auto px-4">
           <div className="flex flex-col space-y-8">
-            {/* First Row: Contact Info */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {/* Address */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <MapPin className="w-5 h-5 text-white" />
@@ -545,7 +653,6 @@ export default function AgencyHomePage() {
                 </p>
               </div>
 
-              {/* Phone */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <Phone className="w-5 h-5 text-white" />
@@ -561,7 +668,6 @@ export default function AgencyHomePage() {
                 </p>
               </div>
 
-              {/* Email */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <Mail className="w-5 h-5 text-white" />
@@ -578,7 +684,6 @@ export default function AgencyHomePage() {
               </div>
             </div>
 
-            {/* Contact Form */}
             <div className="max-w-lg mx-auto w-full mt-8">
               <h3 
                 className="text-lg font-medium mb-4 text-center"
