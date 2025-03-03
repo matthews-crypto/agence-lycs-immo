@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,6 +44,7 @@ const propertyTypes = [
   { value: "OTHER", label: "Autre" },
 ];
 
+// Hook personnalisé pour l'animation
 function useIntersectionObserver(options = {}) {
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -51,6 +53,7 @@ function useIntersectionObserver(options = {}) {
     const observer = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting) {
         setIsVisible(true);
+        // Une fois visible, on peut arrêter d'observer
         if (ref.current) observer.unobserve(ref.current);
       }
     }, { threshold: 0.1, ...options });
@@ -70,6 +73,7 @@ function useIntersectionObserver(options = {}) {
   return { ref, isVisible };
 }
 
+// Composant séparé pour chaque section de catégorie
 function PropertyCategorySection({ type, properties, propertyTypeLabels, agency, handlePropertyClick }) {
   const { ref, isVisible } = useIntersectionObserver();
   
@@ -162,8 +166,6 @@ export default function AgencyHomePage() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showCategoryMenu, setShowCategoryMenu] = useState(false);
   const categoryMenuRef = useRef<HTMLDivElement>(null);
-  const servicesTitleRef = useRef<HTMLHeadingElement>(null);
-  const servicesTextRef = useRef<HTMLParagraphElement>(null);
 
   const { data: regions } = useQuery({
     queryKey: ["regions"],
@@ -607,43 +609,21 @@ export default function AgencyHomePage() {
         )
       )}
 
-      <div id="services" className="py-16 bg-gray-50 overflow-hidden">
+      {/* Section Nos services */}
+      <div id="services" className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-12 relative">
-              <div className="flex items-center justify-center gap-2 mb-4 relative">
+            <div className="text-center mb-12">
+              <div className="flex items-center justify-center gap-2 mb-4">
                 <Briefcase className="w-8 h-8" style={{ color: agency?.primary_color || '#000000' }} />
-                <h2 
-                  ref={servicesTitleRef}
-                  className="text-3xl font-light relative overflow-hidden"
-                >
-                  <span className="inline-block">Nos Services</span>
-                  <span 
-                    className="absolute top-0 left-0 w-full h-full bg-gray-50 transform transition-transform duration-1000 origin-left"
-                    style={{ 
-                      transform: 'scaleX(1)',
-                      animation: 'reveal-text 1.5s cubic-bezier(0.77, 0, 0.175, 1) forwards'
-                    }}
-                  ></span>
-                </h2>
+                <h2 className="text-3xl font-light">Nos Services</h2>
               </div>
-              <p 
-                ref={servicesTextRef}
-                className="text-lg text-gray-700 max-w-3xl mx-auto relative overflow-hidden"
-              >
-                <span className="inline-block">
-                  Chez {agency?.agency_name}, nous vous accompagnons dans toutes les étapes de votre projet immobilier, que ce soit pour acheter ou louer un bien.
-                </span>
-                <span 
-                  className="absolute top-0 left-0 w-full h-full bg-gray-50 transform transition-transform duration-1000 origin-left"
-                  style={{ 
-                    transform: 'scaleX(1)',
-                    animation: 'reveal-text 1.5s cubic-bezier(0.77, 0, 0.175, 1) 0.5s forwards'
-                  }}
-                ></span>
+              <p className="text-lg text-gray-700 max-w-3xl mx-auto">
+                Chez {agency?.agency_name}, nous vous accompagnons dans toutes les étapes de votre projet immobilier, que ce soit pour acheter ou louer un bien.
               </p>
             </div>
             
+            {/* Formulaire de contact déplacé ici */}
             <div className="max-w-lg mx-auto w-full mt-8 bg-white p-8 rounded-lg shadow-lg">
               <h3 
                 className="text-lg font-medium mb-4 text-center"
@@ -781,6 +761,7 @@ export default function AgencyHomePage() {
         onOpenChange={setIsAuthOpen}
       />
       
+      {/* Footer modifié avec logo à la place du formulaire */}
       <footer 
         id="about"
         className="py-12"
@@ -836,6 +817,7 @@ export default function AgencyHomePage() {
               </div>
             </div>
 
+            {/* Logo de l'agence */}
             <div className="flex justify-center mt-8">
               {agency?.logo_url ? (
                 <img 
