@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,7 +47,7 @@ const propertyTypes = [
 // Hook personnalisé pour l'animation
 function useIntersectionObserver(options = {}) {
   const [isVisible, setIsVisible] = useState(false);
-  const ref = useRef(null);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const observer = new IntersectionObserver(([entry]) => {
@@ -596,7 +597,7 @@ export default function AgencyHomePage() {
       </div>
 
       {propertyTypeGroups && Object.entries(propertyTypeGroups).map(([type, typeProperties]) => 
-        typeProperties.length > 0 && (
+        Array.isArray(typeProperties) && typeProperties.length > 0 && (
           <PropertyCategorySection
             key={type}
             type={type}
@@ -635,7 +636,9 @@ export default function AgencyHomePage() {
                 const formData = new FormData(e.currentTarget);
                 const data = {
                   name: formData.get('name') as string,
+                  firstname: formData.get('firstname') as string,
                   email: formData.get('email') as string,
+                  phone: formData.get('phone') as string,
                   message: formData.get('message') as string,
                 };
 
@@ -659,7 +662,7 @@ export default function AgencyHomePage() {
                   return;
                 }
 
-                toast.success("Message envoyé avec succès");
+                toast.success("Cher(e) client votre demande est prise en compte nos agents vous contacterons dans les plus brief délais.");
                 e.currentTarget.reset();
               }}>
                 <div className="space-y-2">
@@ -672,12 +675,31 @@ export default function AgencyHomePage() {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="firstname" className="text-gray-700">Prénom</Label>
+                  <Input 
+                    id="firstname" 
+                    name="firstname" 
+                    placeholder="Votre prénom"
+                    required 
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="email" className="text-gray-700">Email</Label>
                   <Input 
                     id="email" 
                     name="email" 
                     type="email" 
                     placeholder="Votre email"
+                    required 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-gray-700">Téléphone</Label>
+                  <Input 
+                    id="phone" 
+                    name="phone" 
+                    type="tel" 
+                    placeholder="Votre numéro de téléphone"
                     required 
                   />
                 </div>
