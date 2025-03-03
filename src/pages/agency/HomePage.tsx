@@ -134,7 +134,7 @@ const HomePage = () => {
 
   useEffect(() => {
     // Set a hero image from properties if available
-    if (properties && properties.length > 0) {
+    if (properties && Array.isArray(properties) && properties.length > 0) {
       for (const property of properties) {
         if (property.photos && property.photos.length > 0) {
           setHeroImage(property.photos[0]);
