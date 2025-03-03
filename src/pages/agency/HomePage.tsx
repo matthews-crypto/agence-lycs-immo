@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MapPin, User, BedDouble, ChevronUp, Phone, Mail, ChevronDown } from "lucide-react";
+import { MapPin, User, BedDouble, ChevronUp, Phone, Mail, ChevronDown, Briefcase } from "lucide-react";
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { useNavigate } from "react-router-dom";
 import { AuthDrawer } from "@/components/agency/AuthDrawer";
@@ -152,7 +152,6 @@ function PropertyCategorySection({ type, properties, propertyTypeLabels, agency,
 }
 
 export default function AgencyHomePage() {
-  // ... keep existing code (state variables, query hooks, effects)
   const { agency } = useAgencyContext();
   const navigate = useNavigate();
   const [selectedZone, setSelectedZone] = useState<string>("all");
@@ -308,7 +307,6 @@ export default function AgencyHomePage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* ... keep existing code (navbar) */}
       <nav className="border-b relative" style={{ backgroundColor: agency?.primary_color || '#000000' }}>
         <div className="container mx-auto py-4 px-4 flex justify-between items-center">
           <div className="flex items-center">
@@ -375,7 +373,7 @@ export default function AgencyHomePage() {
             </div>
             
             <button
-              onClick={() => scrollToSection('about')}
+              onClick={() => scrollToSection('services')}
               className="text-white hover:text-white/90 transition-colors"
             >
               À propos
@@ -394,7 +392,6 @@ export default function AgencyHomePage() {
         </div>
       </nav>
 
-      {/* ... keep existing code (search section and property carousel) */}
       <div className="container mx-auto px-4 mt-8">
         <div className="relative h-[40vh] max-w-5xl mx-auto bg-gray-100 rounded-lg overflow-hidden">
           <Carousel 
@@ -598,7 +595,6 @@ export default function AgencyHomePage() {
         </div>
       </div>
 
-      {/* Property Type Sections avec animations Fade In & Scale - Version révisée avec composant séparé */}
       {propertyTypeGroups && Object.entries(propertyTypeGroups).map(([type, typeProperties]) => 
         typeProperties.length > 0 && (
           <PropertyCategorySection
@@ -612,7 +608,120 @@ export default function AgencyHomePage() {
         )
       )}
 
-      {/* ... keep existing code (scroll to top button, auth drawer, and footer) */}
+      {/* Section Nos services */}
+      <div id="services" className="py-16 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-12">
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <Briefcase className="w-8 h-8" style={{ color: agency?.primary_color || '#000000' }} />
+                <h2 className="text-3xl font-light">Nos Services</h2>
+              </div>
+              <p className="text-lg text-gray-700 max-w-3xl mx-auto">
+                Chez {agency?.agency_name}, nous vous accompagnons dans toutes les étapes de votre projet immobilier, que ce soit pour acheter ou louer un bien.
+              </p>
+            </div>
+            
+            {/* Formulaire de contact déplacé ici */}
+            <div className="max-w-lg mx-auto w-full mt-8 bg-white p-8 rounded-lg shadow-lg">
+              <h3 
+                className="text-lg font-medium mb-4 text-center"
+                style={{ color: agency?.primary_color || '#000000' }}
+              >
+                CONTACTEZ-NOUS
+              </h3>
+              <form className="space-y-4" onSubmit={async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                const data = {
+                  name: formData.get('name') as string,
+                  email: formData.get('email') as string,
+                  message: formData.get('message') as string,
+                };
+
+                if (!agency?.id) {
+                  toast.error("Une erreur s'est produite");
+                  return;
+                }
+
+                const { error } = await supabase
+                  .from('contact_messages')
+                  .insert([
+                    {
+                      agency_id: agency.id,
+                      ...data
+                    }
+                  ]);
+
+                if (error) {
+                  console.error('Error sending message:', error);
+                  toast.error("Une erreur s'est produite lors de l'envoi du message");
+                  return;
+                }
+
+                toast.success("Message envoyé avec succès");
+                e.currentTarget.reset();
+              }}>
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-gray-700">Nom</Label>
+                  <Input 
+                    id="name" 
+                    name="name" 
+                    placeholder="Votre nom"
+                    required 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-gray-700">Email</Label>
+                  <Input 
+                    id="email" 
+                    name="email" 
+                    type="email" 
+                    placeholder="Votre email"
+                    required 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="message" className="text-gray-700">Message</Label>
+                  <Textarea 
+                    id="message" 
+                    name="message"
+                    placeholder="Votre message"
+                    className="min-h-[100px]"
+                    required
+                  />
+                </div>
+                <Button 
+                  type="submit"
+                  className="w-full"
+                  style={{
+                    backgroundColor: agency?.primary_color || '#000000',
+                    color: 'white',
+                  }}
+                >
+                  Envoyer
+                </Button>
+              </form>
+              <Button
+                className="w-full mt-4 flex items-center justify-center gap-2"
+                onClick={() => {
+                  if (agency?.contact_phone) {
+                    window.location.href = `tel:${agency.contact_phone}`;
+                  }
+                }}
+                style={{
+                  backgroundColor: agency?.secondary_color || '#ffffff',
+                  color: agency?.primary_color || '#000000',
+                }}
+              >
+                <Phone className="w-5 h-5" />
+                Appelez
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {showScrollTop && (
         <button
           onClick={scrollToTop}
@@ -629,9 +738,11 @@ export default function AgencyHomePage() {
         open={isAuthOpen} 
         onOpenChange={setIsAuthOpen}
       />
+      
+      {/* Footer modifié avec logo à la place du formulaire */}
       <footer 
         id="about"
-        className="mt-16 py-12"
+        className="py-12"
         style={{ backgroundColor: agency?.primary_color || '#000000' }}
       >
         <div className="container mx-auto px-4">
@@ -684,100 +795,19 @@ export default function AgencyHomePage() {
               </div>
             </div>
 
-            <div className="max-w-lg mx-auto w-full mt-8">
-              <h3 
-                className="text-lg font-medium mb-4 text-center"
-                style={{ color: agency?.secondary_color || '#ffffff' }}
-              >
-                CONTACTEZ-NOUS
-              </h3>
-              <form className="space-y-4" onSubmit={async (e) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                const data = {
-                  name: formData.get('name') as string,
-                  email: formData.get('email') as string,
-                  message: formData.get('message') as string,
-                };
-
-                if (!agency?.id) {
-                  toast.error("Une erreur s'est produite");
-                  return;
-                }
-
-                const { error } = await supabase
-                  .from('contact_messages')
-                  .insert([
-                    {
-                      agency_id: agency.id,
-                      ...data
-                    }
-                  ]);
-
-                if (error) {
-                  console.error('Error sending message:', error);
-                  toast.error("Une erreur s'est produite lors de l'envoi du message");
-                  return;
-                }
-
-                toast.success("Message envoyé avec succès");
-                e.currentTarget.reset();
-              }}>
-                <div className="space-y-2">
-                  <Label htmlFor="name" className="text-white">Nom</Label>
-                  <Input 
-                    id="name" 
-                    name="name" 
-                    placeholder="Votre nom"
-                    required 
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-white">Email</Label>
-                  <Input 
-                    id="email" 
-                    name="email" 
-                    type="email" 
-                    placeholder="Votre email"
-                    required 
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="message" className="text-white">Message</Label>
-                  <Textarea 
-                    id="message" 
-                    name="message"
-                    placeholder="Votre message"
-                    className="min-h-[100px]"
-                    required
-                  />
-                </div>
-                <Button 
-                  type="submit"
-                  className="w-full"
-                  style={{
-                    backgroundColor: agency?.secondary_color || '#ffffff',
-                    color: agency?.primary_color || '#000000',
-                  }}
-                >
-                  Envoyer
-                </Button>
-              </form>
-              <Button
-                className="w-full mt-4 flex items-center justify-center gap-2"
-                onClick={() => {
-                  if (agency?.contact_phone) {
-                    window.location.href = `tel:${agency.contact_phone}`;
-                  }
-                }}
-                style={{
-                  backgroundColor: agency?.secondary_color || '#ffffff',
-                  color: agency?.primary_color || '#000000',
-                }}
-              >
-                <Phone className="w-5 h-5" />
-                Appelez
-              </Button>
+            {/* Logo de l'agence */}
+            <div className="flex justify-center mt-8">
+              {agency?.logo_url ? (
+                <img 
+                  src={agency.logo_url} 
+                  alt={agency.agency_name}
+                  className="h-20 object-contain rounded-full bg-white p-2"
+                />
+              ) : (
+                <h2 className="text-2xl font-light text-white">
+                  {agency?.agency_name}
+                </h2>
+              )}
             </div>
           </div>
         </div>
