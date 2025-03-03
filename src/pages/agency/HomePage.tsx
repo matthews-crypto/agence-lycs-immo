@@ -43,6 +43,33 @@ const propertyTypes = [
   { value: "OTHER", label: "Autre" },
 ];
 
+function useIntersectionObserver(options = {}) {
+  const [isVisible, setIsVisible] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setIsVisible(true);
+        if (ref.current) observer.unobserve(ref.current);
+      }
+    }, { threshold: 0.1, ...options });
+
+    const currentRef = ref.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [options]);
+
+  return [ref, isVisible];
+}
+
 export default function AgencyHomePage() {
   const { agency } = useAgencyContext();
   const navigate = useNavigate();
@@ -487,70 +514,86 @@ export default function AgencyHomePage() {
         </div>
       </div>
 
-      {propertyTypeGroups && Object.entries(propertyTypeGroups).map(([type, typeProperties]) => (
-        typeProperties.length > 0 && (
+      {propertyTypeGroups && Object.entries(propertyTypeGroups).map(([type, typeProperties]) => {
+        const [sectionRef, isSectionVisible] = useIntersectionObserver();
+        
+        return typeProperties.length > 0 && (
           <div 
             key={type}
             id={`section-${type}`}
-            className="container mx-auto px-4 mt-16"
+            ref={sectionRef}
+            className={`container mx-auto px-4 mt-16 transition-all duration-1000 ease-out ${
+              isSectionVisible 
+                ? 'opacity-100 transform-none' 
+                : 'opacity-0 transform scale-95'
+            }`}
           >
             <h2 className="text-2xl font-light mb-8">{propertyTypeLabels[type] || type}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {typeProperties.map((property) => (
-                <div 
-                  key={property.id} 
-                  className="cursor-pointer"
-                  onClick={() => handlePropertyClick(property.id)}
-                >
-                  <div className="aspect-[4/3] overflow-hidden rounded-lg relative">
-                    {property.photos?.[0] ? (
-                      <img
-                        src={property.photos[0]}
-                        alt={property.title}
-                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                        <BedDouble className="w-12 h-12 text-gray-400" />
-                      </div>
-                    )}
-                    <div 
-                      className="absolute top-4 left-4 px-3 py-1 rounded-full text-sm font-medium"
-                      style={{
-                        backgroundColor: agency?.primary_color || '#000000',
-                        color: 'white',
-                      }}
-                    >
-                      {property.property_offer_type === 'VENTE' ? 'À Vendre' : 'À Louer'}
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <h3 className="text-xl font-light">{property.title}</h3>
-                    <div className="flex items-center gap-2 text-gray-600 mt-2">
-                      <MapPin className="w-4 h-4" />
-                      <p className="text-sm">{property.zone?.nom}</p>
-                    </div>
-                    <div className="mt-2 flex justify-between items-center">
-                      <p className="text-lg">
-                        {property.price.toLocaleString('fr-FR')} FCFA
-                      </p>
-                      <div className="flex items-center gap-1 text-gray-600">
-                        <span>{property.surface_area} m²</span>
-                        {property.bedrooms && (
-                          <div className="flex items-center gap-1 ml-2">
-                            <BedDouble className="w-4 h-4" />
-                            <span>{property.bedrooms}</span>
-                          </div>
-                        )}
+              {typeProperties.map((property, index) => {
+                return (
+                  <div 
+                    key={property.id} 
+                    className={`cursor-pointer transition-all duration-700 ease-out ${
+                      isSectionVisible 
+                        ? 'opacity-100 transform-none' 
+                        : 'opacity-0 transform scale-95'
+                    }`}
+                    style={{ 
+                      transitionDelay: isSectionVisible ? `${index * 100}ms` : '0ms'
+                    }}
+                    onClick={() => handlePropertyClick(property.id)}
+                  >
+                    <div className="aspect-[4/3] overflow-hidden rounded-lg relative">
+                      {property.photos?.[0] ? (
+                        <img
+                          src={property.photos[0]}
+                          alt={property.title}
+                          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                          <BedDouble className="w-12 h-12 text-gray-400" />
+                        </div>
+                      )}
+                      <div 
+                        className="absolute top-4 left-4 px-3 py-1 rounded-full text-sm font-medium"
+                        style={{
+                          backgroundColor: agency?.primary_color || '#000000',
+                          color: 'white',
+                        }}
+                      >
+                        {property.property_offer_type === 'VENTE' ? 'À Vendre' : 'À Louer'}
                       </div>
                     </div>
+                    <div className="mt-4">
+                      <h3 className="text-xl font-light">{property.title}</h3>
+                      <div className="flex items-center gap-2 text-gray-600 mt-2">
+                        <MapPin className="w-4 h-4" />
+                        <p className="text-sm">{property.zone?.nom}</p>
+                      </div>
+                      <div className="mt-2 flex justify-between items-center">
+                        <p className="text-lg">
+                          {property.price.toLocaleString('fr-FR')} FCFA
+                        </p>
+                        <div className="flex items-center gap-1 text-gray-600">
+                          <span>{property.surface_area} m²</span>
+                          {property.bedrooms && (
+                            <div className="flex items-center gap-1 ml-2">
+                              <BedDouble className="w-4 h-4" />
+                              <span>{property.bedrooms}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
-        )
-      ))}
+        );
+      })}
 
       {showScrollTop && (
         <button
