@@ -88,9 +88,9 @@ export function AgencyBasicInfo({ isPublicRegistration = false }: AgencyBasicInf
         name="license_number"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Numéro de licence *</FormLabel>
+            <FormLabel>NINEA ou RCC *</FormLabel>
             <FormControl>
-              <Input placeholder="12345678" {...field} />
+              <Input placeholder="Entrez votre NINEA ou RCC" {...field} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -117,26 +117,6 @@ export function AgencyBasicInfo({ isPublicRegistration = false }: AgencyBasicInf
           </FormItem>
         )}
       />
-
-      {isPublicRegistration && (
-        <FormField
-          control={control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Mot de passe *</FormLabel>
-              <FormControl>
-                <Input 
-                  type="password" 
-                  placeholder="Minimum 8 caractères"
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      )}
     </div>
   )
 }

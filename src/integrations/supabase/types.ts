@@ -31,6 +31,8 @@ export type Database = {
         Row: {
           address: string | null
           admin_email: string | null
+          admin_first_name: string | null
+          admin_last_name: string | null
           admin_license: string | null
           admin_name: string | null
           admin_phone: string | null
@@ -57,6 +59,8 @@ export type Database = {
         Insert: {
           address?: string | null
           admin_email?: string | null
+          admin_first_name?: string | null
+          admin_last_name?: string | null
           admin_license?: string | null
           admin_name?: string | null
           admin_phone?: string | null
@@ -83,6 +87,8 @@ export type Database = {
         Update: {
           address?: string | null
           admin_email?: string | null
+          admin_first_name?: string | null
+          admin_last_name?: string | null
           admin_license?: string | null
           admin_name?: string | null
           admin_phone?: string | null
@@ -253,6 +259,44 @@ export type Database = {
           },
         ]
       }
+      contact_messages: {
+        Row: {
+          agency_id: string
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_messages_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       demande_inscription: {
         Row: {
           address: string | null
@@ -341,26 +385,34 @@ export type Database = {
           amenities: string[] | null
           bathrooms: number | null
           bedrooms: number | null
-          city: string | null
           created_at: string
           description: string | null
           detailed_description: string | null
           id: string
           is_available: boolean | null
+          is_furnished: boolean | null
           location_lat: number | null
           location_lng: number | null
           photos: string[] | null
           postal_code: string | null
           preview_description: string | null
           price: number
+          property_condition:
+            | Database["public"]["Enums"]["property_condition"]
+            | null
+          property_offer_type: string | null
           property_status: Database["public"]["Enums"]["property_status"] | null
           property_type: string
+          reference_number: string | null
+          region: string | null
           surface_area: number | null
           title: string
           updated_at: string
+          vefa_availability_date: string | null
           view_count: number | null
           virtual_tour_url: string | null
           year_built: number | null
+          zone_id: number | null
         }
         Insert: {
           address?: string | null
@@ -368,28 +420,36 @@ export type Database = {
           amenities?: string[] | null
           bathrooms?: number | null
           bedrooms?: number | null
-          city?: string | null
           created_at?: string
           description?: string | null
           detailed_description?: string | null
           id?: string
           is_available?: boolean | null
+          is_furnished?: boolean | null
           location_lat?: number | null
           location_lng?: number | null
           photos?: string[] | null
           postal_code?: string | null
           preview_description?: string | null
           price: number
+          property_condition?:
+            | Database["public"]["Enums"]["property_condition"]
+            | null
+          property_offer_type?: string | null
           property_status?:
             | Database["public"]["Enums"]["property_status"]
             | null
           property_type: string
+          reference_number?: string | null
+          region?: string | null
           surface_area?: number | null
           title: string
           updated_at?: string
+          vefa_availability_date?: string | null
           view_count?: number | null
           virtual_tour_url?: string | null
           year_built?: number | null
+          zone_id?: number | null
         }
         Update: {
           address?: string | null
@@ -397,28 +457,36 @@ export type Database = {
           amenities?: string[] | null
           bathrooms?: number | null
           bedrooms?: number | null
-          city?: string | null
           created_at?: string
           description?: string | null
           detailed_description?: string | null
           id?: string
           is_available?: boolean | null
+          is_furnished?: boolean | null
           location_lat?: number | null
           location_lng?: number | null
           photos?: string[] | null
           postal_code?: string | null
           preview_description?: string | null
           price?: number
+          property_condition?:
+            | Database["public"]["Enums"]["property_condition"]
+            | null
+          property_offer_type?: string | null
           property_status?:
             | Database["public"]["Enums"]["property_status"]
             | null
           property_type?: string
+          reference_number?: string | null
+          region?: string | null
           surface_area?: number | null
           title?: string
           updated_at?: string
+          vefa_availability_date?: string | null
           view_count?: number | null
           virtual_tour_url?: string | null
           year_built?: number | null
+          zone_id?: number | null
         }
         Relationships: [
           {
@@ -426,6 +494,13 @@ export type Database = {
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "properties_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zone"
             referencedColumns: ["id"]
           },
         ]
@@ -473,6 +548,78 @@ export type Database = {
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      region: {
+        Row: {
+          id: number
+          nom: string
+        }
+        Insert: {
+          id?: number
+          nom: string
+        }
+        Update: {
+          id?: number
+          nom?: string
+        }
+        Relationships: []
+      }
+      reservations: {
+        Row: {
+          agency_id: string
+          client_phone: string
+          created_at: string
+          id: string
+          property_id: string
+          rental_end_date: string | null
+          rental_start_date: string | null
+          reservation_number: string
+          status: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          client_phone: string
+          created_at?: string
+          id?: string
+          property_id: string
+          rental_end_date?: string | null
+          rental_start_date?: string | null
+          reservation_number: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          client_phone?: string
+          created_at?: string
+          id?: string
+          property_id?: string
+          rental_end_date?: string | null
+          rental_start_date?: string | null
+          reservation_number?: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reservations_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reservations_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
             referencedColumns: ["id"]
           },
         ]
@@ -533,6 +680,44 @@ export type Database = {
           },
         ]
       }
+      zone: {
+        Row: {
+          circle_radius: number | null
+          created_at: string | null
+          id: number
+          latitude: number | null
+          longitude: number | null
+          nom: string
+          region_id: number | null
+        }
+        Insert: {
+          circle_radius?: number | null
+          created_at?: string | null
+          id?: number
+          latitude?: number | null
+          longitude?: number | null
+          nom: string
+          region_id?: number | null
+        }
+        Update: {
+          circle_radius?: number | null
+          created_at?: string | null
+          id?: number
+          latitude?: number | null
+          longitude?: number | null
+          nom?: string
+          region_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zone_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "region"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -554,6 +739,10 @@ export type Database = {
         }
         Returns: string
       }
+      generate_reservation_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       is_admin: {
         Args: {
           user_id: string
@@ -562,13 +751,14 @@ export type Database = {
       }
     }
     Enums: {
-      appointment_status: "SCHEDULED" | "COMPLETED" | "CANCELLED"
+      appointment_status: "RESERVEE" | "ACHETEE" | "ANNULEE"
+      property_condition: "VEFA" | "NEUF" | "RENOVE" | "USAGE"
       property_status:
-        | "AVAILABLE"
-        | "UNDER_OPTION"
-        | "SOLD"
-        | "RENTED"
-        | "ARCHIVED"
+        | "DISPONIBLE"
+        | "VENDUE"
+        | "ARCHIVEE"
+        | "OCCUPEE"
+        | "RESERVEE"
       registration_status: "EN_ATTENTE" | "VALIDEE" | "REJETEE"
       theme_type: "LIGHT" | "DARK"
       user_role: "ADMIN" | "AGENCY" | "AGENT" | "CLIENT"

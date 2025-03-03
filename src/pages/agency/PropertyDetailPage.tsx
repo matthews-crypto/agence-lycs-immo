@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,11 +19,13 @@ import { fr } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useState, useEffect } from "react";
+import ModifyPropertyDialog from "@/components/agency/properties/ModifyProperty.tsx";
 
 export default function AgencyPropertyDetailPage() {
   const { propertyId, agencySlug } = useParams();
   const navigate = useNavigate();
   const { agency } = useAgencyContext();
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [api, setApi] = useState<any>();
 
@@ -31,7 +34,16 @@ export default function AgencyPropertyDetailPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("properties")
-        .select("*")
+        .select(`
+          *,
+          zone (
+            id,
+            nom,
+            latitude,
+            longitude,
+            circle_radius
+          )
+        `)
         .eq("id", propertyId)
         .single();
 
@@ -41,7 +53,6 @@ export default function AgencyPropertyDetailPage() {
     enabled: !!propertyId,
   });
 
-  // Auto-scroll every 5 seconds
   useEffect(() => {
     if (!api) return;
 
@@ -87,24 +98,34 @@ export default function AgencyPropertyDetailPage() {
           style={{ color: agency?.primary_color }}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Retour aux biens
+          Retour aux offres
         </Button>
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold mb-2">{property.title}</h1>
-          <Button
-            onClick={() => navigate(`/${agencySlug}/properties/${propertyId}/images`)}
-            style={{
-              backgroundColor: agency?.primary_color,
-              color: "white",
-            }}
-          >
-            Gérer les images
-          </Button>
+          <div className="align-text-bottom space-x-2">
+            <Button
+              onClick={() => setIsDialogOpen(true)}
+              style={{
+                backgroundColor: agency?.secondary_color,
+                color: "white",
+              }}
+            >
+              Modifier Offre
+            </Button>
+            <Button
+              onClick={() => navigate(`/${agencySlug}/properties/${propertyId}/images`)}
+              style={{
+                backgroundColor: agency?.primary_color,
+                color: "white",
+              }}
+            >
+              Gérer les images
+            </Button>
+          </div>
         </div>
-        <p className="text-muted-foreground text-lg">{property.city}</p>
+        <p className="text-muted-foreground text-lg">{property.zone?.nom}</p>
       </div>
 
-      {/* Carousel */}
       <div className="mb-8 relative rounded-lg overflow-hidden">
         <Carousel
           opts={{
@@ -143,7 +164,6 @@ export default function AgencyPropertyDetailPage() {
         </Carousel>
       </div>
 
-      {/* Image Modal */}
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
         <DialogContent className="max-w-[90vw] max-h-[90vh] p-0">
           {selectedImage && (
@@ -157,7 +177,6 @@ export default function AgencyPropertyDetailPage() {
       </Dialog>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Main Info */}
         <div className="md:col-span-2 space-y-8">
           <Card>
             <CardContent className="p-6">
@@ -196,7 +215,6 @@ export default function AgencyPropertyDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Features */}
           <Card>
             <CardContent className="p-6">
               <h2 className="text-2xl font-semibold mb-6">Caractéristiques</h2>
@@ -205,16 +223,7 @@ export default function AgencyPropertyDetailPage() {
                   <div className="flex items-center gap-2">
                     <BedDouble className="h-5 w-5 text-muted-foreground" />
                     <span>
-                      {property.bedrooms} chambre{property.bedrooms > 1 && "s"}
-                    </span>
-                  </div>
-                )}
-                {property.bathrooms && (
-                  <div className="flex items-center gap-2">
-                    <Bath className="h-5 w-5 text-muted-foreground" />
-                    <span>
-                      {property.bathrooms} salle{property.bathrooms > 1 && "s"} de
-                      bain
+                      {property.bedrooms} pièce{property.bedrooms > 1 && "s"}
                     </span>
                   </div>
                 )}
@@ -224,17 +233,10 @@ export default function AgencyPropertyDetailPage() {
                     <span>{property.surface_area} m²</span>
                   </div>
                 )}
-                {property.year_built && (
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-muted-foreground" />
-                    <span>Construit en {property.year_built}</span>
-                  </div>
-                )}
               </div>
             </CardContent>
           </Card>
 
-          {/* Amenities */}
           {property.amenities && property.amenities.length > 0 && (
             <Card>
               <CardContent className="p-6">
@@ -251,40 +253,82 @@ export default function AgencyPropertyDetailPage() {
           )}
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-6">
           <Card>
             <CardContent className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Localisation</h2>
+              <h2 className="text-xl font-semibold mb-4">Informations supplémentaires</h2>
               <div className="space-y-2">
-                <p className="text-muted-foreground">{property.address}</p>
-                <p className="text-muted-foreground">
-                  {property.city}, {property.postal_code}
-                </p>
+                {property.reference_number && (
+                  <div className="flex items-center gap-2">
+                    <strong className="text-sm">Référence:</strong>
+                    <span className="text-muted-foreground">{property.reference_number}</span>
+                  </div>
+                )}
+                {property.property_condition && (
+                  <div className="flex items-center gap-2">
+                    <strong className="text-sm">État du bien:</strong>
+                    <span className="text-muted-foreground">
+                      {property.property_condition === "VEFA" && "Vente en l'État Futur d'Achèvement"}
+                      {property.property_condition === "NEUF" && "Neuf"}
+                      {property.property_condition === "RENOVE" && "Rénové"}
+                      {property.property_condition === "USAGE" && "Usage"}
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <strong className="text-sm">Meublé:</strong>
+                  <span className="text-muted-foreground">
+                    {property.is_furnished ? "Oui" : "Non"}
+                  </span>
+                </div>
+                {property.property_condition === "VEFA" && property.vefa_availability_date && (
+                  <div className="flex items-center gap-2">
+                    <strong className="text-sm">Date de disponibilité:</strong>
+                    <span className="text-muted-foreground">
+                      {format(new Date(property.vefa_availability_date), "dd MMMM yyyy", { locale: fr })}
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 mt-4">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
+                    Ajouté le{" "}
+                    {format(new Date(property.created_at), "dd MMMM yyyy", {
+                      locale: fr,
+                    })}
+                  </span>
+                </div>
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardContent className="p-6">
-              <h2 className="text-xl font-semibold mb-4">
-                Informations supplémentaires
-              </h2>
+              <h2 className="text-xl font-semibold mb-4">Localisation</h2>
               <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">
-                  Ajouté le{" "}
-                  {format(new Date(property.created_at), "Pp", {
-                    locale: fr,
-                  })}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Référence: {property.id}
-                </p>
+                {property.region && (
+                  <p className="text-muted-foreground">Région de {property.region}</p>
+                )}
+                {property.zone?.nom && property.address && property.postal_code && (
+                  <p className="text-muted-foreground">
+                    {property.zone.nom}, {property.address}, {property.postal_code}
+                  </p>
+                )}
+                {property.zone?.latitude && property.zone?.longitude && (
+                  <p className="text-muted-foreground text-black">
+                    <strong>Coordonnées GPS</strong>: {property.zone.latitude}, {property.zone.longitude}
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
+      <ModifyPropertyDialog
+          open={isDialogOpen}
+          onOpenChange={setIsDialogOpen}
+          propertyId={propertyId}
+      />
     </div>
   );
 }

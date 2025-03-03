@@ -1,26 +1,33 @@
+
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Home, Euro, Bath, BedDouble, ArrowRight } from "lucide-react";
+import { Search, Home, Bath, BedDouble, ArrowRight } from "lucide-react";
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { Link } from "react-router-dom";
 import { AgencySidebar } from "@/components/agency/AgencySidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AddPropertyDialog } from "@/components/agency/properties/AddPropertyDialog";
+import { Badge } from "@/components/ui/badge";
 
 export default function AgencyPropertiesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const { agency } = useAgencyContext();
 
   const propertyTypeTranslations: { [key: string]: string } = {
-    APARTMENT: "Appartement",
-    HOUSE: "Maison",
-    LAND: "Terrain",
-    COMMERCIAL: "Local commercial",
-    OFFICE: "Bureau",
-    OTHER: "Autre",
+    Appartement: "Appartement",
+    Maison: "Maison",
+    Terrain: "Terrain",
+    Bureau: "Bureau",
+  };
+
+  const propertyConditionTranslations: { [key: string]: string } = {
+    VEFA: "VEFA",
+    NEUF: "Neuf",
+    RENOVE: "Récemment rénové",
+    USAGE: "Usagé",
   };
 
   const { data: properties, isLoading } = useQuery({
@@ -28,7 +35,16 @@ export default function AgencyPropertiesPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("properties")
-        .select("*")
+        .select(`
+          *,
+          zone (
+            id,
+            nom,
+            latitude,
+            longitude,
+            circle_radius
+          )
+        `)
         .eq("agency_id", agency?.id);
 
       if (error) throw error;
@@ -40,7 +56,7 @@ export default function AgencyPropertiesPage() {
   const filteredProperties = properties?.filter(
     (property) =>
       property.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      property.city?.toLowerCase().includes(searchTerm.toLowerCase())
+      property.zone?.nom.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -52,7 +68,7 @@ export default function AgencyPropertiesPage() {
             <div className="flex flex-col space-y-8">
               <div className="flex flex-col space-y-4">
                 <div className="flex justify-between items-center">
-                  <h1 className="text-4xl font-light">Nos biens immobiliers</h1>
+                  <h1 className="text-4xl font-light">Nos offres immobilières</h1>
                   <AddPropertyDialog />
                 </div>
                 <div className="relative">
@@ -66,7 +82,6 @@ export default function AgencyPropertiesPage() {
                 </div>
               </div>
 
-              {/* Properties Grid */}
               {isLoading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {[1, 2, 3, 4, 5, 6].map((n) => (
@@ -89,13 +104,28 @@ export default function AgencyPropertiesPage() {
                     >
                       <Card className="overflow-hidden h-full">
                         <div 
-                          className="h-48 bg-cover bg-center"
+                          className="relative h-48 bg-cover bg-center"
                           style={{
                             backgroundImage: property.photos?.length 
                               ? `url(${property.photos[0]})` 
                               : "url(/placeholder.svg)"
                           }}
-                        />
+                        >
+                          <Badge 
+                            className="absolute top-4 right-4 text-white"
+                            style={{ backgroundColor: agency?.primary_color || '#0066FF' }}
+                          >
+                            {property.property_offer_type === 'VENTE' ? 'À Vendre' : 'À Louer'}
+                          </Badge>
+                          {property.property_condition && (
+                            <Badge 
+                              className="absolute top-4 left-4 bg-white text-black"
+                              variant="outline"
+                            >
+                              {propertyConditionTranslations[property.property_condition]}
+                            </Badge>
+                          )}
+                        </div>
                         <CardHeader>
                           <CardTitle className="line-clamp-1">{property.title}</CardTitle>
                         </CardHeader>
@@ -103,9 +133,6 @@ export default function AgencyPropertiesPage() {
                           <div className="flex items-center space-x-2 text-muted-foreground">
                             <Home className="h-4 w-4" />
                             <span>{propertyTypeTranslations[property.property_type] || property.property_type}</span>
-                          </div>
-                          <div className="flex items-center space-x-2 text-muted-foreground">
-                            <span>{property.price.toLocaleString()} FCFA</span>
                           </div>
                           {(property.bedrooms || property.bathrooms) && (
                             <div className="flex space-x-4">
@@ -126,7 +153,7 @@ export default function AgencyPropertiesPage() {
                         </CardContent>
                         <CardFooter className="flex justify-between items-center">
                           <div className="text-sm text-muted-foreground">
-                            {property.city}
+                            {property.zone?.nom}
                           </div>
                           <ArrowRight className="h-4 w-4" />
                         </CardFooter>

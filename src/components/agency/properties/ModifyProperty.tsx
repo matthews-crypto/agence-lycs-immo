@@ -1,5 +1,6 @@
-import {useEffect, useState} from "react";
-import {useForm} from "react-hook-form";
+
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
@@ -10,7 +11,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -29,14 +29,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PlusCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAgencyContext } from "@/contexts/AgencyContext";
-import { useNavigate } from "react-router-dom";
 import { Checkbox } from "@/components/ui/checkbox";
+import { format } from "date-fns";
 
 // Define the property condition type to match Supabase enum
 type PropertyCondition = "VEFA" | "NEUF" | "RENOVE" | "USAGE";
+type Region = { id: number; nom: string };
+type Zone = { id: number; nom: string };
 
 const propertySchema = z.object({
   title: z.string().min(1, "Le titre est requis"),
@@ -55,10 +56,6 @@ const propertySchema = z.object({
   vefa_availability_date: z.string().optional(),
 });
 
-type PropertyFormValues = z.infer<typeof propertySchema>;
-type Region = { id: number; nom: string };
-type Zone = { id: number; nom: string };
-
 const propertyConditionTranslations = {
   VEFA: "Vente en l'État Futur d'Achèvement (VEFA)",
   NEUF: "Neuf",
@@ -66,8 +63,15 @@ const propertyConditionTranslations = {
   USAGE: "Usagé",
 };
 
-export function AddPropertyDialog() {
-  const [open, setOpen] = useState(false);
+type PropertyFormValues = z.infer<typeof propertySchema>;
+
+interface ModifyPropertyDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  propertyId: string | undefined;
+}
+
+export default function ModifyPropertyDialog({ open, onOpenChange, propertyId }: ModifyPropertyDialogProps) {
   const [selectedRegion, setSelectedRegion] = useState<string>("");
   const [regions, setRegions] = useState<Region[]>([]);
   const [availableCities, setAvailableCities] = useState<Zone[]>([]);
@@ -75,8 +79,89 @@ export function AddPropertyDialog() {
   const [isVente, setIsVente] = useState(true);
   const { toast } = useToast();
   const { agency } = useAgencyContext();
-  const navigate = useNavigate();
 
+  const form = useForm<PropertyFormValues>({
+    resolver: zodResolver(propertySchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      property_type: "",
+      bedrooms: undefined,
+      price: undefined,
+      surface_area: undefined,
+      address: "",
+      zone_id: undefined,
+      region: "",
+      postal_code: "",
+      is_furnished: false,
+      property_offer_type: "VENTE",
+      property_condition: undefined,
+      vefa_availability_date: undefined,
+    },
+  });
+
+  // Fetch property data and set form values
+  useEffect(() => {
+    const fetchProperty = async () => {
+      if (!propertyId) return;
+
+      const { data: property, error } = await supabase
+        .from("properties")
+        .select(`
+          *,
+          zone (
+            id,
+            nom,
+            region (
+              id,
+              nom
+            )
+          )
+        `)
+        .eq("id", propertyId)
+        .single();
+
+      if (error) {
+        console.error("Error fetching property:", error);
+        return;
+      }
+
+      if (property) {
+        // Set form values
+        form.reset({
+          title: property.title || "",
+          description: property.description || "",
+          property_type: property.property_type || "",
+          bedrooms: property.bedrooms || undefined,
+          price: property.price || undefined,
+          surface_area: property.surface_area || undefined,
+          address: property.address || "",
+          zone_id: property.zone_id || undefined,
+          region: property.region || "", // We'll update this when regions are loaded
+          postal_code: property.postal_code || "",
+          is_furnished: property.is_furnished || false,
+          property_offer_type: property.property_offer_type || "VENTE",
+          property_condition: property.property_condition as PropertyCondition | undefined,
+          vefa_availability_date: property.vefa_availability_date 
+            ? format(new Date(property.vefa_availability_date), "yyyy-MM-dd")
+            : undefined,
+        });
+
+        // Set offer type state
+        setIsLocation(property.property_offer_type === "LOCATION");
+        setIsVente(property.property_offer_type === "VENTE");
+
+        // Set selected region if available
+        if (property.zone?.region?.id) {
+          setSelectedRegion(property.zone.region.id.toString());
+        }
+      }
+    };
+
+    fetchProperty();
+  }, [propertyId, form]);
+
+  // Fetch regions
   useEffect(() => {
     const fetchRegions = async () => {
       const { data: regionsData, error } = await supabase
@@ -90,11 +175,21 @@ export function AddPropertyDialog() {
       }
       
       setRegions(regionsData);
+
+      // If form has a region value, find its corresponding ID and set selectedRegion
+      const regionValue = form.getValues("region");
+      if (regionValue && regionsData) {
+        const matchingRegion = regionsData.find(r => r.nom === regionValue);
+        if (matchingRegion) {
+          setSelectedRegion(matchingRegion.id.toString());
+        }
+      }
     };
 
     fetchRegions();
-  }, []);
+  }, [form]);
 
+  // Fetch cities when region changes
   useEffect(() => {
     const fetchCities = async (regionId: string) => {
       const numericRegionId = parseInt(regionId, 10);
@@ -125,26 +220,6 @@ export function AddPropertyDialog() {
     }
   }, [selectedRegion]);
 
-  const form = useForm<PropertyFormValues>({
-    resolver: zodResolver(propertySchema),
-    defaultValues: {
-      title: "",
-      description: "",
-      property_type: "",
-      bedrooms: undefined,
-      price: undefined,
-      surface_area: undefined,
-      address: "",
-      zone_id: undefined,
-      region: "",
-      postal_code: "",
-      is_furnished: false,
-      property_offer_type: "VENTE",
-      property_condition: undefined,
-      vefa_availability_date: undefined,
-    },
-  });
-
   const selectedPropertyType = form.watch("property_type");
   const selectedPropertyCondition = form.watch("property_condition");
 
@@ -171,11 +246,11 @@ export function AddPropertyDialog() {
   };
 
   const onSubmit = async (data: PropertyFormValues) => {
-    if (!agency?.id) {
+    if (!propertyId) {
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: "ID de l'agence non trouvé",
+        description: "ID de la propriété non trouvé",
       });
       return;
     }
@@ -192,55 +267,41 @@ export function AddPropertyDialog() {
         zone_id: data.zone_id,
         region: data.region,
         postal_code: data.postal_code,
-        agency_id: agency.id,
-        property_status: "DISPONIBLE" as const,
-        is_available: true,
         is_furnished: data.is_furnished,
         property_offer_type: data.property_type === "TERRAIN" ? "VENTE" : data.property_offer_type,
         property_condition: data.property_condition as PropertyCondition | null,
         vefa_availability_date: data.property_condition === "VEFA" ? data.vefa_availability_date : null,
-        amenities: [] as string[],
       };
 
-      const { data: newProperty, error } = await supabase
+      const { error } = await supabase
         .from("properties")
-        .insert(propertyData)
-        .select()
-        .single();
+        .update(propertyData)
+        .eq("id", propertyId);
 
       if (error) throw error;
 
       toast({
         title: "Succès",
-        description: "L'offre a été ajoutée avec succès",
+        description: "L'offre a été modifiée avec succès",
       });
-      setOpen(false);
-      form.reset();
-      
-      navigate(`/${agency.slug}/properties/${newProperty.id}/images`);
+      onOpenChange(false);
     } catch (error) {
-      console.error("Error adding property:", error);
+      console.error("Error modifying property:", error);
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: "Une erreur est survenue lors de la creation de l'offre",
+        description: "Une erreur est survenue lors de la modification de l'offre",
       });
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="flex items-center gap-2 bg-sidebar-primary hover:bg-sidebar-primary/90">
-          <PlusCircle className="h-5 w-5" />
-          Nouvelle Offre
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Creation Offre</DialogTitle>
+          <DialogTitle>Modification Offre</DialogTitle>
           <DialogDescription>
-            Remplissez les informations de l'offre.
+            Veuillez modifier les informations de l'offre.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -424,21 +485,21 @@ export function AddPropertyDialog() {
             )}
 
             <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Prix (CFA)</FormLabel>
-                        <FormControl>
-                            <Input
-                                type="number"
-                                placeholder="Prix en FCFA"
-                                {...field}
-                            />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )}
+              control={form.control}
+              name="price"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Prix (CFA)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      placeholder="Prix en FCFA"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
 
             <FormField
@@ -450,6 +511,7 @@ export function AddPropertyDialog() {
                   <FormControl>
                     <Textarea
                       placeholder="Description détaillée du bien"
+                      className="min-h-[100px]"
                       {...field}
                     />
                   </FormControl>
@@ -460,91 +522,93 @@ export function AddPropertyDialog() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
-                  control={form.control}
-                  name="region"
-                  render={({ field }) => (
-                      <FormItem>
-                          <FormLabel>Région</FormLabel>
-                          <Select
-                              onValueChange={(value) => {
-                                  const selectedRegion = regions.find(r => r.id.toString() === value);
-                                  if (selectedRegion) {
-                                      field.onChange(selectedRegion.nom);
-                                      setSelectedRegion(value);
-                                  }
-                              }}
-                              defaultValue={field.value}
-                          >
-                              <FormControl>
-                                  <SelectTrigger>
-                                      <SelectValue placeholder="Sélectionnez une région" />
-                                  </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                  {regions.map((region) => (
-                                      <SelectItem key={region.id} value={region.id.toString()}>
-                                          {region.nom}
-                                      </SelectItem>
-                                  ))}
-                              </SelectContent>
-                          </Select>
-                          <FormMessage />
-                      </FormItem>
-                  )}
+                control={form.control}
+                name="region"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Région</FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        const selectedRegion = regions.find(r => r.id.toString() === value);
+                        if (selectedRegion) {
+                          field.onChange(selectedRegion.nom);
+                          setSelectedRegion(value);
+                        }
+                      }}
+                      value={selectedRegion}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionnez une région" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {regions.map((region) => (
+                          <SelectItem key={region.id} value={region.id.toString()}>
+                            {region.nom}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
               <FormField
                 control={form.control}
                 name="zone_id"
                 render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Zone</FormLabel>
-                        <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value?.toString()}
-                            disabled={availableCities.length === 0}
-                        >
-                            <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Sélectionnez une zone" />
-                                </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                {availableCities.map((city) => (
-                                    <SelectItem key={city.id} value={city.id.toString()}>
-                                        {city.nom}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                    </FormItem>
+                  <FormItem>
+                    <FormLabel>Zone</FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(parseInt(value, 10));
+                      }}
+                      value={field.value?.toString()}
+                      disabled={availableCities.length === 0}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionnez une zone" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {availableCities.map((city) => (
+                          <SelectItem key={city.id} value={city.id.toString()}>
+                            {city.nom}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
               <FormField
-                  control={form.control}
-                  name="address"
-                  render={({ field }) => (
-                      <FormItem>
-                          <FormLabel>Adresse complémentaire</FormLabel>
-                          <FormControl>
-                              <Input placeholder="Adresse complémentaire" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                      </FormItem>
-                  )}
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Adresse complémentaire</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Adresse complémentaire" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
               <FormField
-                  control={form.control}
-                  name="postal_code"
-                  render={({ field }) => (
-                      <FormItem>
-                          <FormLabel>Code postal</FormLabel>
-                          <FormControl>
-                              <Input placeholder="Code postal" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                      </FormItem>
-                  )}
+                control={form.control}
+                name="postal_code"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Code postal</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Code postal" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
 
@@ -552,11 +616,11 @@ export function AddPropertyDialog() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setOpen(false)}
+                onClick={() => onOpenChange(false)}
               >
                 Annuler
               </Button>
-              <Button type="submit">Créer</Button>
+              <Button type="submit">Modifier</Button>
             </div>
           </form>
         </Form>
@@ -564,3 +628,4 @@ export function AddPropertyDialog() {
     </Dialog>
   );
 }
+
