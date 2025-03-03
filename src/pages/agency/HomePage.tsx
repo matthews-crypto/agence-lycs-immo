@@ -24,7 +24,6 @@ import {
 } from "@/components/ui/carousel";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
 
 const propertyTypeLabels: { [key: string]: string } = {
   "APARTMENT": "Appartement",
@@ -488,33 +487,19 @@ export default function AgencyHomePage() {
         </div>
       </div>
 
-      {propertyTypeGroups && Object.entries(propertyTypeGroups).map(([type, typeProperties]) => {
-        const { ref: sectionRef, isVisible: isSectionVisible } = useIntersectionObserver<HTMLDivElement>();
-        
-        return typeProperties.length > 0 && (
+      {propertyTypeGroups && Object.entries(propertyTypeGroups).map(([type, typeProperties]) => (
+        typeProperties.length > 0 && (
           <div 
             key={type}
             id={`section-${type}`}
-            ref={sectionRef}
-            className={`container mx-auto px-4 mt-16 transition-all duration-1000 ease-out ${
-              isSectionVisible 
-                ? 'opacity-100 transform-none' 
-                : 'opacity-0 transform scale-95'
-            }`}
+            className="container mx-auto px-4 mt-16"
           >
             <h2 className="text-2xl font-light mb-8">{propertyTypeLabels[type] || type}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {typeProperties.map((property, index) => (
+              {typeProperties.map((property) => (
                 <div 
                   key={property.id} 
-                  className={`cursor-pointer transition-all duration-700 ease-out ${
-                    isSectionVisible 
-                      ? 'opacity-100 transform-none' 
-                      : 'opacity-0 transform scale-95'
-                  }`}
-                  style={{ 
-                    transitionDelay: isSectionVisible ? `${index * 100}ms` : '0ms'
-                  }}
+                  className="cursor-pointer"
                   onClick={() => handlePropertyClick(property.id)}
                 >
                   <div className="aspect-[4/3] overflow-hidden rounded-lg relative">
@@ -564,8 +549,8 @@ export default function AgencyHomePage() {
               ))}
             </div>
           </div>
-        );
-      })}
+        )
+      ))}
 
       {showScrollTop && (
         <button
@@ -583,7 +568,6 @@ export default function AgencyHomePage() {
         open={isAuthOpen} 
         onOpenChange={setIsAuthOpen}
       />
-      
       <footer 
         id="about"
         className="mt-16 py-12"
