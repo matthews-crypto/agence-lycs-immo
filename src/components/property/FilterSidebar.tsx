@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { toast } from "sonner";
 
 type RegionType = {
   id: number;
@@ -99,35 +100,80 @@ export function FilterSidebar({ agencyId, onFilterApply, open, onOpenChange }: F
     enabled: !!selectedRegion && !!agencyId,
   });
 
-  // Initialize Leaflet Map
+  // Initialize or reinitialize the map when the sidebar opens
   useEffect(() => {
-    if (!open || mapInitialized || !mapContainerRef.current) return;
+    if (!open) return;
 
-    // Create the map
-    const map = L.map(mapContainerRef.current).setView([14.7167, -17.4677], 7);
+    console.log("FilterSidebar opened, initializing map...");
     
-    // Add the OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
+    // Clean up previous map instance if it exists
+    if (mapRef.current) {
+      console.log("Removing existing map");
+      mapRef.current.remove();
+      mapRef.current = null;
+      setMapInitialized(false);
+    }
 
-    // Store the map in the ref
-    mapRef.current = map;
-    setMapInitialized(true);
+    // Wait for the DOM to be ready
+    setTimeout(() => {
+      if (!mapContainerRef.current) {
+        console.log("Map container ref not available");
+        return;
+      }
+
+      try {
+        console.log("Creating new map instance");
+        // Create the map with a default view of Senegal
+        const map = L.map(mapContainerRef.current, {
+          scrollWheelZoom: false, // Disable scroll to zoom for better UX in a small container
+          zoomControl: true,      // Add zoom controls
+        }).setView([14.7167, -17.4677], 7);
+        
+        // Add the OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Store the map in the ref
+        mapRef.current = map;
+        setMapInitialized(true);
+        console.log("Map initialized successfully");
+
+        // Force map to recalculate its container size
+        setTimeout(() => {
+          if (mapRef.current) {
+            mapRef.current.invalidateSize();
+            console.log("Map size invalidated");
+          }
+        }, 300);
+      } catch (error) {
+        console.error("Error initializing map:", error);
+        toast.error("Erreur lors de l'initialisation de la carte");
+      }
+    }, 300); // Short delay to ensure the container is rendered
 
     // Cleanup function
     return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-        setMapInitialized(false);
+      if (circleRef.current && mapRef.current) {
+        circleRef.current.remove();
+        circleRef.current = null;
       }
     };
-  }, [open, mapInitialized]);
+  }, [open]);
 
   // Update map when a zone is selected
   useEffect(() => {
-    if (!mapRef.current || !zones || zones.length === 0 || !selectedZone) return;
+    if (!mapRef.current || !zones || zones.length === 0 || !selectedZone || !mapInitialized) {
+      console.log("Skipping zone update on map, conditions not met:", {
+        mapExists: !!mapRef.current,
+        zonesExist: !!(zones && zones.length > 0),
+        zoneSelected: !!selectedZone,
+        mapInitialized
+      });
+      return;
+    }
+
+    console.log("Updating map with selected zone:", selectedZone);
 
     // Clear existing circle
     if (circleRef.current) {
@@ -137,30 +183,55 @@ export function FilterSidebar({ agencyId, onFilterApply, open, onOpenChange }: F
 
     // Find selected zone
     const selectedZoneData = zones.find(zone => zone.id === selectedZone);
-    if (!selectedZoneData || !selectedZoneData.latitude || !selectedZoneData.longitude) return;
+    if (!selectedZoneData || !selectedZoneData.latitude || !selectedZoneData.longitude) {
+      console.log("Selected zone data is invalid:", selectedZoneData);
+      return;
+    }
 
-    // Create new circle with the selected zone's coordinates and radius
-    const center: L.LatLngExpression = [Number(selectedZoneData.latitude), Number(selectedZoneData.longitude)];
-    
-    const newCircle = L.circle(center, {
-      radius: selectedZoneData.circle_radius || 5000,
-      color: '#AA1CA0',
-      fillColor: '#AA1CA0',
-      fillOpacity: 0.3,
-      weight: 2
-    }).addTo(mapRef.current);
+    console.log("Found zone data:", selectedZoneData);
 
-    // Add a marker at the center
-    L.marker(center).addTo(mapRef.current)
-      .bindPopup(selectedZoneData.nom)
-      .openPopup();
+    try {
+      // Create new circle with the selected zone's coordinates and radius
+      const center: L.LatLngExpression = [Number(selectedZoneData.latitude), Number(selectedZoneData.longitude)];
+      
+      const newCircle = L.circle(center, {
+        radius: selectedZoneData.circle_radius || 5000,
+        color: '#AA1CA0',
+        fillColor: '#AA1CA0',
+        fillOpacity: 0.3,
+        weight: 2
+      }).addTo(mapRef.current);
 
-    // Set the current circle to the ref for future cleanup
-    circleRef.current = newCircle;
-    
-    // Center map on selected zone and zoom appropriately
-    mapRef.current.setView(center, 11);
-  }, [mapRef.current, zones, selectedZone]);
+      // Add a marker at the center
+      L.marker(center).addTo(mapRef.current)
+        .bindPopup(selectedZoneData.nom)
+        .openPopup();
+
+      // Set the current circle to the ref for future cleanup
+      circleRef.current = newCircle;
+      
+      // Center map on selected zone and zoom appropriately
+      mapRef.current.setView(center, 11);
+      mapRef.current.invalidateSize();
+      
+      console.log("Map updated successfully with zone:", selectedZoneData.nom);
+    } catch (error) {
+      console.error("Error updating map with zone:", error);
+      toast.error("Erreur lors de l'affichage de la zone sur la carte");
+    }
+  }, [mapRef.current, zones, selectedZone, mapInitialized]);
+
+  // Make sure map size is correct after the sidebar animation completes
+  useEffect(() => {
+    if (open && mapRef.current && mapInitialized) {
+      const resizeTimeout = setTimeout(() => {
+        mapRef.current?.invalidateSize();
+        console.log("Map size invalidated after animation");
+      }, 500);
+      
+      return () => clearTimeout(resizeTimeout);
+    }
+  }, [open, mapInitialized]);
 
   const handleRegionChange = (regionId: string) => {
     setSelectedRegion(parseInt(regionId));
@@ -168,6 +239,7 @@ export function FilterSidebar({ agencyId, onFilterApply, open, onOpenChange }: F
     if (circleRef.current && mapRef.current) {
       circleRef.current.remove();
       circleRef.current = null;
+      mapRef.current.setView([14.7167, -17.4677], 7); // Reset to Dakar
     }
   };
 
@@ -260,7 +332,7 @@ export function FilterSidebar({ agencyId, onFilterApply, open, onOpenChange }: F
 
           <div 
             ref={mapContainerRef} 
-            className="w-full h-[200px] rounded-lg mt-4"
+            className="w-full h-[300px] rounded-lg mt-4 border"
             style={{ zIndex: 0 }}
           ></div>
 
