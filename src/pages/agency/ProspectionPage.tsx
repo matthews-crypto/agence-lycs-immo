@@ -7,11 +7,14 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Calendar, Clock, Home, User, Phone, CheckCircle } from "lucide-react";
+import { Calendar, Clock, Home, User, Phone, CheckCircle, Search, MapPin, Euro, Tag } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import { LoadingLayout } from "@/components/LoadingLayout";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 
 interface Reservation {
   id: string;
@@ -28,15 +31,23 @@ interface Reservation {
     title: string;
     address: string;
     reference_number: string;
+    price: number;
   };
 }
 
 const ProspectionPage = () => {
   const { agency } = useAgencyContext();
   const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [filteredReservations, setFilteredReservations] = useState<Reservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [propertyRefFilter, setPropertyRefFilter] = useState("");
+  const [reservationRefFilter, setReservationRefFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
 
   useEffect(() => {
     const fetchReservations = async () => {
@@ -51,7 +62,8 @@ const ProspectionPage = () => {
                 id,
                 title,
                 address,
-                reference_number
+                reference_number,
+                price
               )
             `)
             .eq('agency_id', agency.id)
@@ -64,6 +76,7 @@ const ProspectionPage = () => {
           }
 
           setReservations(data || []);
+          setFilteredReservations(data || []);
         } catch (error) {
           console.error('Error in fetch operation:', error);
           toast.error('Une erreur est survenue');
@@ -76,9 +89,53 @@ const ProspectionPage = () => {
     fetchReservations();
   }, [agency?.id]);
 
+  useEffect(() => {
+    applyFilters();
+  }, [searchQuery, propertyRefFilter, reservationRefFilter, statusFilter, reservations]);
+
+  const applyFilters = () => {
+    let filtered = [...reservations];
+
+    // Apply property reference filter
+    if (propertyRefFilter) {
+      filtered = filtered.filter(res => 
+        res.property?.reference_number?.toLowerCase().includes(propertyRefFilter.toLowerCase())
+      );
+    }
+
+    // Apply reservation reference filter
+    if (reservationRefFilter) {
+      filtered = filtered.filter(res => 
+        res.reservation_number.toLowerCase().includes(reservationRefFilter.toLowerCase())
+      );
+    }
+
+    // Apply status filter
+    if (statusFilter) {
+      filtered = filtered.filter(res => res.status.toUpperCase() === statusFilter.toUpperCase());
+    }
+
+    // Apply search query (searches in client phone and property title)
+    if (searchQuery) {
+      filtered = filtered.filter(res => 
+        res.client_phone.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        res.property?.title?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    setFilteredReservations(filtered);
+  };
+
   const handleReservationClick = (reservation: Reservation) => {
     setSelectedReservation(reservation);
     setIsDialogOpen(true);
+  };
+
+  const clearFilters = () => {
+    setSearchQuery("");
+    setPropertyRefFilter("");
+    setReservationRefFilter("");
+    setStatusFilter("");
   };
 
   const getStatusColor = (status: string) => {
@@ -104,22 +161,79 @@ const ProspectionPage = () => {
     <SidebarProvider>
       <div className="flex min-h-screen bg-background">
         <AgencySidebar />
-        <div className="flex-1 p-8">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-3xl font-bold">Gestion des Prospections</h1>
+        <div className="flex-1 p-4 md:p-8">
+          <div className="flex flex-col items-start mb-6">
+            <h1 className="text-2xl md:text-3xl font-bold">Gestion des Prospections</h1>
+            <p className="text-muted-foreground mt-2">Consultez et gérez vos demandes de prospection</p>
           </div>
 
-          {reservations.length === 0 ? (
+          {/* Filters */}
+          <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
+            <h2 className="text-lg font-medium mb-4">Filtres</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Recherche</label>
+                <div className="relative">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Téléphone client ou bien..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-8"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Référence du bien</label>
+                <Input
+                  placeholder="Réf. bien"
+                  value={propertyRefFilter}
+                  onChange={(e) => setPropertyRefFilter(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Référence de réservation</label>
+                <Input
+                  placeholder="Réf. réservation"
+                  value={reservationRefFilter}
+                  onChange={(e) => setReservationRefFilter(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Statut</label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Tous les statuts" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Tous les statuts</SelectItem>
+                    <SelectItem value="PENDING">En attente</SelectItem>
+                    <SelectItem value="CONFIRMED">Confirmé</SelectItem>
+                    <SelectItem value="CANCELLED">Annulé</SelectItem>
+                    <SelectItem value="COMPLETED">Terminé</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="flex justify-end mt-4">
+              <Button variant="outline" onClick={clearFilters} className="mr-2">
+                Réinitialiser
+              </Button>
+            </div>
+          </div>
+
+          {filteredReservations.length === 0 ? (
             <div className="text-center p-10 border rounded-lg">
               <p className="text-lg text-gray-500">Aucune réservation trouvée</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {reservations.map((reservation) => (
+              {filteredReservations.map((reservation) => (
                 <Card key={reservation.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => handleReservationClick(reservation)}>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-lg flex justify-between">
-                      <span>{reservation.reservation_number}</span>
+                      <span className="truncate">{reservation.reservation_number}</span>
                       <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(reservation.status)}`}>
                         {reservation.status}
                       </span>
@@ -128,13 +242,27 @@ const ProspectionPage = () => {
                   <CardContent className="pb-2">
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <Home className="h-4 w-4 text-gray-500" />
+                        <Home className="h-4 w-4 text-gray-500 flex-shrink-0" />
                         <span className="text-sm truncate">{reservation.property?.title || 'Bien non spécifié'}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-gray-500" />
+                        <Euro className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                        <span className="text-sm font-medium">
+                          {reservation.property?.price 
+                            ? new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(reservation.property.price)
+                            : 'Prix non spécifié'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Tag className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                        <span className="text-xs text-gray-600">
+                          Réf: {reservation.property?.reference_number || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
                         <span className="text-sm">
-                          {format(new Date(reservation.created_at), 'PPP', { locale: fr })}
+                          {format(new Date(reservation.created_at), 'PP', { locale: fr })}
                         </span>
                       </div>
                     </div>
@@ -154,9 +282,9 @@ const ProspectionPage = () => {
 
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             {selectedReservation && (
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle className="flex justify-between items-center">
+              <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+                <DialogHeader className="sticky top-0 bg-white z-10 pb-2 border-b">
+                  <DialogTitle className="flex justify-between items-center flex-wrap gap-2">
                     <span>Réservation {selectedReservation.reservation_number}</span>
                     <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(selectedReservation.status)}`}>
                       {selectedReservation.status}
@@ -166,66 +294,97 @@ const ProspectionPage = () => {
                     Détails de la réservation
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
+                
+                <div className="space-y-5 mt-2">
                   <div className="bg-gray-50 p-4 rounded-lg space-y-3">
-                    <h3 className="font-semibold">Informations du bien</h3>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Home className="h-4 w-4 text-gray-500" />
-                        <span className="text-sm">{selectedReservation.property?.title || 'Bien non spécifié'}</span>
+                    <h3 className="font-semibold text-lg border-b pb-2">Informations du bien</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-3">
+                        <Home className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="font-medium">{selectedReservation.property?.title || 'Bien non spécifié'}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Réf: {selectedReservation.property?.reference_number || 'N/A'}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs px-2 py-1 rounded-full bg-gray-100">
-                          Réf: {selectedReservation.property?.reference_number || 'N/A'}
-                        </span>
+                      
+                      <div className="flex items-center gap-3">
+                        <Euro className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                        <div>
+                          <p className="font-medium">
+                            {selectedReservation.property?.price 
+                              ? new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(selectedReservation.property.price)
+                              : 'Prix non spécifié'}
+                          </p>
+                        </div>
                       </div>
+                      
                       {selectedReservation.property?.address && (
-                        <div className="text-sm text-gray-500">
-                          {selectedReservation.property?.address}
+                        <div className="flex items-start gap-3">
+                          <MapPin className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                          <p className="text-sm">{selectedReservation.property?.address}</p>
                         </div>
                       )}
                     </div>
                   </div>
 
                   <div className="bg-gray-50 p-4 rounded-lg space-y-3">
-                    <h3 className="font-semibold">Contact client</h3>
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm">{selectedReservation.client_phone}</span>
-                    </div>
-                  </div>
-
-                  <div className="bg-gray-50 p-4 rounded-lg space-y-3">
-                    <h3 className="font-semibold">Dates</h3>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-gray-500" />
-                        <span className="text-sm">Créée le: {format(new Date(selectedReservation.created_at), 'PPP', { locale: fr })}</span>
+                    <h3 className="font-semibold text-lg border-b pb-2">Contact client</h3>
+                    <div className="flex items-center gap-3">
+                      <Phone className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium">{selectedReservation.client_phone}</p>
+                        <p className="text-xs text-muted-foreground">Numéro de téléphone</p>
                       </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                    <h3 className="font-semibold text-lg border-b pb-2">Dates</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <Calendar className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                        <div>
+                          <p className="font-medium">{format(new Date(selectedReservation.created_at), 'PPP', { locale: fr })}</p>
+                          <p className="text-xs text-muted-foreground">Date de création</p>
+                        </div>
+                      </div>
+                      
                       {selectedReservation.rental_start_date && (
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm">
-                            Début: {format(new Date(selectedReservation.rental_start_date), 'PPP', { locale: fr })}
-                          </span>
+                        <div className="flex items-center gap-3">
+                          <Clock className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                          <div>
+                            <p className="font-medium">
+                              {format(new Date(selectedReservation.rental_start_date), 'PPP', { locale: fr })}
+                            </p>
+                            <p className="text-xs text-muted-foreground">Date de début</p>
+                          </div>
                         </div>
                       )}
+                      
                       {selectedReservation.rental_end_date && (
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm">
-                            Fin: {format(new Date(selectedReservation.rental_end_date), 'PPP', { locale: fr })}
-                          </span>
+                        <div className="flex items-center gap-3">
+                          <Clock className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                          <div>
+                            <p className="font-medium">
+                              {format(new Date(selectedReservation.rental_end_date), 'PPP', { locale: fr })}
+                            </p>
+                            <p className="text-xs text-muted-foreground">Date de fin</p>
+                          </div>
                         </div>
                       )}
                     </div>
                   </div>
 
                   <div className="bg-gray-50 p-4 rounded-lg space-y-3">
-                    <h3 className="font-semibold">Type de transaction</h3>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm capitalize">{selectedReservation.type.toLowerCase()}</span>
+                    <h3 className="font-semibold text-lg border-b pb-2">Type de transaction</h3>
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium capitalize">{selectedReservation.type.toLowerCase()}</p>
+                        <p className="text-xs text-muted-foreground">Type de prospection</p>
+                      </div>
                     </div>
                   </div>
                 </div>
