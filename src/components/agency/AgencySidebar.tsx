@@ -1,4 +1,3 @@
-
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import {
   LayoutDashboard,
@@ -10,7 +9,6 @@ import {
   MessageSquare,
   LogOut,
   Image,
-  Target,
 } from "lucide-react"
 import {
   Sidebar,
@@ -81,11 +79,6 @@ export function AgencySidebar() {
           title: "Clients",
           icon: Users,
           url: `/${agency?.slug}/agency/clients`,
-        },
-        {
-          title: "Prospection",
-          icon: Target,
-          url: `/${agency?.slug}/agency/prospection`,
         },
       ],
     },

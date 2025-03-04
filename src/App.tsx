@@ -38,7 +38,6 @@ import ClientFavoritesPage from "@/pages/agency/client/FavoritesPage"
 import ClientAppointmentsPage from "@/pages/agency/client/AppointmentsPage"
 import NotFoundPage from "@/pages/NotFoundPage"
 import UsersPage from "@/pages/admin/UsersPage"
-import ProspectionPage from "@/pages/admin/ProspectionPage"
 
 const queryClient = new QueryClient()
 
@@ -109,7 +108,6 @@ const App = () => (
                     path="properties"
                     element={<AgencyPropertiesPage />}
                   />
-                  <Route path="prospection" element={<ProspectionPage />} />
                 </Route>
 
                 {/* Agent routes */}
