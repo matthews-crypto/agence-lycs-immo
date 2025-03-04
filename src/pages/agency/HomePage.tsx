@@ -285,7 +285,7 @@ export default function AgencyHomePage() {
 
   const filteredProperties = properties?.filter(property => {
     const matchesType = !selectedType || property.property_type === selectedType;
-    const matchesCity = !selectedCity || property.city === selectedCity;
+    const matchesCity = !selectedCity || property.zone?.nom === selectedCity;
     const matchesSearch = !searchTerm || 
       property.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       property.description?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -293,7 +293,7 @@ export default function AgencyHomePage() {
     return matchesType && matchesCity && matchesSearch;
   });
 
-  const cities = [...new Set(properties?.map(p => p.city).filter(Boolean))];
+  const cities = [...new Set(properties?.map(p => p.zone?.nom).filter(Boolean))];
 
   const propertyTypeGroups = properties?.reduce((groups: { [key: string]: any[] }, property) => {
     const type = property.property_type;
