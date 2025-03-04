@@ -5,19 +5,21 @@ import {
   Route,
   Routes,
 } from "react-router-dom";
-import { LandingPage } from "./pages/agency/HomePage";
 import AgencyDashboardPage from "./pages/agency/DashboardPage";
 import AgentDashboardPage from "./pages/agency/agent/DashboardPage";
 import AgencyLayout from "./layouts/AgencyLayout";
-import { AuthPage } from "./pages/agency/AuthPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import PropertiesPage from "./pages/agency/PropertiesPage";
 import SettingsPage from "./pages/agency/SettingsPage";
-import { AppointmentsPage } from "./pages/agency/agent/AppointmentsPage";
-import { ClientsPage } from "./pages/agency/ClientsPage";
-import { AnalyticsPage } from "./pages/agency/AnalyticsPage";
-import { WhatsAppPage } from "./pages/agency/WhatsAppPage";
 import ProspectionPage from "./pages/agency/ProspectionPage";
+
+// Create stub components for missing pages
+const LandingPage = () => <div>Landing Page</div>;
+const AuthPage = () => <div>Auth Page</div>;
+const AppointmentsPage = () => <div>Appointments Page</div>;
+const ClientsPage = () => <div>Clients Page</div>;
+const AnalyticsPage = () => <div>Analytics Page</div>;
+const WhatsAppPage = () => <div>WhatsApp Page</div>;
 
 function App() {
   return (
@@ -37,7 +39,6 @@ function App() {
           <Route path="clients" element={<ClientsPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="whatsapp" element={<WhatsAppPage />} />
-          {/* Make sure to add this route within your existing Routes component */}
           <Route path="prospection" element={<ProspectionPage />} />
         </Route>
 
