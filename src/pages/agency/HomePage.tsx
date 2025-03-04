@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -844,6 +845,13 @@ export default function AgencyHomePage() {
       <AuthDrawer 
         open={isAuthOpen} 
         onOpenChange={setIsAuthOpen}
+      />
+      
+      <FilterSidebar
+        agencyId={agency?.id}
+        onFilterApply={handleApplyFilters}
+        open={isFilterSidebarOpen}
+        onOpenChange={setIsFilterSidebarOpen}
       />
       
       <footer 
