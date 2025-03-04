@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MapPin, User, BedDouble, ChevronUp, Phone, Mail, ChevronDown, Briefcase, Search, Filter } from "lucide-react";
+import { MapPin, User, BedDouble, ChevronUp, Phone, Mail, ChevronDown, Briefcase } from "lucide-react";
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { useNavigate } from "react-router-dom";
 import { AuthDrawer } from "@/components/agency/AuthDrawer";
@@ -175,9 +175,11 @@ function PropertyCategorySection({ type, properties, propertyTypeLabels, agency,
 export default function AgencyHomePage() {
   const { agency } = useAgencyContext();
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedType, setSelectedType] = useState<string>("");
-  const [selectedCity, setSelectedCity] = useState<string>("");
+  const [selectedZone, setSelectedZone] = useState<string>("all");
+  const [selectedType, setSelectedType] = useState<string>("all");
+  const [selectedRegion, setSelectedRegion] = useState<string>("all");
+  const [minBudget, setMinBudget] = useState<string>("");
+  const [maxBudget, setMaxBudget] = useState<string>("");
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [heroApi, setHeroApi] = useState<any>();
   const [propertiesApi, setPropertiesApi] = useState<any>();
@@ -284,16 +286,15 @@ export default function AgencyHomePage() {
   };
 
   const filteredProperties = properties?.filter(property => {
-    const matchesType = !selectedType || property.property_type === selectedType;
-    const matchesCity = !selectedCity || property.zone?.nom === selectedCity;
-    const matchesSearch = !searchTerm || 
-      property.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      property.description?.toLowerCase().includes(searchTerm.toLowerCase());
-      
-    return matchesType && matchesCity && matchesSearch;
+    const matchesZone = selectedZone === "all" || property.zone?.nom === selectedZone;
+    const matchesType = selectedType === "all" || property.property_type === selectedType;
+    const matchesRegion = selectedRegion === "all" || property.region === selectedRegion;
+    const matchesMinBudget = !minBudget || property.price >= parseInt(minBudget);
+    const matchesMaxBudget = !maxBudget || property.price <= parseInt(maxBudget);
+    return matchesZone && matchesType && matchesRegion && matchesMinBudget && matchesMaxBudget;
   });
 
-  const cities = [...new Set(properties?.map(p => p.zone?.nom).filter(Boolean))];
+  const zones = [...new Set(properties?.map(p => p.zone?.nom).filter(Boolean))];
 
   const propertyTypeGroups = properties?.reduce((groups: { [key: string]: any[] }, property) => {
     const type = property.property_type;
@@ -313,7 +314,11 @@ export default function AgencyHomePage() {
   };
 
   const handleSearch = () => {
-    toast.success("Recherche effectuée");
+    if (!selectedZone && !minBudget && !maxBudget && selectedType === "all" && selectedRegion === "all") {
+      toast.warning("Veuillez sélectionner au moins un critère de recherche");
+      return;
+    }
+    toast.success("Recherche effectuée avec succès");
   };
 
   const handlePropertyClick = (propertyId: string) => {
@@ -480,73 +485,84 @@ export default function AgencyHomePage() {
         </div>
 
         <div className="mt-8 max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-4 gap-4">
-            <div className="flex flex-col md:flex-row gap-4 items-center">
-              <div className="relative flex-1 w-full">
-                <Input
-                  type="text"
-                  placeholder="Rechercher un bien..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 py-6 text-base w-full"
-                />
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-              </div>
-              
-              <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
-                <Select 
-                  value={selectedType} 
-                  onValueChange={setSelectedType}
-                >
-                  <SelectTrigger className="w-full md:w-[180px] text-base">
-                    <SelectValue placeholder="Type de bien" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="" className="text-base">Tous les types</SelectItem>
-                    {propertyTypes.map((type) => (
-                      <SelectItem key={type.value} value={type.value} className="text-base">
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
-                <Select 
-                  value={selectedCity} 
-                  onValueChange={setSelectedCity}
-                >
-                  <SelectTrigger className="w-full md:w-[180px] text-base">
-                    <SelectValue placeholder="Ville" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="" className="text-base">Toutes les villes</SelectItem>
-                    {cities.map((city) => (
-                      <SelectItem key={city} value={city || ''} className="text-base">
-                        {city}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
-                <Button 
-                  className="w-full md:w-auto"
-                  variant="outline"
-                >
-                  <Filter className="mr-2 h-4 w-4" />
-                  Plus de filtres
-                </Button>
-                
-                <Button 
-                  className="w-full md:w-auto px-8"
-                  style={{
-                    backgroundColor: agency?.primary_color || '#000000',
-                  }}
-                  onClick={handleSearch}
-                >
-                  Rechercher
-                </Button>
-              </div>
+          <div className="bg-white rounded-lg shadow-lg p-4 flex flex-col md:flex-row gap-4">
+            <Select 
+              value={selectedZone} 
+              onValueChange={setSelectedZone}
+            >
+              <SelectTrigger className="w-full md:w-[200px] text-base font-medium">
+                <SelectValue placeholder="Zone" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-base">Zones</SelectItem>
+                {zones.map((zone) => (
+                  <SelectItem key={zone} value={zone || ''} className="text-base">
+                    {zone}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select 
+              value={selectedType} 
+              onValueChange={setSelectedType}
+            >
+              <SelectTrigger className="w-full md:w-[200px] text-base font-medium">
+                <SelectValue placeholder="Type de bien" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-base">Types</SelectItem>
+                {propertyTypes.map((type) => (
+                  <SelectItem key={type.value} value={type.value} className="text-base">
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select 
+              value={selectedRegion} 
+              onValueChange={setSelectedRegion}
+            >
+              <SelectTrigger className="w-full md:w-[200px] text-base font-medium">
+                <SelectValue placeholder="Région" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-base">Toutes les régions</SelectItem>
+                {filteredRegions?.map((region) => (
+                  <SelectItem key={region.id} value={region.nom} className="text-base">
+                    {region.nom}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <div className="flex flex-col md:flex-row gap-4 flex-1">
+              <input
+                type="number"
+                placeholder="Budget min"
+                className="flex-1 px-3 py-2 border rounded-md text-base font-medium"
+                value={minBudget}
+                onChange={(e) => setMinBudget(e.target.value)}
+              />
+              <input
+                type="number"
+                placeholder="Budget max"
+                className="flex-1 px-3 py-2 border rounded-md text-base font-medium"
+                value={maxBudget}
+                onChange={(e) => setMaxBudget(e.target.value)}
+              />
             </div>
+
+            <Button 
+              className="w-full md:w-auto px-8"
+              style={{
+                backgroundColor: agency?.primary_color || '#000000',
+              }}
+              onClick={handleSearch}
+            >
+              Rechercher
+            </Button>
           </div>
         </div>
       </div>
