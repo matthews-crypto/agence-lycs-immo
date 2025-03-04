@@ -3,17 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MapPin, User, BedDouble } from "lucide-react";
+import { MapPin, User, BedDouble, Search, Filter } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { AgencyRegistrationDialog } from "@/components/agency-registration/AgencyRegistrationDialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { toast } from "sonner";
 import {
   Carousel,
   CarouselContent,
@@ -42,11 +34,7 @@ const propertyTypeLabels: { [key: string]: string } = {
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const [selectedRegion, setSelectedRegion] = useState<string>("all");
-  const [selectedCity, setSelectedCity] = useState<string>("all");
-  const [selectedType, setSelectedType] = useState<string>("all");
-  const [minBudget, setMinBudget] = useState<string>("");
-  const [maxBudget, setMaxBudget] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState<string>("");
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
   const [heroApi, setHeroApi] = useState<any>();
   const [propertiesApi, setPropertiesApi] = useState<any>();
@@ -107,23 +95,13 @@ export default function HomePage() {
   }, [heroApi, propertiesApi]);
 
   const filteredProperties = properties?.filter(property => {
-    const matchesCity = selectedCity === "all" || property.zone?.nom === selectedCity;
-    const matchesType = selectedType === "all" || property.property_type === selectedType;
-    const matchesRegion = selectedRegion === "all" || property.region === selectedRegion;
-    const matchesMinBudget = !minBudget || property.price >= parseInt(minBudget);
-    const matchesMaxBudget = !maxBudget || property.price <= parseInt(maxBudget);
-    return matchesCity && matchesType && matchesRegion && matchesMinBudget && matchesMaxBudget;
+    const matchesSearch = !searchTerm || 
+      property.title?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      property.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      property.zone?.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      propertyTypeLabels[property.property_type]?.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSearch;
   });
-
-  const cities = [...new Set(properties?.map(p => p.zone?.nom).filter(Boolean))];
-
-  const handleSearch = () => {
-    if (!selectedCity && !minBudget && !maxBudget && selectedType === "all" && selectedRegion === "all") {
-      toast.warning("Veuillez sélectionner au moins un critère de recherche");
-      return;
-    }
-    toast.success("Recherche effectuée avec succès");
-  };
 
   const handlePropertyClick = (propertyId: string, agencySlug: string) => {
     if (!agencySlug) {
@@ -137,7 +115,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Navbar */}
       <nav style={{ backgroundColor: '#aa1ca0' }} className="border-b">
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
@@ -158,7 +135,6 @@ export default function HomePage() {
         </div>
       </nav>
 
-      {/* Hero Carousel */}
       <div className="container mx-auto px-4 mt-8">
         <div className="relative h-[40vh] max-w-5xl mx-auto bg-gray-100 rounded-lg overflow-hidden">
           <Carousel 
@@ -202,125 +178,87 @@ export default function HomePage() {
           </Carousel>
         </div>
 
-        {/* Search Bar */}
         <div className="mt-8 max-w-4xl mx-auto">
           <div className="bg-white rounded-lg shadow-lg p-4 flex flex-col md:flex-row gap-4">
-            <Select 
-              value={selectedCity} 
-              onValueChange={setSelectedCity}
-            >
-              <SelectTrigger className="w-full md:w-[200px] text-base font-medium">
-                <SelectValue placeholder="Ville" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all" className="text-base">Villes</SelectItem>
-                {cities.map((city) => (
-                  <SelectItem key={city} value={city} className="text-base">
-                    {city}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select 
-              value={selectedType} 
-              onValueChange={setSelectedType}
-            >
-              <SelectTrigger className="w-full md:w-[200px] text-base font-medium">
-                <SelectValue placeholder="Type de bien" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all" className="text-base">Types</SelectItem>
-                {propertyTypes.map((type) => (
-                  <SelectItem key={type.value} value={type.value} className="text-base">
-                    {type.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <div className="flex flex-col md:flex-row gap-4 flex-1">
-              <input
-                type="number"
-                placeholder="Budget min"
-                className="flex-1 px-3 py-2 border rounded-md text-base font-medium"
-                value={minBudget}
-                onChange={(e) => setMinBudget(e.target.value)}
-              />
-              <input
-                type="number"
-                placeholder="Budget max"
-                className="flex-1 px-3 py-2 border rounded-md text-base font-medium"
-                value={maxBudget}
-                onChange={(e) => setMaxBudget(e.target.value)}
+            <div className="flex-1 relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-gray-400" />
+              </div>
+              <Input
+                placeholder="Rechercher un bien..."
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-
+            
             <Button 
-              className="w-full md:w-auto px-8"
-              style={{
-                backgroundColor: '#aa1ca0',
-              }}
-              onClick={handleSearch}
+              variant="outline"
+              className="w-full md:w-auto gap-2"
             >
-              Rechercher
+              <Filter className="h-4 w-4" />
+              Plus de filtres
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Filtered Properties */}
-      {filteredProperties && filteredProperties.length > 0 && (selectedCity !== "all" || minBudget || maxBudget || selectedType !== "all") && (
+      {searchTerm.length > 0 && filteredProperties && (
         <div className="container mx-auto px-4 mt-16">
-          <h2 className="text-2xl font-light mb-8">Résultats de votre recherche</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredProperties.map((property) => (
-              <div 
-                key={property.id} 
-                className="cursor-pointer"
-                onClick={() => handlePropertyClick(property.id, property.agencies?.slug)}
-              >
-                <div className="aspect-[4/3] overflow-hidden rounded-lg">
-                  {property.photos?.[0] ? (
-                    <img
-                      src={property.photos[0]}
-                      alt={property.title}
-                      className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                      <BedDouble className="w-12 h-12 text-gray-400" />
-                    </div>
-                  )}
-                </div>
-                <div className="mt-4">
-                  <h3 className="text-xl font-light">{property.title}</h3>
-                  <div className="flex items-center gap-2 text-gray-600 mt-2">
-                    <MapPin className="w-4 h-4" />
-                    <p className="text-sm">{property.zone?.nom}</p>
-                  </div>
-                  <div className="mt-2 flex justify-between items-center">
-                    <p className="text-lg">
-                      {property.price.toLocaleString('fr-FR')} FCFA
-                    </p>
-                    <div className="flex items-center gap-1 text-gray-600">
-                      <span>{property.surface_area} m²</span>
-                      {property.bedrooms && (
-                        <div className="flex items-center gap-1 ml-2">
-                          <BedDouble className="w-4 h-4" />
-                          <span>{property.bedrooms}</span>
+          {filteredProperties.length > 0 ? (
+            <>
+              <h2 className="text-2xl font-light mb-8">Résultats de votre recherche</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {filteredProperties.map((property) => (
+                  <div 
+                    key={property.id} 
+                    className="cursor-pointer"
+                    onClick={() => handlePropertyClick(property.id, property.agencies?.slug)}
+                  >
+                    <div className="aspect-[4/3] overflow-hidden rounded-lg">
+                      {property.photos?.[0] ? (
+                        <img
+                          src={property.photos[0]}
+                          alt={property.title}
+                          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                          <BedDouble className="w-12 h-12 text-gray-400" />
                         </div>
                       )}
                     </div>
+                    <div className="mt-4">
+                      <h3 className="text-xl font-light">{property.title}</h3>
+                      <div className="flex items-center gap-2 text-gray-600 mt-2">
+                        <MapPin className="w-4 h-4" />
+                        <p className="text-sm">{property.zone?.nom}</p>
+                      </div>
+                      <div className="mt-2 flex justify-between items-center">
+                        <p className="text-lg">
+                          {property.price.toLocaleString('fr-FR')} FCFA
+                        </p>
+                        <div className="flex items-center gap-1 text-gray-600">
+                          <span>{property.surface_area} m²</span>
+                          {property.bedrooms && (
+                            <div className="flex items-center gap-1 ml-2">
+                              <BedDouble className="w-4 h-4" />
+                              <span>{property.bedrooms}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </>
+          ) : (
+            <h2 className="text-2xl font-light mb-8 text-center">Aucune propriété ne correspond à votre sélection</h2>
+          )}
         </div>
       )}
 
-      {/* Properties Carousel */}
       <div className="py-32 container mx-auto px-4">
         <h2 className="text-3xl font-light mb-12 text-center">
           Notre sélection d'annonces immobilières
@@ -392,7 +330,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Registration Dialog */}
       <AgencyRegistrationDialog 
         open={isRegistrationOpen} 
         onOpenChange={setIsRegistrationOpen}
