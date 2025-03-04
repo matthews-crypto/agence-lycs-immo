@@ -7,7 +7,7 @@ import { MapPin, User, BedDouble, ChevronUp, Phone, Mail, ChevronDown, Briefcase
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { useNavigate } from "react-router-dom";
 import { AuthDrawer } from "@/components/agency/AuthDrawer";
-import { FilterSidebar } from "@/components/property/FilterSidebar";
+import { FilterSidebar, FilterType } from "@/components/property/FilterSidebar";
 import {
   Select,
   SelectContent,
