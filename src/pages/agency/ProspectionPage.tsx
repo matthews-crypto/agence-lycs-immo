@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,7 +6,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Calendar, Clock, Home, User, Phone, CheckCircle, Search, MapPin, Euro, Tag } from "lucide-react";
+import { Calendar, Clock, Home, User, Phone, CheckCircle, Search, MapPin, Tag } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
@@ -111,7 +110,7 @@ const ProspectionPage = () => {
     }
 
     // Apply status filter
-    if (statusFilter) {
+    if (statusFilter && statusFilter !== "all") {
       filtered = filtered.filter(res => res.status.toUpperCase() === statusFilter.toUpperCase());
     }
 
@@ -124,6 +123,55 @@ const ProspectionPage = () => {
     }
 
     setFilteredReservations(filtered);
+  };
+
+  // Format reservation reference input
+  const handleReservationRefChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+    
+    // If user is just starting to type, add the prefix
+    if (value && !value.startsWith("RES-")) {
+      value = "RES-" + value;
+    }
+    
+    // Auto-format as RES-YYYY-XXXXX
+    if (value.startsWith("RES-") && value.length > 4) {
+      // Keep only alphanumeric characters after prefix
+      const numbers = value.substring(4).replace(/[^0-9]/g, "");
+      
+      // Format with hyphens
+      if (numbers.length > 0) {
+        value = "RES-" + numbers;
+      } else {
+        value = "RES-";
+      }
+    }
+    
+    setReservationRefFilter(value);
+  };
+
+  // Format property reference input
+  const handlePropertyRefChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+    
+    // If user is just starting to type, add the prefix if needed
+    if (value && !value.startsWith("PROP-")) {
+      value = "PROP-" + value;
+    }
+    
+    // Keep only alphanumeric characters after prefix
+    if (value.startsWith("PROP-") && value.length > 5) {
+      const numbers = value.substring(5).replace(/[^0-9]/g, "");
+      
+      // Format with proper structure
+      if (numbers.length > 0) {
+        value = "PROP-" + numbers;
+      } else {
+        value = "PROP-";
+      }
+    }
+    
+    setPropertyRefFilter(value);
   };
 
   const handleReservationClick = (reservation: Reservation) => {
@@ -151,6 +199,11 @@ const ProspectionPage = () => {
       default:
         return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  // Format price to display FCFA
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('fr-FR').format(price) + ' FCFA';
   };
 
   if (isLoading) {
@@ -186,17 +239,17 @@ const ProspectionPage = () => {
               <div>
                 <label className="text-sm font-medium mb-1 block">Référence du bien</label>
                 <Input
-                  placeholder="Réf. bien"
+                  placeholder="PROP-"
                   value={propertyRefFilter}
-                  onChange={(e) => setPropertyRefFilter(e.target.value)}
+                  onChange={handlePropertyRefChange}
                 />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Référence de réservation</label>
                 <Input
-                  placeholder="Réf. réservation"
+                  placeholder="RES-"
                   value={reservationRefFilter}
-                  onChange={(e) => setReservationRefFilter(e.target.value)}
+                  onChange={handleReservationRefChange}
                 />
               </div>
               <div>
@@ -246,10 +299,10 @@ const ProspectionPage = () => {
                         <span className="text-sm truncate">{reservation.property?.title || 'Bien non spécifié'}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Euro className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                        <Tag className="h-4 w-4 text-gray-500 flex-shrink-0" />
                         <span className="text-sm font-medium">
                           {reservation.property?.price 
-                            ? new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(reservation.property.price)
+                            ? formatPrice(reservation.property.price)
                             : 'Prix non spécifié'}
                         </span>
                       </div>
@@ -310,11 +363,11 @@ const ProspectionPage = () => {
                       </div>
                       
                       <div className="flex items-center gap-3">
-                        <Euro className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                        <Tag className="h-5 w-5 text-gray-500 flex-shrink-0" />
                         <div>
                           <p className="font-medium">
                             {selectedReservation.property?.price 
-                              ? new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(selectedReservation.property.price)
+                              ? formatPrice(selectedReservation.property.price)
                               : 'Prix non spécifié'}
                           </p>
                         </div>
