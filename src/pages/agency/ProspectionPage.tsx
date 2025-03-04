@@ -206,7 +206,7 @@ const ProspectionPage = () => {
                     <SelectValue placeholder="Tous les statuts" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Tous les statuts</SelectItem>
+                    <SelectItem value="all">Tous les statuts</SelectItem>
                     <SelectItem value="PENDING">En attente</SelectItem>
                     <SelectItem value="CONFIRMED">Confirmé</SelectItem>
                     <SelectItem value="CANCELLED">Annulé</SelectItem>
