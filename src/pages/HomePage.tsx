@@ -39,16 +39,6 @@ export default function HomePage() {
   const [heroApi, setHeroApi] = useState<any>();
   const [propertiesApi, setPropertiesApi] = useState<any>();
 
-  useEffect(() => {
-    if (!window.google) {
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyC2I-ak4zmqSwd6dk2zUonaRrR1dhWGZrA&libraries=places`;
-      script.async = true;
-      script.defer = true;
-      document.head.appendChild(script);
-    }
-  }, []);
-
   const { data: regions } = useQuery({
     queryKey: ["regions"],
     queryFn: async () => {
@@ -105,7 +95,6 @@ export default function HomePage() {
   }, [heroApi, propertiesApi]);
 
   const filteredProperties = properties?.filter(property => {
-    // Only filter by searchTerm now
     const matchesSearch = !searchTerm || 
       property.title?.toLowerCase().includes(searchTerm.toLowerCase()) || 
       property.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -126,7 +115,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Navbar */}
       <nav style={{ backgroundColor: '#aa1ca0' }} className="border-b">
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
@@ -147,7 +135,6 @@ export default function HomePage() {
         </div>
       </nav>
 
-      {/* Hero Carousel */}
       <div className="container mx-auto px-4 mt-8">
         <div className="relative h-[40vh] max-w-5xl mx-auto bg-gray-100 rounded-lg overflow-hidden">
           <Carousel 
@@ -191,7 +178,6 @@ export default function HomePage() {
           </Carousel>
         </div>
 
-        {/* Search Bar */}
         <div className="mt-8 max-w-4xl mx-auto">
           <div className="bg-white rounded-lg shadow-lg p-4 flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
@@ -217,7 +203,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Filtered Properties - Only show if searchTerm has at least one character */}
       {searchTerm.length > 0 && filteredProperties && (
         <div className="container mx-auto px-4 mt-16">
           {filteredProperties.length > 0 ? (
@@ -274,7 +259,6 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Properties Carousel */}
       <div className="py-32 container mx-auto px-4">
         <h2 className="text-3xl font-light mb-12 text-center">
           Notre sélection d'annonces immobilières
@@ -346,7 +330,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Registration Dialog */}
       <AgencyRegistrationDialog 
         open={isRegistrationOpen} 
         onOpenChange={setIsRegistrationOpen}
