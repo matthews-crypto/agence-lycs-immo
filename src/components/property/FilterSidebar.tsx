@@ -19,6 +19,8 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { toast } from "sonner";
@@ -39,14 +41,36 @@ type ZoneType = {
 
 interface FilterSidebarProps {
   agencyId?: string;
-  onFilterApply: (selectedRegion: number | null, selectedZone: number | null) => void;
+  onFilterApply: (filters: FilterType) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+export type FilterType = {
+  regionId: number | null;
+  zoneId: number | null;
+  propertyType: string | null;
+  minSurfaceArea: number | null;
+  bedroomsCount: number | null;
+  maxPrice: number | null;
+}
+
+const propertyTypeLabels: { [key: string]: string } = {
+  "APARTMENT": "Appartement",
+  "HOUSE": "Maison",
+  "LAND": "Terrain",
+  "COMMERCIAL": "Local commercial",
+  "OFFICE": "Bureau",
+  "OTHER": "Autre"
+};
+
 export function FilterSidebar({ agencyId, onFilterApply, open, onOpenChange }: FilterSidebarProps) {
   const [selectedRegion, setSelectedRegion] = useState<number | null>(null);
   const [selectedZone, setSelectedZone] = useState<number | null>(null);
+  const [selectedPropertyType, setSelectedPropertyType] = useState<string | null>(null);
+  const [minSurfaceArea, setMinSurfaceArea] = useState<number | null>(null);
+  const [selectedBedrooms, setSelectedBedrooms] = useState<number | null>(null);
+  const [maxPrice, setMaxPrice] = useState<number | null>(null);
   const [mapInitialized, setMapInitialized] = useState(false);
   const mapRef = useRef<L.Map | null>(null);
   const circleRef = useRef<L.Circle | null>(null);
@@ -98,6 +122,139 @@ export function FilterSidebar({ agencyId, onFilterApply, open, onOpenChange }: F
       return zoneData as ZoneType[];
     },
     enabled: !!selectedRegion && !!agencyId,
+  });
+
+  // Fetch available property types for the selected zone
+  const { data: availablePropertyTypes } = useQuery({
+    queryKey: ["available-property-types", selectedZone, agencyId],
+    queryFn: async () => {
+      if (!agencyId) return [];
+      
+      let query = supabase
+        .from("properties")
+        .select("property_type")
+        .eq("agency_id", agencyId)
+        .eq("is_available", true);
+        
+      if (selectedZone) {
+        query = query.eq("zone_id", selectedZone);
+      } else if (selectedRegion) {
+        const { data: regionZones, error: zonesError } = await supabase
+          .from("zone")
+          .select("id")
+          .eq("region_id", selectedRegion);
+        
+        if (zonesError) throw zonesError;
+        
+        if (regionZones.length > 0) {
+          const zoneIds = regionZones.map(z => z.id);
+          query = query.in("zone_id", zoneIds);
+        }
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      
+      // Extract unique property types
+      const types = [...new Set(data.map(p => p.property_type))];
+      return types;
+    },
+    enabled: !!(agencyId && (selectedZone || selectedRegion)),
+  });
+
+  // Fetch available bedrooms counts for the selected filters
+  const { data: availableBedrooms } = useQuery({
+    queryKey: ["available-bedrooms", selectedZone, selectedPropertyType, agencyId],
+    queryFn: async () => {
+      if (!agencyId) return [];
+      
+      let query = supabase
+        .from("properties")
+        .select("bedrooms")
+        .eq("agency_id", agencyId)
+        .eq("is_available", true)
+        .not("bedrooms", "is", null);
+        
+      if (selectedZone) {
+        query = query.eq("zone_id", selectedZone);
+      } else if (selectedRegion) {
+        const { data: regionZones, error: zonesError } = await supabase
+          .from("zone")
+          .select("id")
+          .eq("region_id", selectedRegion);
+        
+        if (zonesError) throw zonesError;
+        
+        if (regionZones.length > 0) {
+          const zoneIds = regionZones.map(z => z.id);
+          query = query.in("zone_id", zoneIds);
+        }
+      }
+      
+      if (selectedPropertyType) {
+        query = query.eq("property_type", selectedPropertyType);
+      }
+      
+      const { data, error } = await query.order("bedrooms");
+      
+      if (error) throw error;
+      
+      // Extract unique bedroom counts
+      const bedrooms = [...new Set(data.map(p => p.bedrooms))].filter(Boolean);
+      return bedrooms;
+    },
+    enabled: !!(agencyId && (selectedZone || selectedRegion)),
+  });
+
+  // Get price range for the selected filters
+  const { data: priceRange } = useQuery({
+    queryKey: ["price-range", selectedZone, selectedPropertyType, selectedBedrooms, agencyId],
+    queryFn: async () => {
+      if (!agencyId) return { max: 0 };
+      
+      let query = supabase
+        .from("properties")
+        .select("price")
+        .eq("agency_id", agencyId)
+        .eq("is_available", true);
+        
+      if (selectedZone) {
+        query = query.eq("zone_id", selectedZone);
+      } else if (selectedRegion) {
+        const { data: regionZones, error: zonesError } = await supabase
+          .from("zone")
+          .select("id")
+          .eq("region_id", selectedRegion);
+        
+        if (zonesError) throw zonesError;
+        
+        if (regionZones.length > 0) {
+          const zoneIds = regionZones.map(z => z.id);
+          query = query.in("zone_id", zoneIds);
+        }
+      }
+      
+      if (selectedPropertyType) {
+        query = query.eq("property_type", selectedPropertyType);
+      }
+      
+      if (selectedBedrooms) {
+        query = query.eq("bedrooms", selectedBedrooms);
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      
+      if (data.length === 0) return { max: 0 };
+      
+      const prices = data.map(p => p.price);
+      const max = Math.max(...prices);
+      
+      return { max };
+    },
+    enabled: !!(agencyId && (selectedZone || selectedRegion)),
   });
 
   // Initialize or reinitialize the map when the sidebar opens
@@ -236,6 +393,9 @@ export function FilterSidebar({ agencyId, onFilterApply, open, onOpenChange }: F
   const handleRegionChange = (regionId: string) => {
     setSelectedRegion(parseInt(regionId));
     setSelectedZone(null);
+    setSelectedPropertyType(null);
+    setSelectedBedrooms(null);
+    setMaxPrice(null);
     if (circleRef.current && mapRef.current) {
       circleRef.current.remove();
       circleRef.current = null;
@@ -247,14 +407,46 @@ export function FilterSidebar({ agencyId, onFilterApply, open, onOpenChange }: F
     setSelectedZone(parseInt(zoneId));
   };
 
+  const handlePropertyTypeChange = (propertyType: string) => {
+    setSelectedPropertyType(propertyType);
+    setSelectedBedrooms(null); // Reset bedrooms when property type changes
+  };
+
+  const handleBedroomsChange = (bedrooms: string) => {
+    setSelectedBedrooms(parseInt(bedrooms));
+  };
+
+  const handleMinSurfaceChange = (value: string) => {
+    const numValue = value === "" ? null : parseFloat(value);
+    setMinSurfaceArea(numValue);
+  };
+
+  const handleMaxPriceChange = (value: string) => {
+    const numValue = value === "" ? null : parseFloat(value);
+    setMaxPrice(numValue);
+  };
+
   const handleApplyFilters = () => {
-    onFilterApply(selectedRegion, selectedZone);
+    const filters: FilterType = {
+      regionId: selectedRegion,
+      zoneId: selectedZone,
+      propertyType: selectedPropertyType,
+      minSurfaceArea: minSurfaceArea,
+      bedroomsCount: selectedBedrooms,
+      maxPrice: maxPrice
+    };
+    
+    onFilterApply(filters);
     onOpenChange(false);
   };
 
   const handleResetFilters = () => {
     setSelectedRegion(null);
     setSelectedZone(null);
+    setSelectedPropertyType(null);
+    setMinSurfaceArea(null);
+    setSelectedBedrooms(null);
+    setMaxPrice(null);
     if (circleRef.current && mapRef.current) {
       circleRef.current.remove();
       circleRef.current = null;
@@ -269,7 +461,7 @@ export function FilterSidebar({ agencyId, onFilterApply, open, onOpenChange }: F
           <div className="flex justify-between items-center">
             <SheetTitle className="flex items-center gap-2">
               <Filter className="w-5 h-5" />
-              Filtrer par région et zone
+              Filtres
             </SheetTitle>
             <Button
               variant="ghost"
@@ -324,11 +516,74 @@ export function FilterSidebar({ agencyId, onFilterApply, open, onOpenChange }: F
             </div>
           )}
 
-          {selectedRegion && (!zones || zones.length === 0) && (
-            <div className="text-sm text-muted-foreground">
-              Aucune zone disponible pour cette région
+          {availablePropertyTypes && availablePropertyTypes.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="propertyType">Type de bien</Label>
+              <Select 
+                value={selectedPropertyType || ""} 
+                onValueChange={handlePropertyTypeChange}
+              >
+                <SelectTrigger id="propertyType">
+                  <SelectValue placeholder="Sélectionnez un type de bien" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availablePropertyTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {propertyTypeLabels[type] || type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           )}
+
+          <div className="space-y-2">
+            <Label htmlFor="minSurfaceArea">Surface minimale (m²)</Label>
+            <Input 
+              id="minSurfaceArea" 
+              type="number" 
+              placeholder="Surface minimale" 
+              value={minSurfaceArea?.toString() || ""} 
+              onChange={(e) => handleMinSurfaceChange(e.target.value)}
+            />
+          </div>
+
+          {availableBedrooms && availableBedrooms.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="bedrooms">Nombre de pièces</Label>
+              <Select 
+                value={selectedBedrooms?.toString() || ""} 
+                onValueChange={handleBedroomsChange}
+              >
+                <SelectTrigger id="bedrooms">
+                  <SelectValue placeholder="Sélectionnez le nombre de pièces" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableBedrooms.map((count) => (
+                    <SelectItem key={count} value={count.toString()}>
+                      {count}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="maxPrice">Budget maximal (FCFA)</Label>
+            <Input 
+              id="maxPrice" 
+              type="number" 
+              placeholder="Budget maximal" 
+              value={maxPrice?.toString() || ""} 
+              onChange={(e) => handleMaxPriceChange(e.target.value)}
+            />
+            {priceRange?.max > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Prix maximal disponible: {priceRange.max.toLocaleString('fr-FR')} FCFA
+              </p>
+            )}
+          </div>
 
           <div 
             ref={mapContainerRef} 

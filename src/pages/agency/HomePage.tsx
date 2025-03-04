@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -189,6 +188,10 @@ export default function AgencyHomePage() {
   const [isFilterSidebarOpen, setIsFilterSidebarOpen] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState<number | null>(null);
   const [selectedZone, setSelectedZone] = useState<number | null>(null);
+  const [selectedPropertyType, setSelectedPropertyType] = useState<string | null>(null);
+  const [minSurfaceArea, setMinSurfaceArea] = useState<number | null>(null);
+  const [selectedBedrooms, setSelectedBedrooms] = useState<number | null>(null);
+  const [maxPrice, setMaxPrice] = useState<number | null>(null);
 
   const { data: regions } = useQuery({
     queryKey: ["regions"],
@@ -204,7 +207,7 @@ export default function AgencyHomePage() {
   });
 
   const { data: properties } = useQuery({
-    queryKey: ["agency-properties", agency?.id, selectedRegion, selectedZone],
+    queryKey: ["agency-properties", agency?.id, selectedRegion, selectedZone, selectedPropertyType, minSurfaceArea, selectedBedrooms, maxPrice],
     queryFn: async () => {
       if (!agency?.id) throw new Error("Agency ID required");
       
@@ -238,6 +241,22 @@ export default function AgencyHomePage() {
           const zoneIds = regionZones.map(z => z.id);
           query = query.in("zone_id", zoneIds);
         }
+      }
+      
+      if (selectedPropertyType) {
+        query = query.eq("property_type", selectedPropertyType);
+      }
+      
+      if (minSurfaceArea) {
+        query = query.gte("surface_area", minSurfaceArea);
+      }
+      
+      if (selectedBedrooms) {
+        query = query.eq("bedrooms", selectedBedrooms);
+      }
+      
+      if (maxPrice) {
+        query = query.lte("price", maxPrice);
       }
       
       const { data, error } = await query.order("created_at", { ascending: false });
@@ -367,11 +386,16 @@ export default function AgencyHomePage() {
     };
   }, [servicesRef]);
 
-  const handleApplyFilters = (regionId: number | null, zoneId: number | null) => {
-    setSelectedRegion(regionId);
-    setSelectedZone(zoneId);
+  const handleApplyFilters = (filters: FilterType) => {
+    setSelectedRegion(filters.regionId);
+    setSelectedZone(filters.zoneId);
+    setSelectedPropertyType(filters.propertyType);
+    setMinSurfaceArea(filters.minSurfaceArea);
+    setSelectedBedrooms(filters.bedroomsCount);
+    setMaxPrice(filters.maxPrice);
     
-    if (regionId || zoneId) {
+    if (filters.regionId || filters.zoneId || filters.propertyType || 
+        filters.minSurfaceArea || filters.bedroomsCount || filters.maxPrice) {
       toast.success("Filtres appliqués");
     } else {
       toast.info("Filtres réinitialisés");
