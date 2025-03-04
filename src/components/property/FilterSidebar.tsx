@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,8 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 type RegionType = {
   id: number;
@@ -45,8 +47,9 @@ export function FilterSidebar({ agencyId, onFilterApply, open, onOpenChange }: F
   const [selectedRegion, setSelectedRegion] = useState<number | null>(null);
   const [selectedZone, setSelectedZone] = useState<number | null>(null);
   const [mapInitialized, setMapInitialized] = useState(false);
-  const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [zoneCircle, setZoneCircle] = useState<google.maps.Circle | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const circleRef = useRef<L.Circle | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
 
   // Fetch all regions
   const { data: regions } = useQuery({
@@ -96,88 +99,75 @@ export function FilterSidebar({ agencyId, onFilterApply, open, onOpenChange }: F
     enabled: !!selectedRegion && !!agencyId,
   });
 
-  // Initialize Google Maps
+  // Initialize Leaflet Map
   useEffect(() => {
-    if (!open || mapInitialized) return;
+    if (!open || mapInitialized || !mapContainerRef.current) return;
 
-    const initMap = () => {
-      const mapElement = document.getElementById("filter-map");
-      if (!mapElement) return;
+    // Create the map
+    const map = L.map(mapContainerRef.current).setView([14.7167, -17.4677], 7);
+    
+    // Add the OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
 
-      const mapOptions = {
-        center: { lat: 14.7167, lng: -17.4677 }, // Dakar, Senegal as default
-        zoom: 7,
-        mapTypeId: google.maps.MapTypeId.ROADMAP,
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: false,
-      };
+    // Store the map in the ref
+    mapRef.current = map;
+    setMapInitialized(true);
 
-      const newMap = new google.maps.Map(mapElement, mapOptions);
-      setMap(newMap);
-      setMapInitialized(true);
+    // Cleanup function
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+        setMapInitialized(false);
+      }
     };
-
-    // Check if Google Maps API is already loaded
-    if (window.google && window.google.maps) {
-      initMap();
-    } else {
-      // Script already added, just wait for it to load
-      const checkGoogleMapsLoaded = setInterval(() => {
-        if (window.google && window.google.maps) {
-          clearInterval(checkGoogleMapsLoaded);
-          initMap();
-        }
-      }, 100);
-
-      // Clean up
-      return () => clearInterval(checkGoogleMapsLoaded);
-    }
   }, [open, mapInitialized]);
 
   // Update map when a zone is selected
   useEffect(() => {
-    if (!map || !zones || zones.length === 0 || !selectedZone) return;
+    if (!mapRef.current || !zones || zones.length === 0 || !selectedZone) return;
 
     // Clear existing circle
-    if (zoneCircle) {
-      zoneCircle.setMap(null);
+    if (circleRef.current) {
+      circleRef.current.remove();
+      circleRef.current = null;
     }
 
     // Find selected zone
     const selectedZoneData = zones.find(zone => zone.id === selectedZone);
     if (!selectedZoneData || !selectedZoneData.latitude || !selectedZoneData.longitude) return;
 
-    // Create new circle
-    const center = { 
-      lat: Number(selectedZoneData.latitude), 
-      lng: Number(selectedZoneData.longitude) 
-    };
+    // Create new circle with the selected zone's coordinates and radius
+    const center: L.LatLngExpression = [Number(selectedZoneData.latitude), Number(selectedZoneData.longitude)];
     
-    const newCircle = new google.maps.Circle({
-      map,
-      center,
+    const newCircle = L.circle(center, {
       radius: selectedZoneData.circle_radius || 5000,
-      fillColor: "#AA1CA0",
+      color: '#AA1CA0',
+      fillColor: '#AA1CA0',
       fillOpacity: 0.3,
-      strokeColor: "#AA1CA0",
-      strokeOpacity: 0.8,
-      strokeWeight: 2
-    });
+      weight: 2
+    }).addTo(mapRef.current);
 
-    setZoneCircle(newCircle);
+    // Add a marker at the center
+    L.marker(center).addTo(mapRef.current)
+      .bindPopup(selectedZoneData.nom)
+      .openPopup();
 
-    // Center map on selected zone
-    map.setCenter(center);
-    map.setZoom(11);
-  }, [map, zones, selectedZone]);
+    // Set the current circle to the ref for future cleanup
+    circleRef.current = newCircle;
+    
+    // Center map on selected zone and zoom appropriately
+    mapRef.current.setView(center, 11);
+  }, [mapRef.current, zones, selectedZone]);
 
   const handleRegionChange = (regionId: string) => {
     setSelectedRegion(parseInt(regionId));
     setSelectedZone(null);
-    if (zoneCircle) {
-      zoneCircle.setMap(null);
-      setZoneCircle(null);
+    if (circleRef.current && mapRef.current) {
+      circleRef.current.remove();
+      circleRef.current = null;
     }
   };
 
@@ -193,13 +183,10 @@ export function FilterSidebar({ agencyId, onFilterApply, open, onOpenChange }: F
   const handleResetFilters = () => {
     setSelectedRegion(null);
     setSelectedZone(null);
-    if (zoneCircle) {
-      zoneCircle.setMap(null);
-      setZoneCircle(null);
-    }
-    if (map) {
-      map.setCenter({ lat: 14.7167, lng: -17.4677 }); // Reset to Dakar
-      map.setZoom(7);
+    if (circleRef.current && mapRef.current) {
+      circleRef.current.remove();
+      circleRef.current = null;
+      mapRef.current.setView([14.7167, -17.4677], 7); // Reset to Dakar
     }
   };
 
@@ -271,7 +258,11 @@ export function FilterSidebar({ agencyId, onFilterApply, open, onOpenChange }: F
             </div>
           )}
 
-          <div id="filter-map" className="w-full h-[200px] rounded-lg mt-4"></div>
+          <div 
+            ref={mapContainerRef} 
+            className="w-full h-[200px] rounded-lg mt-4"
+            style={{ zIndex: 0 }}
+          ></div>
 
           <div className="flex flex-col space-y-2">
             <Button 
