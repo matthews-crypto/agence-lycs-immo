@@ -3,10 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MapPin, User, BedDouble, ChevronUp, Phone, Mail, ChevronDown, Briefcase } from "lucide-react";
+import { MapPin, User, BedDouble, ChevronUp, Phone, Mail, ChevronDown, Briefcase, Search, Filter } from "lucide-react";
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { useNavigate } from "react-router-dom";
 import { AuthDrawer } from "@/components/agency/AuthDrawer";
+import { FilterSidebar, FilterType } from "@/components/property/FilterSidebar";
 import {
   Select,
   SelectContent,
@@ -175,11 +176,7 @@ function PropertyCategorySection({ type, properties, propertyTypeLabels, agency,
 export default function AgencyHomePage() {
   const { agency } = useAgencyContext();
   const navigate = useNavigate();
-  const [selectedZone, setSelectedZone] = useState<string>("all");
-  const [selectedType, setSelectedType] = useState<string>("all");
-  const [selectedRegion, setSelectedRegion] = useState<string>("all");
-  const [minBudget, setMinBudget] = useState<string>("");
-  const [maxBudget, setMaxBudget] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState<string>("");
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [heroApi, setHeroApi] = useState<any>();
   const [propertiesApi, setPropertiesApi] = useState<any>();
@@ -188,6 +185,13 @@ export default function AgencyHomePage() {
   const categoryMenuRef = useRef<HTMLDivElement>(null);
   const servicesRef = useRef<HTMLDivElement>(null);
   const [isServicesVisible, setIsServicesVisible] = useState(false);
+  const [isFilterSidebarOpen, setIsFilterSidebarOpen] = useState(false);
+  const [selectedRegion, setSelectedRegion] = useState<number | null>(null);
+  const [selectedZone, setSelectedZone] = useState<number | null>(null);
+  const [selectedPropertyType, setSelectedPropertyType] = useState<string | null>(null);
+  const [minSurfaceArea, setMinSurfaceArea] = useState<number | null>(null);
+  const [selectedBedrooms, setSelectedBedrooms] = useState<number | null>(null);
+  const [maxPrice, setMaxPrice] = useState<number | null>(null);
 
   const { data: regions } = useQuery({
     queryKey: ["regions"],
@@ -203,9 +207,11 @@ export default function AgencyHomePage() {
   });
 
   const { data: properties } = useQuery({
-    queryKey: ["agency-properties", agency?.id],
+    queryKey: ["agency-properties", agency?.id, selectedRegion, selectedZone, selectedPropertyType, minSurfaceArea, selectedBedrooms, maxPrice],
     queryFn: async () => {
-      const { data, error } = await supabase
+      if (!agency?.id) throw new Error("Agency ID required");
+      
+      let query = supabase
         .from("properties")
         .select(`
           *,
@@ -217,10 +223,44 @@ export default function AgencyHomePage() {
             circle_radius
           )
         `)
-        .eq("agency_id", agency?.id)
-        .eq("is_available", true)
-        .order("created_at", { ascending: false });
-
+        .eq("agency_id", agency.id)
+        .eq("is_available", true);
+      
+      if (selectedZone) {
+        query = query.eq("zone_id", selectedZone);
+      }
+      else if (selectedRegion) {
+        const { data: regionZones, error: zonesError } = await supabase
+          .from("zone")
+          .select("id")
+          .eq("region_id", selectedRegion);
+        
+        if (zonesError) throw zonesError;
+        
+        if (regionZones.length > 0) {
+          const zoneIds = regionZones.map(z => z.id);
+          query = query.in("zone_id", zoneIds);
+        }
+      }
+      
+      if (selectedPropertyType) {
+        query = query.eq("property_type", selectedPropertyType);
+      }
+      
+      if (minSurfaceArea) {
+        query = query.gte("surface_area", minSurfaceArea);
+      }
+      
+      if (selectedBedrooms) {
+        query = query.eq("bedrooms", selectedBedrooms);
+      }
+      
+      if (maxPrice) {
+        query = query.lte("price", maxPrice);
+      }
+      
+      const { data, error } = await query.order("created_at", { ascending: false });
+      
       if (error) throw error;
       return data;
     },
@@ -286,12 +326,12 @@ export default function AgencyHomePage() {
   };
 
   const filteredProperties = properties?.filter(property => {
-    const matchesZone = selectedZone === "all" || property.zone?.nom === selectedZone;
-    const matchesType = selectedType === "all" || property.property_type === selectedType;
-    const matchesRegion = selectedRegion === "all" || property.region === selectedRegion;
-    const matchesMinBudget = !minBudget || property.price >= parseInt(minBudget);
-    const matchesMaxBudget = !maxBudget || property.price <= parseInt(maxBudget);
-    return matchesZone && matchesType && matchesRegion && matchesMinBudget && matchesMaxBudget;
+    const matchesSearch = !searchTerm || 
+      property.title?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      property.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      property.zone?.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      propertyTypeLabels[property.property_type]?.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSearch;
   });
 
   const zones = [...new Set(properties?.map(p => p.zone?.nom).filter(Boolean))];
@@ -311,14 +351,6 @@ export default function AgencyHomePage() {
     if (section) {
       section.scrollIntoView({ behavior: 'smooth' });
     }
-  };
-
-  const handleSearch = () => {
-    if (!selectedZone && !minBudget && !maxBudget && selectedType === "all" && selectedRegion === "all") {
-      toast.warning("Veuillez sélectionner au moins un critère de recherche");
-      return;
-    }
-    toast.success("Recherche effectuée avec succès");
   };
 
   const handlePropertyClick = (propertyId: string) => {
@@ -353,6 +385,22 @@ export default function AgencyHomePage() {
       }
     };
   }, [servicesRef]);
+
+  const handleApplyFilters = (filters: FilterType) => {
+    setSelectedRegion(filters.regionId);
+    setSelectedZone(filters.zoneId);
+    setSelectedPropertyType(filters.propertyType);
+    setMinSurfaceArea(filters.minSurfaceArea);
+    setSelectedBedrooms(filters.bedroomsCount);
+    setMaxPrice(filters.maxPrice);
+    
+    if (filters.regionId || filters.zoneId || filters.propertyType || 
+        filters.minSurfaceArea || filters.bedroomsCount || filters.maxPrice) {
+      toast.success("Filtres appliqués");
+    } else {
+      toast.info("Filtres réinitialisés");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -486,86 +534,94 @@ export default function AgencyHomePage() {
 
         <div className="mt-8 max-w-4xl mx-auto">
           <div className="bg-white rounded-lg shadow-lg p-4 flex flex-col md:flex-row gap-4">
-            <Select 
-              value={selectedZone} 
-              onValueChange={setSelectedZone}
-            >
-              <SelectTrigger className="w-full md:w-[200px] text-base font-medium">
-                <SelectValue placeholder="Zone" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all" className="text-base">Zones</SelectItem>
-                {zones.map((zone) => (
-                  <SelectItem key={zone} value={zone || ''} className="text-base">
-                    {zone}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select 
-              value={selectedType} 
-              onValueChange={setSelectedType}
-            >
-              <SelectTrigger className="w-full md:w-[200px] text-base font-medium">
-                <SelectValue placeholder="Type de bien" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all" className="text-base">Types</SelectItem>
-                {propertyTypes.map((type) => (
-                  <SelectItem key={type.value} value={type.value} className="text-base">
-                    {type.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select 
-              value={selectedRegion} 
-              onValueChange={setSelectedRegion}
-            >
-              <SelectTrigger className="w-full md:w-[200px] text-base font-medium">
-                <SelectValue placeholder="Région" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all" className="text-base">Toutes les régions</SelectItem>
-                {filteredRegions?.map((region) => (
-                  <SelectItem key={region.id} value={region.nom} className="text-base">
-                    {region.nom}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <div className="flex flex-col md:flex-row gap-4 flex-1">
-              <input
-                type="number"
-                placeholder="Budget min"
-                className="flex-1 px-3 py-2 border rounded-md text-base font-medium"
-                value={minBudget}
-                onChange={(e) => setMinBudget(e.target.value)}
-              />
-              <input
-                type="number"
-                placeholder="Budget max"
-                className="flex-1 px-3 py-2 border rounded-md text-base font-medium"
-                value={maxBudget}
-                onChange={(e) => setMaxBudget(e.target.value)}
+            <div className="flex-1 relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-gray-400" />
+              </div>
+              <Input
+                placeholder="Rechercher un bien..."
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-
+            
             <Button 
-              className="w-full md:w-auto px-8"
-              style={{
-                backgroundColor: agency?.primary_color || '#000000',
-              }}
-              onClick={handleSearch}
+              variant="outline"
+              className="w-full md:w-auto gap-2"
+              onClick={() => setIsFilterSidebarOpen(true)}
             >
-              Rechercher
+              <Filter className="h-4 w-4" />
+              Plus de filtres
             </Button>
           </div>
         </div>
       </div>
+
+      {(searchTerm.length > 0 || selectedRegion !== null || selectedZone !== null) && filteredProperties && (
+        <div className="container mx-auto px-4 mt-16">
+          {filteredProperties.length > 0 ? (
+            <>
+              <h2 className="text-2xl font-light mb-8">Résultats de votre recherche</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {filteredProperties.map((property) => (
+                  <div 
+                    key={property.id} 
+                    className="cursor-pointer"
+                    onClick={() => handlePropertyClick(property.id)}
+                  >
+                    <div className="aspect-[4/3] overflow-hidden rounded-lg relative">
+                      {property.photos?.[0] ? (
+                        <img
+                          src={property.photos[0]}
+                          alt={property.title}
+                          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                          <BedDouble className="w-12 h-12 text-gray-400" />
+                        </div>
+                      )}
+                      <div 
+                        className="absolute top-4 left-4 px-3 py-1 rounded-full text-sm font-medium"
+                        style={{
+                          backgroundColor: agency?.primary_color || '#000000',
+                          color: 'white',
+                        }}
+                      >
+                        {property.property_offer_type === 'VENTE' ? 'À Vendre' : 'À Louer'}
+                      </div>
+                    </div>
+                    <div className="mt-4">
+                      <h3 className="text-xl font-light">{property.title}</h3>
+                      <div className="flex items-center gap-2 text-gray-600 mt-2">
+                        <MapPin className="w-4 h-4" />
+                        <p className="text-sm">{property.zone?.nom}</p>
+                      </div>
+                      <div className="mt-2 flex justify-between items-center">
+                        <p className="text-lg">
+                          {property.price.toLocaleString('fr-FR')} FCFA
+                        </p>
+                        <div className="flex items-center gap-1 text-gray-600">
+                          <span>{property.surface_area} m²</span>
+                          {property.bedrooms && (
+                            <div className="flex items-center gap-1 ml-2">
+                              <BedDouble className="w-4 h-4" />
+                              <span>{property.bedrooms}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <h2 className="text-2xl font-light mb-8 text-center">Aucune propriété ne correspond à votre sélection</h2>
+          )}
+        </div>
+      )}
 
       <div className="py-16 container mx-auto px-4">
         <h2 className="text-3xl font-light mb-12 text-center">
@@ -599,7 +655,7 @@ export default function AgencyHomePage() {
                           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
                       ) : (
-                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center rounded-lg cursor-pointer">
                           <BedDouble className="w-12 h-12 text-gray-400" />
                         </div>
                       )}
@@ -813,6 +869,13 @@ export default function AgencyHomePage() {
       <AuthDrawer 
         open={isAuthOpen} 
         onOpenChange={setIsAuthOpen}
+      />
+      
+      <FilterSidebar
+        agencyId={agency?.id}
+        onFilterApply={handleApplyFilters}
+        open={isFilterSidebarOpen}
+        onOpenChange={setIsFilterSidebarOpen}
       />
       
       <footer 
