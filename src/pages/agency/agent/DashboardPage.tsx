@@ -5,12 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, MapPin, Phone, User, Search } from "lucide-react";
+import { Calendar, Clock, MapPin, Phone, User } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AgencySidebar } from "@/components/agency/AgencySidebar";
 
 type Reservation = {
   id: string;
@@ -25,21 +22,14 @@ type Reservation = {
     address: string;
     price: number;
     property_type: string;
-    reference_number: string;
   };
 };
 
 export default function AgentDashboardPage() {
   const { agency } = useAgencyContext();
   const [reservations, setReservations] = useState<Reservation[]>([]);
-  const [filteredReservations, setFilteredReservations] = useState<Reservation[]>([]);
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [propertyRefFilter, setPropertyRefFilter] = useState("");
-  const [reservationRefFilter, setReservationRefFilter] = useState("");
-  const [availablePropertyRefs, setAvailablePropertyRefs] = useState<string[]>([]);
-  const [availableReservationRefs, setAvailableReservationRefs] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchReservations = async () => {
@@ -55,8 +45,7 @@ export default function AgentDashboardPage() {
               title,
               address,
               price,
-              property_type,
-              reference_number
+              property_type
             )
           `)
           .eq('agency_id', agency.id)
@@ -68,15 +57,6 @@ export default function AgentDashboardPage() {
         }
 
         setReservations(data || []);
-        setFilteredReservations(data || []);
-        
-        // Extract unique property references
-        const propertyRefs = [...new Set(data?.map(res => res.property?.reference_number).filter(Boolean) || [])];
-        setAvailablePropertyRefs(propertyRefs);
-        
-        // Extract unique reservation numbers
-        const reservationRefs = [...new Set(data?.map(res => res.reservation_number).filter(Boolean) || [])];
-        setAvailableReservationRefs(reservationRefs);
       } catch (error) {
         console.error("Error in reservation fetch:", error);
       } finally {
@@ -87,51 +67,12 @@ export default function AgentDashboardPage() {
     fetchReservations();
   }, [agency?.id]);
 
-  useEffect(() => {
-    applyFilters();
-  }, [searchTerm, propertyRefFilter, reservationRefFilter, reservations]);
-
-  const applyFilters = () => {
-    let filtered = [...reservations];
-    
-    // Filter by property reference
-    if (propertyRefFilter) {
-      filtered = filtered.filter(res => 
-        res.property?.reference_number === propertyRefFilter
-      );
-    }
-    
-    // Filter by reservation reference
-    if (reservationRefFilter) {
-      filtered = filtered.filter(res => 
-        res.reservation_number === reservationRefFilter
-      );
-    }
-    
-    // Filter by search term (phone or property title)
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(res => 
-        res.client_phone.toLowerCase().includes(term) || 
-        res.property?.title.toLowerCase().includes(term)
-      );
-    }
-    
-    setFilteredReservations(filtered);
-  };
-
   const handleOpenDetails = (reservation: Reservation) => {
     setSelectedReservation(reservation);
   };
 
   const handleCloseDetails = () => {
     setSelectedReservation(null);
-  };
-
-  const clearFilters = () => {
-    setSearchTerm("");
-    setPropertyRefFilter("");
-    setReservationRefFilter("");
   };
 
   const formatPrice = (price: number) => {
@@ -161,70 +102,15 @@ export default function AgentDashboardPage() {
 
   return (
     <div className="flex h-screen w-full bg-background">
-      <AgencySidebar />
       <main className="flex-1 p-8 overflow-auto">
         <div className="max-w-6xl mx-auto">
           <h1 className="text-2xl font-bold mb-8">Prospection</h1>
-          
-          <div className="mb-6 bg-white p-4 rounded-lg shadow">
-            <h2 className="text-lg font-medium mb-4">Filtres</h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Recherche</label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input 
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Téléphone ou nom du bien"
-                    className="pl-9"
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Référence bien</label>
-                <Select value={propertyRefFilter} onValueChange={setPropertyRefFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Toutes les références" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Toutes les références</SelectItem>
-                    {availablePropertyRefs.map(ref => (
-                      <SelectItem key={ref} value={ref}>{ref}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Référence réservation</label>
-                <Select value={reservationRefFilter} onValueChange={setReservationRefFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Toutes les réservations" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Toutes les réservations</SelectItem>
-                    {availableReservationRefs.map(ref => (
-                      <SelectItem key={ref} value={ref}>{ref}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="flex items-end">
-                <Button onClick={clearFilters} variant="outline" className="w-full">
-                  Effacer les filtres
-                </Button>
-              </div>
-            </div>
-          </div>
           
           {isLoading ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
             </div>
-          ) : filteredReservations.length === 0 ? (
+          ) : reservations.length === 0 ? (
             <Card className="w-full">
               <CardContent className="py-10">
                 <p className="text-center text-muted-foreground">
@@ -234,7 +120,7 @@ export default function AgentDashboardPage() {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredReservations.map((reservation) => (
+              {reservations.map((reservation) => (
                 <Card 
                   key={reservation.id} 
                   className="cursor-pointer hover:shadow-md transition-shadow"
@@ -252,23 +138,13 @@ export default function AgentDashboardPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-sm">
-                          <MapPin className="h-4 w-4 text-muted-foreground" />
-                          <span className="line-clamp-1">{reservation.property?.address || "Adresse non spécifiée"}</span>
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {reservation.property?.reference_number}
-                        </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <span className="line-clamp-1">{reservation.property?.address || "Adresse non spécifiée"}</span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-sm">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          <span>{reservation.client_phone}</span>
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {reservation.reservation_number}
-                        </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <span>{reservation.client_phone}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -314,10 +190,6 @@ export default function AgentDashboardPage() {
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Numéro de réservation</span>
                       <span className="text-sm font-medium">{selectedReservation.reservation_number}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Référence du bien</span>
-                      <span className="text-sm font-medium">{selectedReservation.property?.reference_number}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Type</span>
