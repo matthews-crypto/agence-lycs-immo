@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MapPin, User, BedDouble, ChevronUp, Phone, Mail, ChevronDown, Briefcase } from "lucide-react";
+import { MapPin, User, BedDouble, ChevronUp, Phone, Mail, ChevronDown, Briefcase, Search, Filter } from "lucide-react";
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { useNavigate } from "react-router-dom";
 import { AuthDrawer } from "@/components/agency/AuthDrawer";
@@ -177,9 +177,7 @@ export default function AgencyHomePage() {
   const navigate = useNavigate();
   const [selectedZone, setSelectedZone] = useState<string>("all");
   const [selectedType, setSelectedType] = useState<string>("all");
-  const [selectedRegion, setSelectedRegion] = useState<string>("all");
-  const [minBudget, setMinBudget] = useState<string>("");
-  const [maxBudget, setMaxBudget] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState<string>("");
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [heroApi, setHeroApi] = useState<any>();
   const [propertiesApi, setPropertiesApi] = useState<any>();
@@ -288,10 +286,11 @@ export default function AgencyHomePage() {
   const filteredProperties = properties?.filter(property => {
     const matchesZone = selectedZone === "all" || property.zone?.nom === selectedZone;
     const matchesType = selectedType === "all" || property.property_type === selectedType;
-    const matchesRegion = selectedRegion === "all" || property.region === selectedRegion;
-    const matchesMinBudget = !minBudget || property.price >= parseInt(minBudget);
-    const matchesMaxBudget = !maxBudget || property.price <= parseInt(maxBudget);
-    return matchesZone && matchesType && matchesRegion && matchesMinBudget && matchesMaxBudget;
+    const matchesSearch = !searchTerm || 
+      property.title?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      property.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      property.zone?.nom?.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesZone && matchesType && matchesSearch;
   });
 
   const zones = [...new Set(properties?.map(p => p.zone?.nom).filter(Boolean))];
@@ -314,10 +313,6 @@ export default function AgencyHomePage() {
   };
 
   const handleSearch = () => {
-    if (!selectedZone && !minBudget && !maxBudget && selectedType === "all" && selectedRegion === "all") {
-      toast.warning("Veuillez sélectionner au moins un critère de recherche");
-      return;
-    }
     toast.success("Recherche effectuée avec succès");
   };
 
@@ -486,6 +481,18 @@ export default function AgencyHomePage() {
 
         <div className="mt-8 max-w-4xl mx-auto">
           <div className="bg-white rounded-lg shadow-lg p-4 flex flex-col md:flex-row gap-4">
+            <div className="flex-1 relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-gray-400" />
+              </div>
+              <Input
+                placeholder="Rechercher un bien..."
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            
             <Select 
               value={selectedZone} 
               onValueChange={setSelectedZone}
@@ -494,7 +501,7 @@ export default function AgencyHomePage() {
                 <SelectValue placeholder="Zone" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all" className="text-base">Zones</SelectItem>
+                <SelectItem value="all" className="text-base">Toutes les zones</SelectItem>
                 {zones.map((zone) => (
                   <SelectItem key={zone} value={zone || ''} className="text-base">
                     {zone}
@@ -511,7 +518,7 @@ export default function AgencyHomePage() {
                 <SelectValue placeholder="Type de bien" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all" className="text-base">Types</SelectItem>
+                <SelectItem value="all" className="text-base">Tous les types</SelectItem>
                 {propertyTypes.map((type) => (
                   <SelectItem key={type.value} value={type.value} className="text-base">
                     {type.label}
@@ -520,39 +527,13 @@ export default function AgencyHomePage() {
               </SelectContent>
             </Select>
 
-            <Select 
-              value={selectedRegion} 
-              onValueChange={setSelectedRegion}
+            <Button 
+              variant="outline"
+              className="w-full md:w-auto gap-2"
             >
-              <SelectTrigger className="w-full md:w-[200px] text-base font-medium">
-                <SelectValue placeholder="Région" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all" className="text-base">Toutes les régions</SelectItem>
-                {filteredRegions?.map((region) => (
-                  <SelectItem key={region.id} value={region.nom} className="text-base">
-                    {region.nom}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <div className="flex flex-col md:flex-row gap-4 flex-1">
-              <input
-                type="number"
-                placeholder="Budget min"
-                className="flex-1 px-3 py-2 border rounded-md text-base font-medium"
-                value={minBudget}
-                onChange={(e) => setMinBudget(e.target.value)}
-              />
-              <input
-                type="number"
-                placeholder="Budget max"
-                className="flex-1 px-3 py-2 border rounded-md text-base font-medium"
-                value={maxBudget}
-                onChange={(e) => setMaxBudget(e.target.value)}
-              />
-            </div>
+              <Filter className="h-4 w-4" />
+              Plus de filtres
+            </Button>
 
             <Button 
               className="w-full md:w-auto px-8"
@@ -599,7 +580,7 @@ export default function AgencyHomePage() {
                           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
                       ) : (
-                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center rounded-lg cursor-pointer">
                           <BedDouble className="w-12 h-12 text-gray-400" />
                         </div>
                       )}
