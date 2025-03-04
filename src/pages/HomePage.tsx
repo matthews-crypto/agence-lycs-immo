@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,6 +38,16 @@ export default function HomePage() {
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
   const [heroApi, setHeroApi] = useState<any>();
   const [propertiesApi, setPropertiesApi] = useState<any>();
+
+  useEffect(() => {
+    if (!window.google) {
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyC2I-ak4zmqSwd6dk2zUonaRrR1dhWGZrA&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+    }
+  }, []);
 
   const { data: regions } = useQuery({
     queryKey: ["regions"],

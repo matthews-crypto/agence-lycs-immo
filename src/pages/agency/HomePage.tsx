@@ -7,6 +7,7 @@ import { MapPin, User, BedDouble, ChevronUp, Phone, Mail, ChevronDown, Briefcase
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { useNavigate } from "react-router-dom";
 import { AuthDrawer } from "@/components/agency/AuthDrawer";
+import { FilterSidebar } from "@/components/property/FilterSidebar";
 import {
   Select,
   SelectContent,
@@ -184,6 +185,9 @@ export default function AgencyHomePage() {
   const categoryMenuRef = useRef<HTMLDivElement>(null);
   const servicesRef = useRef<HTMLDivElement>(null);
   const [isServicesVisible, setIsServicesVisible] = useState(false);
+  const [isFilterSidebarOpen, setIsFilterSidebarOpen] = useState(false);
+  const [selectedRegion, setSelectedRegion] = useState<number | null>(null);
+  const [selectedZone, setSelectedZone] = useState<number | null>(null);
 
   const { data: regions } = useQuery({
     queryKey: ["regions"],
@@ -199,9 +203,11 @@ export default function AgencyHomePage() {
   });
 
   const { data: properties } = useQuery({
-    queryKey: ["agency-properties", agency?.id],
+    queryKey: ["agency-properties", agency?.id, selectedRegion, selectedZone],
     queryFn: async () => {
-      const { data, error } = await supabase
+      if (!agency?.id) throw new Error("Agency ID required");
+      
+      let query = supabase
         .from("properties")
         .select(`
           *,
@@ -213,10 +219,28 @@ export default function AgencyHomePage() {
             circle_radius
           )
         `)
-        .eq("agency_id", agency?.id)
-        .eq("is_available", true)
-        .order("created_at", { ascending: false });
-
+        .eq("agency_id", agency.id)
+        .eq("is_available", true);
+      
+      if (selectedZone) {
+        query = query.eq("zone_id", selectedZone);
+      }
+      else if (selectedRegion) {
+        const { data: regionZones, error: zonesError } = await supabase
+          .from("zone")
+          .select("id")
+          .eq("region_id", selectedRegion);
+        
+        if (zonesError) throw zonesError;
+        
+        if (regionZones.length > 0) {
+          const zoneIds = regionZones.map(z => z.id);
+          query = query.in("zone_id", zoneIds);
+        }
+      }
+      
+      const { data, error } = await query.order("created_at", { ascending: false });
+      
       if (error) throw error;
       return data;
     },
@@ -341,6 +365,17 @@ export default function AgencyHomePage() {
       }
     };
   }, [servicesRef]);
+
+  const handleApplyFilters = (regionId: number | null, zoneId: number | null) => {
+    setSelectedRegion(regionId);
+    setSelectedZone(zoneId);
+    
+    if (regionId || zoneId) {
+      toast.success("Filtres appliqués");
+    } else {
+      toast.info("Filtres réinitialisés");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -489,6 +524,7 @@ export default function AgencyHomePage() {
             <Button 
               variant="outline"
               className="w-full md:w-auto gap-2"
+              onClick={() => setIsFilterSidebarOpen(true)}
             >
               <Filter className="h-4 w-4" />
               Plus de filtres
@@ -497,7 +533,7 @@ export default function AgencyHomePage() {
         </div>
       </div>
 
-      {searchTerm.length > 0 && filteredProperties && (
+      {(searchTerm.length > 0 || selectedRegion !== null || selectedZone !== null) && filteredProperties && (
         <div className="container mx-auto px-4 mt-16">
           {filteredProperties.length > 0 ? (
             <>
