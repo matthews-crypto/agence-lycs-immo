@@ -8,13 +8,6 @@ import { MapPin, User, BedDouble, Search, Filter } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { AgencyRegistrationDialog } from "@/components/agency-registration/AgencyRegistrationDialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Carousel,
   CarouselContent,
   CarouselItem,
@@ -42,9 +35,6 @@ const propertyTypeLabels: { [key: string]: string } = {
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const [selectedRegion, setSelectedRegion] = useState<string>("");
-  const [selectedCity, setSelectedCity] = useState<string>("");
-  const [selectedType, setSelectedType] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
   const [heroApi, setHeroApi] = useState<any>();
@@ -106,17 +96,14 @@ export default function HomePage() {
   }, [heroApi, propertiesApi]);
 
   const filteredProperties = properties?.filter(property => {
-    const matchesCity = !selectedCity || property.zone?.nom === selectedCity;
-    const matchesType = !selectedType || property.property_type === selectedType;
-    const matchesRegion = !selectedRegion || property.region === selectedRegion;
+    // Only filter by searchTerm now
     const matchesSearch = !searchTerm || 
       property.title?.toLowerCase().includes(searchTerm.toLowerCase()) || 
       property.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      property.zone?.nom?.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesCity && matchesType && matchesRegion && matchesSearch;
+      property.zone?.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      propertyTypeLabels[property.property_type]?.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSearch;
   });
-
-  const cities = [...new Set(properties?.map(p => p.zone?.nom).filter(Boolean))];
 
   const handlePropertyClick = (propertyId: string, agencySlug: string) => {
     if (!agencySlug) {
@@ -210,38 +197,6 @@ export default function HomePage() {
               />
             </div>
             
-            <Select 
-              value={selectedCity} 
-              onValueChange={setSelectedCity}
-            >
-              <SelectTrigger className="w-full md:w-[200px] text-base font-medium">
-                <SelectValue placeholder="Ville" />
-              </SelectTrigger>
-              <SelectContent>
-                {cities.map((city) => (
-                  <SelectItem key={city} value={city} className="text-base">
-                    {city}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select 
-              value={selectedType} 
-              onValueChange={setSelectedType}
-            >
-              <SelectTrigger className="w-full md:w-[200px] text-base font-medium">
-                <SelectValue placeholder="Type de bien" />
-              </SelectTrigger>
-              <SelectContent>
-                {propertyTypes.map((type) => (
-                  <SelectItem key={type.value} value={type.value} className="text-base">
-                    {type.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
             <Button 
               variant="outline"
               className="w-full md:w-auto gap-2"
@@ -253,8 +208,8 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Filtered Properties */}
-      {filteredProperties && (
+      {/* Filtered Properties - Only show if searchTerm has at least one character */}
+      {searchTerm.length > 0 && filteredProperties && (
         <div className="container mx-auto px-4 mt-16">
           {filteredProperties.length > 0 ? (
             <>

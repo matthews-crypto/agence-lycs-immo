@@ -175,8 +175,6 @@ function PropertyCategorySection({ type, properties, propertyTypeLabels, agency,
 export default function AgencyHomePage() {
   const { agency } = useAgencyContext();
   const navigate = useNavigate();
-  const [selectedZone, setSelectedZone] = useState<string>("");
-  const [selectedType, setSelectedType] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [heroApi, setHeroApi] = useState<any>();
@@ -284,13 +282,12 @@ export default function AgencyHomePage() {
   };
 
   const filteredProperties = properties?.filter(property => {
-    const matchesZone = !selectedZone || property.zone?.nom === selectedZone;
-    const matchesType = !selectedType || property.property_type === selectedType;
     const matchesSearch = !searchTerm || 
       property.title?.toLowerCase().includes(searchTerm.toLowerCase()) || 
       property.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      property.zone?.nom?.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesZone && matchesType && matchesSearch;
+      property.zone?.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      propertyTypeLabels[property.property_type]?.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSearch;
   });
 
   const zones = [...new Set(properties?.map(p => p.zone?.nom).filter(Boolean))];
@@ -310,10 +307,6 @@ export default function AgencyHomePage() {
     if (section) {
       section.scrollIntoView({ behavior: 'smooth' });
     }
-  };
-
-  const handleSearch = () => {
-    toast.success("Recherche effectuée avec succès");
   };
 
   const handlePropertyClick = (propertyId: string) => {
@@ -493,38 +486,6 @@ export default function AgencyHomePage() {
               />
             </div>
             
-            <Select 
-              value={selectedZone} 
-              onValueChange={setSelectedZone}
-            >
-              <SelectTrigger className="w-full md:w-[200px] text-base font-medium">
-                <SelectValue placeholder="Zone" />
-              </SelectTrigger>
-              <SelectContent>
-                {zones.map((zone) => (
-                  <SelectItem key={zone} value={zone || ''} className="text-base">
-                    {zone}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select 
-              value={selectedType} 
-              onValueChange={setSelectedType}
-            >
-              <SelectTrigger className="w-full md:w-[200px] text-base font-medium">
-                <SelectValue placeholder="Type de bien" />
-              </SelectTrigger>
-              <SelectContent>
-                {propertyTypes.map((type) => (
-                  <SelectItem key={type.value} value={type.value} className="text-base">
-                    {type.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
             <Button 
               variant="outline"
               className="w-full md:w-auto gap-2"
@@ -532,21 +493,11 @@ export default function AgencyHomePage() {
               <Filter className="h-4 w-4" />
               Plus de filtres
             </Button>
-
-            <Button 
-              className="w-full md:w-auto px-8"
-              style={{
-                backgroundColor: agency?.primary_color || '#000000',
-              }}
-              onClick={handleSearch}
-            >
-              Rechercher
-            </Button>
           </div>
         </div>
       </div>
 
-      {filteredProperties && (
+      {searchTerm.length > 0 && filteredProperties && (
         <div className="container mx-auto px-4 mt-16">
           {filteredProperties.length > 0 ? (
             <>
