@@ -14,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
 import {
   Carousel,
   CarouselContent,
@@ -43,9 +42,9 @@ const propertyTypeLabels: { [key: string]: string } = {
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const [selectedRegion, setSelectedRegion] = useState<string>("all");
-  const [selectedCity, setSelectedCity] = useState<string>("all");
-  const [selectedType, setSelectedType] = useState<string>("all");
+  const [selectedRegion, setSelectedRegion] = useState<string>("");
+  const [selectedCity, setSelectedCity] = useState<string>("");
+  const [selectedType, setSelectedType] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
   const [heroApi, setHeroApi] = useState<any>();
@@ -107,9 +106,9 @@ export default function HomePage() {
   }, [heroApi, propertiesApi]);
 
   const filteredProperties = properties?.filter(property => {
-    const matchesCity = selectedCity === "all" || property.zone?.nom === selectedCity;
-    const matchesType = selectedType === "all" || property.property_type === selectedType;
-    const matchesRegion = selectedRegion === "all" || property.region === selectedRegion;
+    const matchesCity = !selectedCity || property.zone?.nom === selectedCity;
+    const matchesType = !selectedType || property.property_type === selectedType;
+    const matchesRegion = !selectedRegion || property.region === selectedRegion;
     const matchesSearch = !searchTerm || 
       property.title?.toLowerCase().includes(searchTerm.toLowerCase()) || 
       property.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -118,10 +117,6 @@ export default function HomePage() {
   });
 
   const cities = [...new Set(properties?.map(p => p.zone?.nom).filter(Boolean))];
-
-  const handleSearch = () => {
-    toast.success("Recherche effectuée avec succès");
-  };
 
   const handlePropertyClick = (propertyId: string, agencySlug: string) => {
     if (!agencySlug) {
@@ -223,7 +218,6 @@ export default function HomePage() {
                 <SelectValue placeholder="Ville" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all" className="text-base">Toutes les villes</SelectItem>
                 {cities.map((city) => (
                   <SelectItem key={city} value={city} className="text-base">
                     {city}
@@ -240,7 +234,6 @@ export default function HomePage() {
                 <SelectValue placeholder="Type de bien" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all" className="text-base">Tous les types</SelectItem>
                 {propertyTypes.map((type) => (
                   <SelectItem key={type.value} value={type.value} className="text-base">
                     {type.label}
@@ -256,68 +249,64 @@ export default function HomePage() {
               <Filter className="h-4 w-4" />
               Plus de filtres
             </Button>
-
-            <Button 
-              className="w-full md:w-auto px-8"
-              style={{
-                backgroundColor: '#aa1ca0',
-              }}
-              onClick={handleSearch}
-            >
-              Rechercher
-            </Button>
           </div>
         </div>
       </div>
 
       {/* Filtered Properties */}
-      {filteredProperties && filteredProperties.length > 0 && (selectedCity !== "all" || searchTerm || selectedType !== "all") && (
+      {filteredProperties && (
         <div className="container mx-auto px-4 mt-16">
-          <h2 className="text-2xl font-light mb-8">Résultats de votre recherche</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredProperties.map((property) => (
-              <div 
-                key={property.id} 
-                className="cursor-pointer"
-                onClick={() => handlePropertyClick(property.id, property.agencies?.slug)}
-              >
-                <div className="aspect-[4/3] overflow-hidden rounded-lg">
-                  {property.photos?.[0] ? (
-                    <img
-                      src={property.photos[0]}
-                      alt={property.title}
-                      className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                      <BedDouble className="w-12 h-12 text-gray-400" />
-                    </div>
-                  )}
-                </div>
-                <div className="mt-4">
-                  <h3 className="text-xl font-light">{property.title}</h3>
-                  <div className="flex items-center gap-2 text-gray-600 mt-2">
-                    <MapPin className="w-4 h-4" />
-                    <p className="text-sm">{property.zone?.nom}</p>
-                  </div>
-                  <div className="mt-2 flex justify-between items-center">
-                    <p className="text-lg">
-                      {property.price.toLocaleString('fr-FR')} FCFA
-                    </p>
-                    <div className="flex items-center gap-1 text-gray-600">
-                      <span>{property.surface_area} m²</span>
-                      {property.bedrooms && (
-                        <div className="flex items-center gap-1 ml-2">
-                          <BedDouble className="w-4 h-4" />
-                          <span>{property.bedrooms}</span>
+          {filteredProperties.length > 0 ? (
+            <>
+              <h2 className="text-2xl font-light mb-8">Résultats de votre recherche</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {filteredProperties.map((property) => (
+                  <div 
+                    key={property.id} 
+                    className="cursor-pointer"
+                    onClick={() => handlePropertyClick(property.id, property.agencies?.slug)}
+                  >
+                    <div className="aspect-[4/3] overflow-hidden rounded-lg">
+                      {property.photos?.[0] ? (
+                        <img
+                          src={property.photos[0]}
+                          alt={property.title}
+                          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                          <BedDouble className="w-12 h-12 text-gray-400" />
                         </div>
                       )}
                     </div>
+                    <div className="mt-4">
+                      <h3 className="text-xl font-light">{property.title}</h3>
+                      <div className="flex items-center gap-2 text-gray-600 mt-2">
+                        <MapPin className="w-4 h-4" />
+                        <p className="text-sm">{property.zone?.nom}</p>
+                      </div>
+                      <div className="mt-2 flex justify-between items-center">
+                        <p className="text-lg">
+                          {property.price.toLocaleString('fr-FR')} FCFA
+                        </p>
+                        <div className="flex items-center gap-1 text-gray-600">
+                          <span>{property.surface_area} m²</span>
+                          {property.bedrooms && (
+                            <div className="flex items-center gap-1 ml-2">
+                              <BedDouble className="w-4 h-4" />
+                              <span>{property.bedrooms}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </>
+          ) : (
+            <h2 className="text-2xl font-light mb-8 text-center">Aucune propriété ne correspond à votre sélection</h2>
+          )}
         </div>
       )}
 

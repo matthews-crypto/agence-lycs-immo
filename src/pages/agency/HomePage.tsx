@@ -175,8 +175,8 @@ function PropertyCategorySection({ type, properties, propertyTypeLabels, agency,
 export default function AgencyHomePage() {
   const { agency } = useAgencyContext();
   const navigate = useNavigate();
-  const [selectedZone, setSelectedZone] = useState<string>("all");
-  const [selectedType, setSelectedType] = useState<string>("all");
+  const [selectedZone, setSelectedZone] = useState<string>("");
+  const [selectedType, setSelectedType] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [heroApi, setHeroApi] = useState<any>();
@@ -284,8 +284,8 @@ export default function AgencyHomePage() {
   };
 
   const filteredProperties = properties?.filter(property => {
-    const matchesZone = selectedZone === "all" || property.zone?.nom === selectedZone;
-    const matchesType = selectedType === "all" || property.property_type === selectedType;
+    const matchesZone = !selectedZone || property.zone?.nom === selectedZone;
+    const matchesType = !selectedType || property.property_type === selectedType;
     const matchesSearch = !searchTerm || 
       property.title?.toLowerCase().includes(searchTerm.toLowerCase()) || 
       property.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -501,7 +501,6 @@ export default function AgencyHomePage() {
                 <SelectValue placeholder="Zone" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all" className="text-base">Toutes les zones</SelectItem>
                 {zones.map((zone) => (
                   <SelectItem key={zone} value={zone || ''} className="text-base">
                     {zone}
@@ -518,7 +517,6 @@ export default function AgencyHomePage() {
                 <SelectValue placeholder="Type de bien" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all" className="text-base">Tous les types</SelectItem>
                 {propertyTypes.map((type) => (
                   <SelectItem key={type.value} value={type.value} className="text-base">
                     {type.label}
@@ -547,6 +545,71 @@ export default function AgencyHomePage() {
           </div>
         </div>
       </div>
+
+      {filteredProperties && (
+        <div className="container mx-auto px-4 mt-16">
+          {filteredProperties.length > 0 ? (
+            <>
+              <h2 className="text-2xl font-light mb-8">Résultats de votre recherche</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {filteredProperties.map((property) => (
+                  <div 
+                    key={property.id} 
+                    className="cursor-pointer"
+                    onClick={() => handlePropertyClick(property.id)}
+                  >
+                    <div className="aspect-[4/3] overflow-hidden rounded-lg relative">
+                      {property.photos?.[0] ? (
+                        <img
+                          src={property.photos[0]}
+                          alt={property.title}
+                          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                          <BedDouble className="w-12 h-12 text-gray-400" />
+                        </div>
+                      )}
+                      <div 
+                        className="absolute top-4 left-4 px-3 py-1 rounded-full text-sm font-medium"
+                        style={{
+                          backgroundColor: agency?.primary_color || '#000000',
+                          color: 'white',
+                        }}
+                      >
+                        {property.property_offer_type === 'VENTE' ? 'À Vendre' : 'À Louer'}
+                      </div>
+                    </div>
+                    <div className="mt-4">
+                      <h3 className="text-xl font-light">{property.title}</h3>
+                      <div className="flex items-center gap-2 text-gray-600 mt-2">
+                        <MapPin className="w-4 h-4" />
+                        <p className="text-sm">{property.zone?.nom}</p>
+                      </div>
+                      <div className="mt-2 flex justify-between items-center">
+                        <p className="text-lg">
+                          {property.price.toLocaleString('fr-FR')} FCFA
+                        </p>
+                        <div className="flex items-center gap-1 text-gray-600">
+                          <span>{property.surface_area} m²</span>
+                          {property.bedrooms && (
+                            <div className="flex items-center gap-1 ml-2">
+                              <BedDouble className="w-4 h-4" />
+                              <span>{property.bedrooms}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <h2 className="text-2xl font-light mb-8 text-center">Aucune propriété ne correspond à votre sélection</h2>
+          )}
+        </div>
+      )}
 
       <div className="py-16 container mx-auto px-4">
         <h2 className="text-3xl font-light mb-12 text-center">
