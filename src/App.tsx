@@ -1,21 +1,22 @@
+
 import React from 'react';
 import {
   BrowserRouter as Router,
   Route,
   Routes,
 } from "react-router-dom";
-import LandingPage from "./pages/LandingPage";
+import { LandingPage } from "./pages/agency/HomePage";
 import AgencyDashboardPage from "./pages/agency/DashboardPage";
 import AgentDashboardPage from "./pages/agency/agent/DashboardPage";
 import AgencyLayout from "./layouts/AgencyLayout";
-import AuthPage from "./pages/AuthPage";
+import { AuthPage } from "./pages/agency/AuthPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import PropertiesPage from "./pages/agency/PropertiesPage";
 import SettingsPage from "./pages/agency/SettingsPage";
-import AppointmentsPage from "./pages/agency/AppointmentsPage";
-import ClientsPage from "./pages/agency/ClientsPage";
-import AnalyticsPage from "./pages/agency/AnalyticsPage";
-import WhatsAppPage from "./pages/agency/WhatsAppPage";
+import { AppointmentsPage } from "./pages/agency/agent/AppointmentsPage";
+import { ClientsPage } from "./pages/agency/ClientsPage";
+import { AnalyticsPage } from "./pages/agency/AnalyticsPage";
+import { WhatsAppPage } from "./pages/agency/WhatsAppPage";
 import ProspectionPage from "./pages/agency/ProspectionPage";
 
 function App() {
