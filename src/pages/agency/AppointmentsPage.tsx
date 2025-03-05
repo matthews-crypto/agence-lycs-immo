@@ -157,7 +157,11 @@ export default function AppointmentsPage() {
       )
     }
     
-    return day.getDate()
+    return (
+      <div className="flex items-center justify-center">
+        {day.getDate()}
+      </div>
+    )
   }
 
   return (
