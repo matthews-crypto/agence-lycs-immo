@@ -698,14 +698,13 @@ const ProspectionPage = () => {
                               )}
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
+                          <PopoverContent className="w-auto p-0" align="start" forceMount={false}>
                             <Calendar
                               mode="single"
                               selected={appointmentDate || undefined}
                               onSelect={handleAppointmentDateChange}
                               initialFocus
                               locale={fr}
-                              className={cn("p-3 pointer-events-auto")}
                             />
                           </PopoverContent>
                         </Popover>
