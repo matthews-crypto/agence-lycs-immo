@@ -1,9 +1,8 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Bath, BedDouble, Home, Ruler, Calendar } from "lucide-react";
+import { ArrowLeft, Bath, BedDouble, Home, Ruler, Calendar, ListChecks } from "lucide-react";
 import {
   Carousel,
   CarouselContent,
@@ -20,12 +19,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useState, useEffect } from "react";
 import ModifyPropertyDialog from "@/components/agency/properties/ModifyProperty.tsx";
+import PropertyReservationsDialog from "@/components/agency/properties/PropertyReservationsDialog";
 
 export default function AgencyPropertyDetailPage() {
   const { propertyId, agencySlug } = useParams();
   const navigate = useNavigate();
   const { agency } = useAgencyContext();
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isReservationsDialogOpen, setIsReservationsDialogOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [api, setApi] = useState<any>();
 
@@ -103,6 +104,17 @@ export default function AgencyPropertyDetailPage() {
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold mb-2">{property.title}</h1>
           <div className="align-text-bottom space-x-2">
+            <Button
+              onClick={() => setIsReservationsDialogOpen(true)}
+              variant="outline"
+              style={{
+                borderColor: agency?.primary_color,
+                color: agency?.primary_color,
+              }}
+            >
+              <ListChecks className="mr-2 h-4 w-4" />
+              Voir réservations
+            </Button>
             <Button
               onClick={() => setIsDialogOpen(true)}
               style={{
@@ -328,6 +340,13 @@ export default function AgencyPropertyDetailPage() {
           open={isDialogOpen}
           onOpenChange={setIsDialogOpen}
           propertyId={propertyId}
+      />
+
+      <PropertyReservationsDialog 
+        open={isReservationsDialogOpen}
+        onOpenChange={setIsReservationsDialogOpen}
+        propertyId={propertyId}
+        agencyPrimaryColor={agency?.primary_color}
       />
     </div>
   );
