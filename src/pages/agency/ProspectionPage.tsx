@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -134,7 +135,7 @@ const ProspectionPage = () => {
       value = "RES-" + value;
     }
     
-    // Auto-format as RES-XXX-YYY
+    // Auto-format as RES-XXXX-YYYY
     if (value.startsWith("RES-")) {
       // Keep only numeric characters after prefix
       const input = value.substring(4).replace(/[^0-9]/g, "");
@@ -143,10 +144,10 @@ const ProspectionPage = () => {
         // Start with the prefix
         value = "RES-" + input;
         
-        // Add dashes after every 3 digits
-        if (input.length > 3) {
-          const firstPart = input.substring(0, 3);
-          const secondPart = input.substring(3);
+        // Add dashes after every 4 digits
+        if (input.length > 4) {
+          const firstPart = input.substring(0, 4);
+          const secondPart = input.substring(4);
           value = `RES-${firstPart}-${secondPart}`;
         }
       } else {
@@ -166,7 +167,7 @@ const ProspectionPage = () => {
       value = "AGE-" + value;
     }
     
-    // Format with proper structure: AGE-XXX-YYY
+    // Format with proper structure: AGE-XXXX-YYYY
     if (value.startsWith("AGE-")) {
       // Keep only numeric characters after prefix
       const input = value.substring(4).replace(/[^0-9]/g, "");
@@ -175,10 +176,10 @@ const ProspectionPage = () => {
         // Start with the prefix
         value = "AGE-" + input;
         
-        // Add dashes after every 3 digits
-        if (input.length > 3) {
-          const firstPart = input.substring(0, 3);
-          const secondPart = input.substring(3);
+        // Add dashes after every 4 digits
+        if (input.length > 4) {
+          const firstPart = input.substring(0, 4);
+          const secondPart = input.substring(4);
           value = `AGE-${firstPart}-${secondPart}`;
         }
       } else {
