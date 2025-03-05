@@ -26,7 +26,6 @@ interface Reservation {
   created_at: string;
   rental_start_date: string | null;
   rental_end_date: string | null;
-  appointment_date: string | null;
 }
 
 export default function PropertyReservationsDialog({
@@ -73,25 +72,8 @@ export default function PropertyReservationsDialog({
         return "bg-green-100 text-green-800";
       case "CANCELLED":
         return "bg-red-100 text-red-800";
-      case "COMPLETED":
-        return "bg-blue-100 text-blue-800";
       default:
         return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status.toUpperCase()) {
-      case "PENDING":
-        return "En attente";
-      case "CONFIRMED":
-        return "Confirmée";
-      case "CANCELLED":
-        return "Fermée Perdu";
-      case "COMPLETED":
-        return "Fermée Gagnée";
-      default:
-        return status;
     }
   };
 
@@ -136,9 +118,6 @@ export default function PropertyReservationsDialog({
                       <TableHead>Fin location</TableHead>
                     </>
                   )}
-                  {!isMobile && reservations.some(r => r.appointment_date) && (
-                    <TableHead>Rendez-vous</TableHead>
-                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -160,7 +139,10 @@ export default function PropertyReservationsDialog({
                     )}
                     <TableCell>
                       <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusBadgeColor(reservation.status)}`}>
-                        {getStatusLabel(reservation.status)}
+                        {reservation.status === "PENDING" && "En attente"}
+                        {reservation.status === "CONFIRMED" && "Confirmée"}
+                        {reservation.status === "CANCELLED" && "Annulée"}
+                        {!["PENDING", "CONFIRMED", "CANCELLED"].includes(reservation.status) && reservation.status}
                       </span>
                     </TableCell>
                     <TableCell className={isMobile ? "text-xs" : ""}>
@@ -179,13 +161,6 @@ export default function PropertyReservationsDialog({
                             : "-"}
                         </TableCell>
                       </>
-                    )}
-                    {!isMobile && reservations.some(r => r.appointment_date) && (
-                      <TableCell>
-                        {reservation.appointment_date
-                          ? format(new Date(reservation.appointment_date), "dd MMMM yyyy", { locale: fr })
-                          : "-"}
-                      </TableCell>
                     )}
                   </TableRow>
                 ))}
