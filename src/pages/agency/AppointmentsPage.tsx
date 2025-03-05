@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AgencySidebar } from "@/components/agency/AgencySidebar";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, MapPin, User, Clock } from "lucide-react";
 
 interface Appointment {
   id: string;
@@ -97,7 +97,7 @@ export default function AppointmentsPage() {
                 mode="single"
                 selected={date}
                 onSelect={setDate}
-                className="rounded-md border"
+                className="rounded-md border pointer-events-auto"
               />
             </CardContent>
           </Card>
@@ -126,17 +126,24 @@ export default function AppointmentsPage() {
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                           <div>
                             <h3 className="font-medium text-lg">{appointment.property?.title || "Propriété non spécifiée"}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              Client: {appointment.client?.first_name || "Non spécifié"} {appointment.client?.last_name || ""}
-                            </p>
+                            <div className="flex items-center gap-1 text-muted-foreground mt-1">
+                              <User className="h-4 w-4" />
+                              <p className="text-sm">
+                                {appointment.client?.first_name || "Non spécifié"} {appointment.client?.last_name || ""}
+                              </p>
+                            </div>
                           </div>
                           <div>
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium">{format(appointmentTime, "HH:mm")}</p>
+                            <div className="flex items-center gap-1 text-muted-foreground">
+                              <Clock className="h-4 w-4" />
+                              <p className="text-sm font-medium">{format(appointmentTime, "HH:mm")}</p>
                             </div>
-                            <p className="text-sm text-muted-foreground">
-                              {appointment.property?.address || "Adresse non spécifiée"}, {appointment.property?.region || ""}
-                            </p>
+                            <div className="flex items-center gap-1 text-muted-foreground mt-1">
+                              <MapPin className="h-4 w-4" />
+                              <p className="text-sm">
+                                {appointment.property?.address || "Adresse non spécifiée"}, {appointment.property?.region || ""}
+                              </p>
+                            </div>
                           </div>
                         </div>
                       </Card>
