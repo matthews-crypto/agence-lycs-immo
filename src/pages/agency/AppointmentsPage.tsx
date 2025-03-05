@@ -85,7 +85,7 @@ export default function AgencyAppointmentsPage() {
     };
 
     fetchAppointments();
-  }, [agency]);
+  }, [agency, date]);
 
   // Filter appointments by selected date
   const filterAppointmentsByDate = (selectedDate: Date, appointmentList = appointments) => {
