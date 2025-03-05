@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,8 +6,10 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Calendar as CalendarIcon, Clock, Home, User, Phone, CheckCircle, Search, MapPin, Tag, Mail, List, Calendar } from "lucide-react";
-import { format, fr } from "date-fns";
+import { Clock, Home, User, Phone, CheckCircle, Search, MapPin, Tag, Mail, List } from "lucide-react";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale/fr";
 import { toast } from "sonner";
 import { LoadingLayout } from "@/components/LoadingLayout";
 import { Input } from "@/components/ui/input";
@@ -18,6 +19,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { Calendar } from "@/components/ui/calendar";
 
 interface Reservation {
   id: string;
@@ -268,13 +270,10 @@ const ProspectionPage = () => {
   const handleReservationClick = (reservation: Reservation) => {
     setSelectedReservation(reservation);
     
-    // Reset appointment date when opening dialog
     setAppointmentDate(reservation.appointment_date ? new Date(reservation.appointment_date) : null);
     
-    // Fetch client details when opening the dialog
     if (reservation.client_phone) {
       fetchClientDetails(reservation.client_phone);
-      // Also fetch client's reservations
       fetchClientReservations(reservation.client_phone);
     }
     
@@ -311,7 +310,6 @@ const ProspectionPage = () => {
     setAppointmentDate(date);
     
     try {
-      // Update the reservation with the appointment date and change status to "Visite programmée"
       const { error } = await supabase
         .from('reservations')
         .update({ 
@@ -328,7 +326,6 @@ const ProspectionPage = () => {
 
       toast.success('Rendez-vous programmé avec succès');
       
-      // Update the local state
       if (selectedReservation) {
         const updatedReservation = { 
           ...selectedReservation, 
@@ -337,7 +334,6 @@ const ProspectionPage = () => {
         };
         setSelectedReservation(updatedReservation);
         
-        // Also update in the reservations list
         const updatedReservations = reservations.map(res => 
           res.id === selectedReservation.id ? updatedReservation : res
         );
@@ -367,12 +363,10 @@ const ProspectionPage = () => {
 
       toast.success('Statut mis à jour avec succès');
       
-      // Update the local state
       if (selectedReservation) {
         const updatedReservation = { ...selectedReservation, status: newStatus };
         setSelectedReservation(updatedReservation);
         
-        // Also update in the reservations list
         const updatedReservations = reservations.map(res => 
           res.id === selectedReservation.id ? updatedReservation : res
         );
@@ -639,7 +633,7 @@ const ProspectionPage = () => {
                     <h3 className="font-semibold text-lg border-b pb-2">Dates</h3>
                     <div className="space-y-3">
                       <div className="flex items-center gap-3">
-                        <Calendar className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                        <CalendarIcon className="h-5 w-5 text-gray-500 flex-shrink-0" />
                         <div>
                           <p className="font-medium">{format(new Date(selectedReservation.created_at), 'PPP', { locale: fr })}</p>
                           <p className="text-xs text-muted-foreground">Date de création</p>
@@ -738,7 +732,6 @@ const ProspectionPage = () => {
             )}
           </Dialog>
 
-          {/* Dialog for client's all reservations */}
           <Sheet open={isClientReservationsOpen} onOpenChange={setIsClientReservationsOpen}>
             <SheetContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
               <SheetHeader>
