@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog"
 import { Calendar as CalendarIcon, MapPin, User, Phone } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { Badge } from "@/components/ui/badge"
 
 interface AppointmentDay {
   date: Date
@@ -135,6 +136,29 @@ export default function AppointmentsPage() {
 
   // Définit les dates qui ont des rendez-vous pour les mettre en surbrillance dans le calendrier
   const datesWithAppointments = appointmentDays.map((day) => day.date)
+  
+  // Fonction pour styliser le jour du calendrier avec le nombre de rendez-vous
+  const getDayContent = (day: Date) => {
+    const matchingDay = appointmentDays.find(
+      (appDay) => format(appDay.date, "yyyy-MM-dd") === format(day, "yyyy-MM-dd")
+    )
+    
+    if (matchingDay && matchingDay.appointments.length > 0) {
+      return (
+        <div className="relative w-full h-full flex items-center justify-center">
+          {day.getDate()}
+          <Badge 
+            variant="secondary" 
+            className="absolute -top-1 -right-1 min-w-5 h-5 flex items-center justify-center"
+          >
+            {matchingDay.appointments.length}
+          </Badge>
+        </div>
+      )
+    }
+    
+    return day.getDate()
+  }
 
   return (
     <SidebarProvider>
@@ -167,8 +191,13 @@ export default function AppointmentsPage() {
                   modifiersStyles={{
                     appointment: { 
                       backgroundColor: "rgba(59, 130, 246, 0.1)", 
-                      fontWeight: "bold" 
+                      fontWeight: "bold",
+                      border: "1px solid rgba(59, 130, 246, 0.5)",
+                      borderRadius: "4px"
                     }
+                  }}
+                  components={{
+                    DayContent: ({ date }) => getDayContent(date)
                   }}
                 />
               </CardContent>
