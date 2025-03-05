@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { AgencySidebar } from "@/components/agency/AgencySidebar";
 import { toast } from "sonner";
 import { Loader2, MapPin, User, Clock } from "lucide-react";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 interface Appointment {
   id: string;
@@ -81,84 +82,86 @@ export default function AppointmentsPage() {
   const appointmentsForSelectedDate = date ? getAppointmentsForDate(date) : [];
 
   return (
-    <div className="flex h-screen">
-      <AgencySidebar />
-      <div className="flex-1 p-8 overflow-auto">
-        <h1 className="text-3xl font-bold mb-8">Rendez-vous</h1>
+    <SidebarProvider>
+      <div className="flex h-screen w-full bg-background">
+        <AgencySidebar />
+        <div className="flex-1 p-8 overflow-auto">
+          <h1 className="text-3xl font-bold mb-8">Rendez-vous</h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <Card className="col-span-1">
-            <CardHeader>
-              <CardTitle>Calendrier</CardTitle>
-              <CardDescription>Sélectionnez une date pour voir les rendez-vous</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Calendar
-                mode="single"
-                selected={date}
-                onSelect={setDate}
-                className="rounded-md border pointer-events-auto"
-              />
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <Card className="col-span-1">
+              <CardHeader>
+                <CardTitle>Calendrier</CardTitle>
+                <CardDescription>Sélectionnez une date pour voir les rendez-vous</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={setDate}
+                  className="rounded-md border pointer-events-auto"
+                />
+              </CardContent>
+            </Card>
 
-          <Card className="col-span-1 md:col-span-2">
-            <CardHeader>
-              <CardTitle>
-                {date ? format(date, "d MMMM yyyy") : "Tous les rendez-vous"}
-              </CardTitle>
-              <CardDescription>
-                {appointmentsForSelectedDate.length} rendez-vous trouvés
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="flex justify-center items-center h-40">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-              ) : appointmentsForSelectedDate.length > 0 ? (
-                <div className="space-y-4">
-                  {appointmentsForSelectedDate.map((appointment) => {
-                    const appointmentTime = new Date(appointment.appointment_time);
-                    
-                    return (
-                      <Card key={appointment.id} className="p-4 hover:bg-muted/50 transition-colors">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                          <div>
-                            <h3 className="font-medium text-lg">{appointment.property?.title || "Propriété non spécifiée"}</h3>
-                            <div className="flex items-center gap-1 text-muted-foreground mt-1">
-                              <User className="h-4 w-4" />
-                              <p className="text-sm">
-                                {appointment.client?.first_name || "Non spécifié"} {appointment.client?.last_name || ""}
-                              </p>
+            <Card className="col-span-1 md:col-span-2">
+              <CardHeader>
+                <CardTitle>
+                  {date ? format(date, "d MMMM yyyy") : "Tous les rendez-vous"}
+                </CardTitle>
+                <CardDescription>
+                  {appointmentsForSelectedDate.length} rendez-vous trouvés
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="flex justify-center items-center h-40">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : appointmentsForSelectedDate.length > 0 ? (
+                  <div className="space-y-4">
+                    {appointmentsForSelectedDate.map((appointment) => {
+                      const appointmentTime = new Date(appointment.appointment_time);
+                      
+                      return (
+                        <Card key={appointment.id} className="p-4 hover:bg-muted/50 transition-colors">
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                              <h3 className="font-medium text-lg">{appointment.property?.title || "Propriété non spécifiée"}</h3>
+                              <div className="flex items-center gap-1 text-muted-foreground mt-1">
+                                <User className="h-4 w-4" />
+                                <p className="text-sm">
+                                  {appointment.client?.first_name || "Non spécifié"} {appointment.client?.last_name || ""}
+                                </p>
+                              </div>
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-1 text-muted-foreground">
+                                <Clock className="h-4 w-4" />
+                                <p className="text-sm font-medium">{format(appointmentTime, "HH:mm")}</p>
+                              </div>
+                              <div className="flex items-center gap-1 text-muted-foreground mt-1">
+                                <MapPin className="h-4 w-4" />
+                                <p className="text-sm">
+                                  {appointment.property?.address || "Adresse non spécifiée"}, {appointment.property?.region || ""}
+                                </p>
+                              </div>
                             </div>
                           </div>
-                          <div>
-                            <div className="flex items-center gap-1 text-muted-foreground">
-                              <Clock className="h-4 w-4" />
-                              <p className="text-sm font-medium">{format(appointmentTime, "HH:mm")}</p>
-                            </div>
-                            <div className="flex items-center gap-1 text-muted-foreground mt-1">
-                              <MapPin className="h-4 w-4" />
-                              <p className="text-sm">
-                                {appointment.property?.address || "Adresse non spécifiée"}, {appointment.property?.region || ""}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </Card>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center p-8 text-muted-foreground">
-                  Aucun rendez-vous programmé pour cette date
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center p-8 text-muted-foreground">
+                    Aucun rendez-vous programmé pour cette date
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }
