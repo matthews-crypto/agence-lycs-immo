@@ -39,8 +39,10 @@ export default function AgencyAppointmentsPage() {
           .select(`
             id,
             property_id,
-            appointment_date,
-            start_time,
+            appointment_time,
+            status,
+            notes,
+            agent_id,
             client_id,
             properties(title, address),
             clients(first_name, last_name)
@@ -52,19 +54,31 @@ export default function AgencyAppointmentsPage() {
           return;
         }
 
+        if (!data) {
+          console.log('No appointments found');
+          return;
+        }
+
         // Transform the data to match our Appointment type
-        const formattedAppointments = data.map(item => ({
-          id: item.id,
-          property_id: item.property_id,
-          property_title: item.properties?.title || 'Propriété inconnue',
-          property_address: item.properties?.address,
-          appointment_date: item.appointment_date,
-          client_name: item.clients ? `${item.clients.first_name} ${item.clients.last_name}` : 'Client inconnu',
-          start_time: item.start_time,
-        }));
+        const formattedAppointments = data.map(item => {
+          // Format appointment date and time
+          const appointmentDateTime = new Date(item.appointment_time);
+          
+          return {
+            id: item.id,
+            property_id: item.property_id,
+            property_title: item.properties?.title || 'Propriété inconnue',
+            property_address: item.properties?.address,
+            appointment_date: format(appointmentDateTime, 'yyyy-MM-dd'),
+            client_name: item.clients ? `${item.clients.first_name} ${item.clients.last_name}` : 'Client inconnu',
+            start_time: format(appointmentDateTime, 'HH:mm'),
+          };
+        });
 
         setAppointments(formattedAppointments);
-        filterAppointmentsByDate(new Date(), formattedAppointments);
+        if (date) {
+          filterAppointmentsByDate(date, formattedAppointments);
+        }
       } catch (error) {
         console.error('Error in appointment fetching:', error);
       }
