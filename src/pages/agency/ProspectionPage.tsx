@@ -7,9 +7,8 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Calendar, Clock, Home, User, Phone, CheckCircle, Search, MapPin, Tag, Mail, List } from "lucide-react";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import { Calendar as CalendarIcon, Clock, Home, User, Phone, CheckCircle, Search, MapPin, Tag, Mail, List, Calendar } from "lucide-react";
+import { format, fr } from "date-fns";
 import { toast } from "sonner";
 import { LoadingLayout } from "@/components/LoadingLayout";
 import { Input } from "@/components/ui/input";
@@ -17,6 +16,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 interface Reservation {
   id: string;
@@ -28,6 +29,7 @@ interface Reservation {
   updated_at: string;
   rental_start_date: string | null;
   rental_end_date: string | null;
+  appointment_date: string | null;
   property: {
     id: string;
     title: string;
@@ -59,6 +61,7 @@ const ProspectionPage = () => {
   const [clientDetails, setClientDetails] = useState<Client | null>(null);
   const [isClientReservationsOpen, setIsClientReservationsOpen] = useState(false);
   const [clientReservations, setClientReservations] = useState<Reservation[]>([]);
+  const [appointmentDate, setAppointmentDate] = useState<Date | null>(null);
   
   const location = useLocation();
   const navigate = useNavigate();
@@ -265,6 +268,9 @@ const ProspectionPage = () => {
   const handleReservationClick = (reservation: Reservation) => {
     setSelectedReservation(reservation);
     
+    // Reset appointment date when opening dialog
+    setAppointmentDate(reservation.appointment_date ? new Date(reservation.appointment_date) : null);
+    
     // Fetch client details when opening the dialog
     if (reservation.client_phone) {
       fetchClientDetails(reservation.client_phone);
@@ -299,16 +305,96 @@ const ProspectionPage = () => {
     setStatusFilter("");
   };
 
+  const handleAppointmentDateChange = async (date: Date | undefined) => {
+    if (!date || !selectedReservation) return;
+    
+    setAppointmentDate(date);
+    
+    try {
+      // Update the reservation with the appointment date and change status to "Visite programmée"
+      const { error } = await supabase
+        .from('reservations')
+        .update({ 
+          appointment_date: date.toISOString(),
+          status: 'Visite programmée'
+        })
+        .eq('id', selectedReservation.id);
+
+      if (error) {
+        console.error('Error updating reservation:', error);
+        toast.error('Erreur lors de la mise à jour de la réservation');
+        return;
+      }
+
+      toast.success('Rendez-vous programmé avec succès');
+      
+      // Update the local state
+      if (selectedReservation) {
+        const updatedReservation = { 
+          ...selectedReservation, 
+          appointment_date: date.toISOString(),
+          status: 'Visite programmée'
+        };
+        setSelectedReservation(updatedReservation);
+        
+        // Also update in the reservations list
+        const updatedReservations = reservations.map(res => 
+          res.id === selectedReservation.id ? updatedReservation : res
+        );
+        setReservations(updatedReservations);
+        applyFilters();
+      }
+    } catch (error) {
+      console.error('Error in appointment update operation:', error);
+      toast.error('Une erreur est survenue');
+    }
+  };
+
+  const handleStatusChange = async (newStatus: string) => {
+    if (!selectedReservation) return;
+    
+    try {
+      const { error } = await supabase
+        .from('reservations')
+        .update({ status: newStatus })
+        .eq('id', selectedReservation.id);
+
+      if (error) {
+        console.error('Error updating reservation status:', error);
+        toast.error('Erreur lors de la mise à jour du statut');
+        return;
+      }
+
+      toast.success('Statut mis à jour avec succès');
+      
+      // Update the local state
+      if (selectedReservation) {
+        const updatedReservation = { ...selectedReservation, status: newStatus };
+        setSelectedReservation(updatedReservation);
+        
+        // Also update in the reservations list
+        const updatedReservations = reservations.map(res => 
+          res.id === selectedReservation.id ? updatedReservation : res
+        );
+        setReservations(updatedReservations);
+        applyFilters();
+      }
+    } catch (error) {
+      console.error('Error in status update operation:', error);
+      toast.error('Une erreur est survenue');
+    }
+  };
+
   const getStatusColor = (status: string) => {
-    switch (status.toUpperCase()) {
-      case 'PENDING':
+    switch (status) {
+      case 'En attente':
         return 'bg-yellow-100 text-yellow-800';
-      case 'CONFIRMED':
-        return 'bg-green-100 text-green-800';
-      case 'CANCELLED':
-        return 'bg-red-100 text-red-800';
-      case 'COMPLETED':
+      case 'Visite programmée':
         return 'bg-blue-100 text-blue-800';
+      case 'Fermée Gagnée':
+        return 'bg-green-100 text-green-800';
+      case 'Fermée Perdu':
+        return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -371,10 +457,10 @@ const ProspectionPage = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tous les statuts</SelectItem>
-                    <SelectItem value="PENDING">En attente</SelectItem>
-                    <SelectItem value="CONFIRMED">Confirmé</SelectItem>
-                    <SelectItem value="CANCELLED">Annulé</SelectItem>
-                    <SelectItem value="COMPLETED">Terminé</SelectItem>
+                    <SelectItem value="En attente">En attente</SelectItem>
+                    <SelectItem value="Visite programmée">Visite programmée</SelectItem>
+                    <SelectItem value="Fermée Gagnée">Fermée Gagnée</SelectItem>
+                    <SelectItem value="Fermée Perdu">Fermée Perdu</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -596,26 +682,77 @@ const ProspectionPage = () => {
                       </div>
                     </div>
                   </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                    <h3 className="font-semibold text-lg border-b pb-2">Date de rendez-vous</h3>
+                    <div className="flex items-start gap-3">
+                      <CalendarIcon className="h-5 w-5 text-gray-500 mt-2 flex-shrink-0" />
+                      <div className="w-full">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !appointmentDate && "text-muted-foreground"
+                              )}
+                            >
+                              {appointmentDate ? (
+                                format(appointmentDate, "PPP", { locale: fr })
+                              ) : (
+                                <span>Choisir une date</span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={appointmentDate || undefined}
+                              onSelect={handleAppointmentDateChange}
+                              initialFocus
+                              locale={fr}
+                              className={cn("p-3 pointer-events-auto")}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col gap-3 pt-2">
+                    <Button 
+                      variant="destructive" 
+                      onClick={() => handleStatusChange('Fermée Perdu')}
+                    >
+                      Fermée Perdu
+                    </Button>
+                    <Button 
+                      variant="default" 
+                      onClick={() => handleStatusChange('Fermée Gagnée')}
+                    >
+                      Fermée Gagnée
+                    </Button>
+                  </div>
                 </div>
               </DialogContent>
             )}
           </Dialog>
 
           {/* Dialog for client's all reservations */}
-          <Dialog open={isClientReservationsOpen} onOpenChange={setIsClientReservationsOpen}>
-            <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
+          <Sheet open={isClientReservationsOpen} onOpenChange={setIsClientReservationsOpen}>
+            <SheetContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+              <SheetHeader>
+                <SheetTitle>
                   Toutes les réservations du client
                   {clientDetails && (
                     <span className="block text-sm font-normal mt-1">
                       {clientDetails.first_name} {clientDetails.last_name} - {clientDetails.phone_number}
                     </span>
                   )}
-                </DialogTitle>
-              </DialogHeader>
+                </SheetTitle>
+              </SheetHeader>
 
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto mt-6">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -647,8 +784,8 @@ const ProspectionPage = () => {
                   </TableBody>
                 </Table>
               </div>
-            </DialogContent>
-          </Dialog>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </SidebarProvider>
