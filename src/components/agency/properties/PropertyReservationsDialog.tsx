@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getAbsoluteUrl } from "@/utils/urlUtils";
 
@@ -38,6 +38,7 @@ export default function PropertyReservationsDialog({
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { agencySlug } = useParams();
 
   useEffect(() => {
     if (open && propertyId) {
@@ -80,8 +81,9 @@ export default function PropertyReservationsDialog({
     // Close the dialog
     onOpenChange(false);
     
-    // Navigate to prospection page with the reservation filter pre-set
-    navigate(`/prospection?reservation=${reservationNumber}`);
+    // Navigate to agency prospection page with the reservation filter pre-set
+    // Use the agencySlug from params to construct the proper URL
+    navigate(`/${agencySlug}/agency/prospection?reservation=${reservationNumber}`);
   };
 
   return (

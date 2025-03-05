@@ -14,6 +14,7 @@ import { LoadingLayout } from "@/components/LoadingLayout";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { useLocation } from 'react-router-dom';
 
 interface Reservation {
   id: string;
@@ -46,6 +47,10 @@ const ProspectionPage = () => {
   const [propertyRefFilter, setPropertyRefFilter] = useState("");
   const [reservationRefFilter, setReservationRefFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const reservationParam = queryParams.get('reservation');
 
   useEffect(() => {
     const fetchReservations = async () => {
@@ -75,6 +80,10 @@ const ProspectionPage = () => {
 
           setReservations(data || []);
           setFilteredReservations(data || []);
+          
+          if (reservationParam) {
+            setReservationRefFilter(reservationParam);
+          }
         } catch (error) {
           console.error('Error in fetch operation:', error);
           toast.error('Une erreur est survenue');
@@ -85,7 +94,7 @@ const ProspectionPage = () => {
     };
 
     fetchReservations();
-  }, [agency?.id]);
+  }, [agency?.id, reservationParam]);
 
   useEffect(() => {
     applyFilters();
@@ -118,6 +127,11 @@ const ProspectionPage = () => {
     }
 
     setFilteredReservations(filtered);
+    
+    if (filtered.length === 1 && reservationParam && !isDialogOpen) {
+      setSelectedReservation(filtered[0]);
+      setIsDialogOpen(true);
+    }
   };
 
   const handleReservationRefChange = (e: React.ChangeEvent<HTMLInputElement>) => {
