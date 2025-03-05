@@ -698,7 +698,7 @@ const ProspectionPage = () => {
                               )}
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start" forceMount={false}>
+                          <PopoverContent className="w-auto p-0" align="start">
                             <Calendar
                               mode="single"
                               selected={appointmentDate || undefined}
