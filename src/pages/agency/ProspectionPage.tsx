@@ -125,7 +125,7 @@ const ProspectionPage = () => {
     setFilteredReservations(filtered);
   };
 
-  // Format reservation reference input
+  // Format reservation reference input with AGE pattern
   const handleReservationRefChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value;
     
@@ -134,12 +134,11 @@ const ProspectionPage = () => {
       value = "RES-" + value;
     }
     
-    // Auto-format as RES-YYYY-XXXXX
+    // Auto-format as RES-XXX
     if (value.startsWith("RES-") && value.length > 4) {
       // Keep only alphanumeric characters after prefix
       const numbers = value.substring(4).replace(/[^0-9]/g, "");
       
-      // Format with hyphens
       if (numbers.length > 0) {
         value = "RES-" + numbers;
       } else {
@@ -150,24 +149,24 @@ const ProspectionPage = () => {
     setReservationRefFilter(value);
   };
 
-  // Format property reference input
+  // Format property reference input with AGE pattern
   const handlePropertyRefChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value;
     
     // If user is just starting to type, add the prefix if needed
-    if (value && !value.startsWith("PROP-")) {
-      value = "PROP-" + value;
+    if (value && !value.startsWith("AGE-")) {
+      value = "AGE-" + value;
     }
     
     // Keep only alphanumeric characters after prefix
-    if (value.startsWith("PROP-") && value.length > 5) {
-      const numbers = value.substring(5).replace(/[^0-9]/g, "");
+    if (value.startsWith("AGE-") && value.length > 4) {
+      const numbers = value.substring(4).replace(/[^0-9]/g, "");
       
       // Format with proper structure
       if (numbers.length > 0) {
-        value = "PROP-" + numbers;
+        value = "AGE-" + numbers;
       } else {
-        value = "PROP-";
+        value = "AGE-";
       }
     }
     
@@ -239,7 +238,7 @@ const ProspectionPage = () => {
               <div>
                 <label className="text-sm font-medium mb-1 block">Référence du bien</label>
                 <Input
-                  placeholder="PROP-"
+                  placeholder="AGE-"
                   value={propertyRefFilter}
                   onChange={handlePropertyRefChange}
                 />
