@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,7 +42,6 @@ const ProspectionPage = () => {
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   
-  // Filter states
   const [searchQuery, setSearchQuery] = useState("");
   const [propertyRefFilter, setPropertyRefFilter] = useState("");
   const [reservationRefFilter, setReservationRefFilter] = useState("");
@@ -96,26 +94,22 @@ const ProspectionPage = () => {
   const applyFilters = () => {
     let filtered = [...reservations];
 
-    // Apply property reference filter
     if (propertyRefFilter) {
       filtered = filtered.filter(res => 
         res.property?.reference_number?.toLowerCase().includes(propertyRefFilter.toLowerCase())
       );
     }
 
-    // Apply reservation reference filter
     if (reservationRefFilter) {
       filtered = filtered.filter(res => 
         res.reservation_number.toLowerCase().includes(reservationRefFilter.toLowerCase())
       );
     }
 
-    // Apply status filter
     if (statusFilter && statusFilter !== "all") {
       filtered = filtered.filter(res => res.status.toUpperCase() === statusFilter.toUpperCase());
     }
 
-    // Apply search query (searches in client phone and property title)
     if (searchQuery) {
       filtered = filtered.filter(res => 
         res.client_phone.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -126,29 +120,28 @@ const ProspectionPage = () => {
     setFilteredReservations(filtered);
   };
 
-  // Format reservation reference input with correct dash pattern
   const handleReservationRefChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value;
     
-    // If user is just starting to type, add the prefix
     if (value && !value.startsWith("RES-")) {
       value = "RES-" + value;
     }
     
-    // Auto-format as RES-XXXX-YYYY
     if (value.startsWith("RES-")) {
-      // Keep only numeric characters after prefix
       const input = value.substring(4).replace(/[^0-9]/g, "");
       
       if (input.length > 0) {
-        // Start with the prefix
         value = "RES-" + input;
         
-        // Add dashes after every 4 digits
-        if (input.length > 4) {
+        if (input.length >= 4) {
           const firstPart = input.substring(0, 4);
           const secondPart = input.substring(4);
-          value = `RES-${firstPart}-${secondPart}`;
+          
+          if (secondPart.length > 0) {
+            value = `RES-${firstPart}-${secondPart}`;
+          } else {
+            value = `RES-${firstPart}-`;
+          }
         }
       } else {
         value = "RES-";
@@ -158,29 +151,28 @@ const ProspectionPage = () => {
     setReservationRefFilter(value);
   };
 
-  // Format property reference input with correct dash pattern
   const handlePropertyRefChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value;
     
-    // If user is just starting to type, add the prefix if needed
     if (value && !value.startsWith("AGE-")) {
       value = "AGE-" + value;
     }
     
-    // Format with proper structure: AGE-XXXX-YYYY
     if (value.startsWith("AGE-")) {
-      // Keep only numeric characters after prefix
       const input = value.substring(4).replace(/[^0-9]/g, "");
       
       if (input.length > 0) {
-        // Start with the prefix
         value = "AGE-" + input;
         
-        // Add dashes after every 4 digits
-        if (input.length > 4) {
+        if (input.length >= 4) {
           const firstPart = input.substring(0, 4);
           const secondPart = input.substring(4);
-          value = `AGE-${firstPart}-${secondPart}`;
+          
+          if (secondPart.length > 0) {
+            value = `AGE-${firstPart}-${secondPart}`;
+          } else {
+            value = `AGE-${firstPart}-`;
+          }
         }
       } else {
         value = "AGE-";
@@ -217,7 +209,6 @@ const ProspectionPage = () => {
     }
   };
 
-  // Format price to display FCFA
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('fr-FR').format(price) + ' FCFA';
   };
@@ -236,7 +227,6 @@ const ProspectionPage = () => {
             <p className="text-muted-foreground mt-2">Consultez et gérez vos demandes de prospection</p>
           </div>
 
-          {/* Filters */}
           <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
             <h2 className="text-lg font-medium mb-4">Filtres</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
