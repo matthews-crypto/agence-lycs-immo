@@ -73,7 +73,7 @@ export function AgencySidebar() {
           url: `/${agency?.slug}/agency/properties`,
         },
         {
-          title: "Prospection",
+          title: "Opportunité",
           icon: FileSearch,
           url: `/${agency?.slug}/agency/prospection`,
         },
