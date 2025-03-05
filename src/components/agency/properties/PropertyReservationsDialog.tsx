@@ -6,6 +6,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useNavigate } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { getAbsoluteUrl } from "@/utils/urlUtils";
 
 interface PropertyReservationsDialogProps {
   open: boolean;
@@ -33,6 +36,8 @@ export default function PropertyReservationsDialog({
 }: PropertyReservationsDialogProps) {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (open && propertyId) {
@@ -71,9 +76,17 @@ export default function PropertyReservationsDialog({
     }
   };
 
+  const handleReservationClick = (reservationNumber: string) => {
+    // Close the dialog
+    onOpenChange(false);
+    
+    // Navigate to prospection page with the reservation filter pre-set
+    navigate(`/prospection?reservation=${reservationNumber}`);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className={`${isMobile ? 'w-[95vw] max-w-full p-4' : 'max-w-4xl'}`}>
         <DialogHeader>
           <DialogTitle>Réservations pour ce bien</DialogTitle>
         </DialogHeader>
@@ -92,12 +105,12 @@ export default function PropertyReservationsDialog({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Référence</TableHead>
-                  <TableHead>Téléphone</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead>Date de création</TableHead>
-                  {reservations.some(r => r.rental_start_date || r.rental_end_date) && (
+                  <TableHead className={isMobile ? "text-xs" : ""}>Référence</TableHead>
+                  {!isMobile && <TableHead>Téléphone</TableHead>}
+                  {!isMobile && <TableHead>Type</TableHead>}
+                  <TableHead className={isMobile ? "text-xs" : ""}>Statut</TableHead>
+                  <TableHead className={isMobile ? "text-xs" : ""}>Date de création</TableHead>
+                  {!isMobile && reservations.some(r => r.rental_start_date || r.rental_end_date) && (
                     <>
                       <TableHead>Début location</TableHead>
                       <TableHead>Fin location</TableHead>
@@ -107,14 +120,21 @@ export default function PropertyReservationsDialog({
               </TableHeader>
               <TableBody>
                 {reservations.map((reservation) => (
-                  <TableRow key={reservation.id}>
-                    <TableCell className="font-medium">
+                  <TableRow 
+                    key={reservation.id} 
+                    className="cursor-pointer hover:bg-muted transition-colors"
+                    onClick={() => handleReservationClick(reservation.reservation_number)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <TableCell className={`font-medium ${isMobile ? "text-xs" : ""}`}>
                       {reservation.reservation_number}
                     </TableCell>
-                    <TableCell>{reservation.client_phone}</TableCell>
-                    <TableCell>
-                      {reservation.type === "VENTE" ? "Vente" : "Location"}
-                    </TableCell>
+                    {!isMobile && <TableCell>{reservation.client_phone}</TableCell>}
+                    {!isMobile && (
+                      <TableCell>
+                        {reservation.type === "VENTE" ? "Vente" : "Location"}
+                      </TableCell>
+                    )}
                     <TableCell>
                       <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusBadgeColor(reservation.status)}`}>
                         {reservation.status === "PENDING" && "En attente"}
@@ -123,10 +143,10 @@ export default function PropertyReservationsDialog({
                         {!["PENDING", "CONFIRMED", "CANCELLED"].includes(reservation.status) && reservation.status}
                       </span>
                     </TableCell>
-                    <TableCell>
-                      {format(new Date(reservation.created_at), "dd MMMM yyyy", { locale: fr })}
+                    <TableCell className={isMobile ? "text-xs" : ""}>
+                      {format(new Date(reservation.created_at), isMobile ? "dd/MM/yy" : "dd MMMM yyyy", { locale: fr })}
                     </TableCell>
-                    {reservations.some(r => r.rental_start_date || r.rental_end_date) && (
+                    {!isMobile && reservations.some(r => r.rental_start_date || r.rental_end_date) && (
                       <>
                         <TableCell>
                           {reservation.rental_start_date
