@@ -125,7 +125,7 @@ const ProspectionPage = () => {
     setFilteredReservations(filtered);
   };
 
-  // Format reservation reference input with AGE pattern
+  // Format reservation reference input with correct dash pattern
   const handleReservationRefChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value;
     
@@ -134,13 +134,21 @@ const ProspectionPage = () => {
       value = "RES-" + value;
     }
     
-    // Auto-format as RES-XXX
-    if (value.startsWith("RES-") && value.length > 4) {
-      // Keep only alphanumeric characters after prefix
-      const numbers = value.substring(4).replace(/[^0-9]/g, "");
+    // Auto-format as RES-XXX-YYY
+    if (value.startsWith("RES-")) {
+      // Keep only numeric characters after prefix
+      const input = value.substring(4).replace(/[^0-9]/g, "");
       
-      if (numbers.length > 0) {
-        value = "RES-" + numbers;
+      if (input.length > 0) {
+        // Start with the prefix
+        value = "RES-" + input;
+        
+        // Add dashes after every 3 digits
+        if (input.length > 3) {
+          const firstPart = input.substring(0, 3);
+          const secondPart = input.substring(3);
+          value = `RES-${firstPart}-${secondPart}`;
+        }
       } else {
         value = "RES-";
       }
@@ -149,7 +157,7 @@ const ProspectionPage = () => {
     setReservationRefFilter(value);
   };
 
-  // Format property reference input with AGE pattern
+  // Format property reference input with correct dash pattern
   const handlePropertyRefChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value;
     
@@ -158,13 +166,21 @@ const ProspectionPage = () => {
       value = "AGE-" + value;
     }
     
-    // Keep only alphanumeric characters after prefix
-    if (value.startsWith("AGE-") && value.length > 4) {
-      const numbers = value.substring(4).replace(/[^0-9]/g, "");
+    // Format with proper structure: AGE-XXX-YYY
+    if (value.startsWith("AGE-")) {
+      // Keep only numeric characters after prefix
+      const input = value.substring(4).replace(/[^0-9]/g, "");
       
-      // Format with proper structure
-      if (numbers.length > 0) {
-        value = "AGE-" + numbers;
+      if (input.length > 0) {
+        // Start with the prefix
+        value = "AGE-" + input;
+        
+        // Add dashes after every 3 digits
+        if (input.length > 3) {
+          const firstPart = input.substring(0, 3);
+          const secondPart = input.substring(3);
+          value = `AGE-${firstPart}-${secondPart}`;
+        }
       } else {
         value = "AGE-";
       }
