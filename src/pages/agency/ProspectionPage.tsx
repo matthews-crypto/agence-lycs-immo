@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +16,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
 
 interface Reservation {
   id: string;
@@ -28,6 +29,7 @@ interface Reservation {
   updated_at: string;
   rental_start_date: string | null;
   rental_end_date: string | null;
+  appointment_date: string | null;
   property: {
     id: string;
     title: string;
@@ -59,6 +61,7 @@ const ProspectionPage = () => {
   const [clientDetails, setClientDetails] = useState<Client | null>(null);
   const [isClientReservationsOpen, setIsClientReservationsOpen] = useState(false);
   const [clientReservations, setClientReservations] = useState<Reservation[]>([]);
+  const [appointmentDate, setAppointmentDate] = useState<Date | null>(null);
   
   const location = useLocation();
   const navigate = useNavigate();
@@ -265,10 +268,10 @@ const ProspectionPage = () => {
   const handleReservationClick = (reservation: Reservation) => {
     setSelectedReservation(reservation);
     
-    // Fetch client details when opening the dialog
+    setAppointmentDate(reservation.appointment_date ? new Date(reservation.appointment_date) : null);
+    
     if (reservation.client_phone) {
       fetchClientDetails(reservation.client_phone);
-      // Also fetch client's reservations
       fetchClientReservations(reservation.client_phone);
     }
     
@@ -283,6 +286,7 @@ const ProspectionPage = () => {
   const handleClientReservationItemClick = (reservation: Reservation) => {
     setIsClientReservationsOpen(false);
     setSelectedReservation(reservation);
+    setAppointmentDate(reservation.appointment_date ? new Date(reservation.appointment_date) : null);
     setIsDialogOpen(true);
   };
   
@@ -292,11 +296,70 @@ const ProspectionPage = () => {
     }
   };
 
-  const clearFilters = () => {
-    setSearchQuery("");
-    setPropertyRefFilter("");
-    setReservationRefFilter("");
-    setStatusFilter("");
+  const handleStatusUpdate = async (status: string) => {
+    if (!selectedReservation) return;
+    
+    try {
+      const updates: {
+        status: string;
+        appointment_date?: string | null;
+      } = { status };
+      
+      if (status === "CONFIRMED" && appointmentDate) {
+        updates.appointment_date = appointmentDate.toISOString();
+      }
+      
+      const { error } = await supabase
+        .from('reservations')
+        .update(updates)
+        .eq('id', selectedReservation.id);
+        
+      if (error) {
+        throw error;
+      }
+      
+      const updatedReservations = reservations.map(res => {
+        if (res.id === selectedReservation.id) {
+          return {
+            ...res,
+            status,
+            appointment_date: updates.appointment_date || res.appointment_date
+          };
+        }
+        return res;
+      });
+      
+      setReservations(updatedReservations);
+      setFilteredReservations(updatedReservations);
+      
+      if (selectedReservation) {
+        setSelectedReservation({
+          ...selectedReservation,
+          status,
+          appointment_date: updates.appointment_date || selectedReservation.appointment_date
+        });
+      }
+      
+      toast.success(`Statut de la réservation mis à jour : ${getStatusLabel(status)}`);
+    } catch (error) {
+      console.error('Error updating reservation status:', error);
+      toast.error('Erreur lors de la mise à jour du statut');
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status.toUpperCase()) {
+      case 'PENDING':
+        return 'En attente';
+      case 'CONFIRMED': 
+        return 'Confirmée';
+      case 'CANCELLED':
+        return 'Fermée Perdu';
+      case 'COMPLETED':
+        return 'Fermée Gagnée';
+      default:
+        return status;
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -373,8 +436,8 @@ const ProspectionPage = () => {
                     <SelectItem value="all">Tous les statuts</SelectItem>
                     <SelectItem value="PENDING">En attente</SelectItem>
                     <SelectItem value="CONFIRMED">Confirmé</SelectItem>
-                    <SelectItem value="CANCELLED">Annulé</SelectItem>
-                    <SelectItem value="COMPLETED">Terminé</SelectItem>
+                    <SelectItem value="CANCELLED">Fermée Perdu</SelectItem>
+                    <SelectItem value="COMPLETED">Fermée Gagnée</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -399,7 +462,7 @@ const ProspectionPage = () => {
                     <CardTitle className="text-lg flex justify-between">
                       <span className="truncate">{reservation.reservation_number}</span>
                       <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(reservation.status)}`}>
-                        {reservation.status}
+                        {getStatusLabel(reservation.status)}
                       </span>
                     </CardTitle>
                   </CardHeader>
@@ -451,7 +514,7 @@ const ProspectionPage = () => {
                   <DialogTitle className="flex justify-between items-center flex-wrap gap-2">
                     <span>Réservation {selectedReservation.reservation_number}</span>
                     <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(selectedReservation.status)}`}>
-                      {selectedReservation.status}
+                      {getStatusLabel(selectedReservation.status)}
                     </span>
                   </DialogTitle>
                   <DialogDescription>
@@ -583,6 +646,18 @@ const ProspectionPage = () => {
                           </div>
                         </div>
                       )}
+                      
+                      {selectedReservation.appointment_date && (
+                        <div className="flex items-center gap-3">
+                          <Calendar className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                          <div>
+                            <p className="font-medium">
+                              {format(new Date(selectedReservation.appointment_date), 'PPP', { locale: fr })}
+                            </p>
+                            <p className="text-xs text-muted-foreground">Date de rendez-vous</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -596,12 +671,71 @@ const ProspectionPage = () => {
                       </div>
                     </div>
                   </div>
+                  
+                  <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                    <h3 className="font-semibold text-lg border-b pb-2">Date de rendez-vous</h3>
+                    <div className="space-y-3">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant={"outline"}
+                            className={`w-full justify-start text-left font-normal ${!appointmentDate && "text-muted-foreground"}`}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {appointmentDate ? (
+                              format(appointmentDate, "PPP", { locale: fr })
+                            ) : (
+                              <span>Sélectionner une date de rendez-vous</span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={appointmentDate || undefined}
+                            onSelect={(date) => date && setAppointmentDate(date)}
+                            initialFocus
+                            locale={fr}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col gap-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button 
+                        variant="outline" 
+                        className="bg-red-50 hover:bg-red-100 border-red-200 text-red-700"
+                        onClick={() => handleStatusUpdate("CANCELLED")}
+                      >
+                        Fermée Perdu
+                      </Button>
+                      
+                      {appointmentDate ? (
+                        <Button 
+                          variant="outline"
+                          className="bg-green-50 hover:bg-green-100 border-green-200 text-green-700"
+                          onClick={() => handleStatusUpdate("CONFIRMED")}
+                        >
+                          Fixer rendez-vous
+                        </Button>
+                      ) : (
+                        <Button 
+                          variant="outline"
+                          className="bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700"
+                          onClick={() => handleStatusUpdate("COMPLETED")}
+                        >
+                          Fermée Gagnée
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </DialogContent>
             )}
           </Dialog>
 
-          {/* Dialog for client's all reservations */}
           <Dialog open={isClientReservationsOpen} onOpenChange={setIsClientReservationsOpen}>
             <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
@@ -637,7 +771,7 @@ const ProspectionPage = () => {
                         <TableCell>{reservation.property?.title || 'Non spécifié'}</TableCell>
                         <TableCell>
                           <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(reservation.status)}`}>
-                            {reservation.status}
+                            {getStatusLabel(reservation.status)}
                           </span>
                         </TableCell>
                         <TableCell>{reservation.type}</TableCell>
