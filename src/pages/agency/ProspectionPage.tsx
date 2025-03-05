@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,7 +7,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Calendar, Clock, Home, User, Phone, CheckCircle, Search, MapPin, Tag } from "lucide-react";
+import { Calendar, Clock, Home, User, Phone, CheckCircle, Search, MapPin, Tag, Mail, List } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
@@ -14,7 +15,8 @@ import { LoadingLayout } from "@/components/LoadingLayout";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface Reservation {
   id: string;
@@ -35,6 +37,14 @@ interface Reservation {
   };
 }
 
+interface Client {
+  id: string;
+  first_name: string;
+  last_name: string;
+  phone_number: string;
+  email: string;
+}
+
 const ProspectionPage = () => {
   const { agency } = useAgencyContext();
   const [reservations, setReservations] = useState<Reservation[]>([]);
@@ -42,13 +52,17 @@ const ProspectionPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  
   const [searchQuery, setSearchQuery] = useState("");
   const [propertyRefFilter, setPropertyRefFilter] = useState("");
   const [reservationRefFilter, setReservationRefFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [clientDetails, setClientDetails] = useState<Client | null>(null);
+  const [isClientReservationsOpen, setIsClientReservationsOpen] = useState(false);
+  const [clientReservations, setClientReservations] = useState<Reservation[]>([]);
   
   const location = useLocation();
+  const navigate = useNavigate();
+  const { agencySlug } = useParams();
   const queryParams = new URLSearchParams(location.search);
   const reservationParam = queryParams.get('reservation');
 
@@ -99,6 +113,58 @@ const ProspectionPage = () => {
   useEffect(() => {
     applyFilters();
   }, [searchQuery, propertyRefFilter, reservationRefFilter, statusFilter, reservations]);
+
+  const fetchClientDetails = async (phoneNumber: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('phone_number', phoneNumber)
+        .single();
+
+      if (error) {
+        console.error('Error fetching client details:', error);
+        setClientDetails(null);
+        return;
+      }
+
+      setClientDetails(data);
+    } catch (error) {
+      console.error('Error in client fetch operation:', error);
+      setClientDetails(null);
+    }
+  };
+
+  const fetchClientReservations = async (phoneNumber: string) => {
+    if (!agency?.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('reservations')
+        .select(`
+          *,
+          property:property_id (
+            id,
+            title,
+            address,
+            reference_number,
+            price
+          )
+        `)
+        .eq('agency_id', agency.id)
+        .eq('client_phone', phoneNumber)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching client reservations:', error);
+        return;
+      }
+
+      setClientReservations(data || []);
+    } catch (error) {
+      console.error('Error in client reservations fetch operation:', error);
+    }
+  };
 
   const applyFilters = () => {
     let filtered = [...reservations];
@@ -198,7 +264,32 @@ const ProspectionPage = () => {
 
   const handleReservationClick = (reservation: Reservation) => {
     setSelectedReservation(reservation);
+    
+    // Fetch client details when opening the dialog
+    if (reservation.client_phone) {
+      fetchClientDetails(reservation.client_phone);
+      // Also fetch client's reservations
+      fetchClientReservations(reservation.client_phone);
+    }
+    
     setIsDialogOpen(true);
+  };
+
+  const handleClientReservationsClick = () => {
+    setIsDialogOpen(false);
+    setIsClientReservationsOpen(true);
+  };
+  
+  const handleClientReservationItemClick = (reservation: Reservation) => {
+    setIsClientReservationsOpen(false);
+    setSelectedReservation(reservation);
+    setIsDialogOpen(true);
+  };
+  
+  const handlePropertyClick = (propertyId: string) => {
+    if (agencySlug) {
+      navigate(`/${agencySlug}/properties/${propertyId}`);
+    }
   };
 
   const clearFilters = () => {
@@ -375,7 +466,12 @@ const ProspectionPage = () => {
                       <div className="flex items-start gap-3">
                         <Home className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
                         <div>
-                          <p className="font-medium">{selectedReservation.property?.title || 'Bien non spécifié'}</p>
+                          <p 
+                            className="font-medium cursor-pointer hover:text-blue-600 hover:underline"
+                            onClick={() => handlePropertyClick(selectedReservation.property?.id)}
+                          >
+                            {selectedReservation.property?.title || 'Bien non spécifié'}
+                          </p>
                           <p className="text-sm text-muted-foreground">
                             Réf: {selectedReservation.property?.reference_number || 'N/A'}
                           </p>
@@ -404,12 +500,52 @@ const ProspectionPage = () => {
 
                   <div className="bg-gray-50 p-4 rounded-lg space-y-3">
                     <h3 className="font-semibold text-lg border-b pb-2">Contact client</h3>
-                    <div className="flex items-center gap-3">
-                      <Phone className="h-5 w-5 text-gray-500 flex-shrink-0" />
-                      <div>
-                        <p className="font-medium">{selectedReservation.client_phone}</p>
-                        <p className="text-xs text-muted-foreground">Numéro de téléphone</p>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <Phone className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                        <div>
+                          <p className="font-medium">{selectedReservation.client_phone}</p>
+                          <p className="text-xs text-muted-foreground">Numéro de téléphone</p>
+                        </div>
                       </div>
+
+                      {clientDetails && (
+                        <>
+                          <div className="flex items-center gap-3">
+                            <User className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                            <div>
+                              <p className="font-medium">
+                                {clientDetails.first_name} {clientDetails.last_name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">Nom complet</p>
+                            </div>
+                          </div>
+
+                          {clientDetails.email && (
+                            <div className="flex items-center gap-3">
+                              <Mail className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                              <div>
+                                <p className="font-medium">{clientDetails.email}</p>
+                                <p className="text-xs text-muted-foreground">Email</p>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      
+                      {clientReservations.length > 1 && (
+                        <div className="flex items-center gap-3 mt-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="flex items-center gap-2"
+                            onClick={handleClientReservationsClick}
+                          >
+                            <List className="h-4 w-4" />
+                            Voir toutes les réservations
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -463,6 +599,55 @@ const ProspectionPage = () => {
                 </div>
               </DialogContent>
             )}
+          </Dialog>
+
+          {/* Dialog for client's all reservations */}
+          <Dialog open={isClientReservationsOpen} onOpenChange={setIsClientReservationsOpen}>
+            <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  Toutes les réservations du client
+                  {clientDetails && (
+                    <span className="block text-sm font-normal mt-1">
+                      {clientDetails.first_name} {clientDetails.last_name} - {clientDetails.phone_number}
+                    </span>
+                  )}
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Référence</TableHead>
+                      <TableHead>Bien</TableHead>
+                      <TableHead>Statut</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {clientReservations.map(reservation => (
+                      <TableRow 
+                        key={reservation.id} 
+                        className="cursor-pointer hover:bg-gray-50"
+                        onClick={() => handleClientReservationItemClick(reservation)}
+                      >
+                        <TableCell className="font-medium">{reservation.reservation_number}</TableCell>
+                        <TableCell>{reservation.property?.title || 'Non spécifié'}</TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(reservation.status)}`}>
+                            {reservation.status}
+                          </span>
+                        </TableCell>
+                        <TableCell>{reservation.type}</TableCell>
+                        <TableCell>{format(new Date(reservation.created_at), 'dd/MM/yyyy', { locale: fr })}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </DialogContent>
           </Dialog>
         </div>
       </div>
