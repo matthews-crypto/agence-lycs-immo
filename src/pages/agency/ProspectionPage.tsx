@@ -6,7 +6,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Calendar, Clock, Home, User, Phone, CheckCircle, Search, MapPin, Tag, Mail, List } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, Home, User, Phone, CheckCircle, Search, MapPin, Tag, Mail, List } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
@@ -17,7 +17,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
 interface Reservation {
   id: string;
@@ -381,6 +382,13 @@ const ProspectionPage = () => {
     return new Intl.NumberFormat('fr-FR').format(price) + ' FCFA';
   };
 
+  const clearFilters = () => {
+    setSearchQuery("");
+    setPropertyRefFilter("");
+    setReservationRefFilter("");
+    setStatusFilter("");
+  };
+
   if (isLoading) {
     return <LoadingLayout />;
   }
@@ -679,7 +687,7 @@ const ProspectionPage = () => {
                         <PopoverTrigger asChild>
                           <Button
                             variant={"outline"}
-                            className={`w-full justify-start text-left font-normal ${!appointmentDate && "text-muted-foreground"}`}
+                            className={cn("w-full justify-start text-left font-normal", !appointmentDate && "text-muted-foreground")}
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {appointmentDate ? (
@@ -696,6 +704,7 @@ const ProspectionPage = () => {
                             onSelect={(date) => date && setAppointmentDate(date)}
                             initialFocus
                             locale={fr}
+                            className="p-3 pointer-events-auto"
                           />
                         </PopoverContent>
                       </Popover>
