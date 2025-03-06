@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom"
 import { AgencySidebar } from "@/components/agency/AgencySidebar"
 import { SidebarProvider } from "@/components/ui/sidebar"
@@ -88,10 +87,10 @@ export default function AppointmentsPage() {
               }}
               className="rounded-md border"
               components={{
-                Day: ({ date, ...props }) => (
+                Day: ({ date, ...props }: { date: Date } & React.HTMLAttributes<HTMLDivElement>) => (
                   <div
                     {...props}
-                    className={`${props.className} ${getDayClassName(date)}`}
+                    className={`${props.className || ''} ${getDayClassName(date)}`}
                   />
                 )
               }}
