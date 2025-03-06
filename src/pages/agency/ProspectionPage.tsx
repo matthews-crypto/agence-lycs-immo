@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -489,8 +488,8 @@ const ProspectionPage = () => {
       };
       
       if (selectedReservation.type === 'Location') {
-        locationUpsertData.rental_start_date = rentalStartDate;
-        locationUpsertData.rental_end_date = rentalEndDate;
+        locationUpsertData.rental_start_date = new Date(rentalStartDate).toISOString();
+        locationUpsertData.rental_end_date = new Date(rentalEndDate).toISOString();
       }
       
       if (locationData) {
@@ -625,8 +624,8 @@ const ProspectionPage = () => {
       doc.text(`Date de création: ${format(new Date(reservation.created_at), 'dd/MM/yyyy', { locale: fr })}`, 20, 230);
       
       if (reservation.type === 'Location' && startDate && endDate) {
-        doc.text(`Date de début de location: ${format(new Date(startDate), 'dd/MM/yyyy', { locale: fr })}`, 20, 240);
-        doc.text(`Date de fin de location: ${format(new Date(endDate), 'dd/MM/yyyy', { locale: fr })}`, 20, 250);
+        doc.text(`Date de début: ${format(new Date(startDate), 'dd/MM/yyyy', { locale: fr })}`, 20, 240);
+        doc.text(`Date de fin: ${format(new Date(endDate), 'dd/MM/yyyy', { locale: fr })}`, 20, 250);
       }
       
       const signatureY = reservation.type === 'Location' ? 280 : 260;
@@ -921,326 +920,351 @@ const ProspectionPage = () => {
                       </span>
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="pb-2">
                     <div className="space-y-2">
-                      <div className="flex items-center">
-                        <Home className="h-4 w-4 mr-2 text-gray-500" />
-                        <span className="text-sm">{reservation.property?.title || 'Bien inconnu'}</span>
+                      <div className="flex items-center gap-2">
+                        <Home className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                        <span className="text-sm truncate">{reservation.property?.title || 'Bien non spécifié'}</span>
                       </div>
-                      <div className="flex items-center">
-                        <MapPin className="h-4 w-4 mr-2 text-gray-500" />
-                        <span className="text-sm truncate">{reservation.property?.address || 'Adresse non spécifiée'}</span>
+                      <div className="flex items-center gap-2">
+                        <Tag className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                        <span className="text-sm font-medium">
+                          {reservation.property?.price 
+                            ? formatPrice(reservation.property.price)
+                            : 'Prix non spécifié'}
+                        </span>
                       </div>
-                      <div className="flex items-center">
-                        <Tag className="h-4 w-4 mr-2 text-gray-500" />
-                        <span className="text-sm">{formatPrice(reservation.property?.price || 0)}</span>
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                        <span className="text-sm text-gray-600" id={`client-name-${reservation.id}`}>
+                          Chargement...
+                        </span>
                       </div>
-                      <div className="flex items-center">
-                        <Phone className="h-4 w-4 mr-2 text-gray-500" />
-                        <span className="text-sm">{reservation.client_phone}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <User className="h-4 w-4 mr-2 text-gray-500" />
-                        <span className="text-sm" id={`client-name-${reservation.id}`}>Chargement...</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Clock className="h-4 w-4 mr-2 text-gray-500" />
-                        <span className="text-sm">{format(new Date(reservation.created_at), 'dd MMM yyyy HH:mm', { locale: fr })}</span>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                        <span className="text-sm">
+                          {format(new Date(reservation.created_at), 'PP', { locale: fr })}
+                        </span>
                       </div>
                     </div>
                   </CardContent>
+                  <CardFooter className="pt-2">
+                    <Button variant="outline" className="w-full" onClick={(e) => {
+                      e.stopPropagation();
+                      handleReservationClick(reservation);
+                    }}>
+                      Voir les détails
+                    </Button>
+                  </CardFooter>
                 </Card>
               ))}
             </div>
           )}
 
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogContent className="max-w-4xl overflow-y-auto max-h-[90vh]">
-              {selectedReservation && (
-                <>
-                  <DialogHeader>
-                    <DialogTitle className="flex justify-between items-center">
-                      <span>{selectedReservation.reservation_number}</span>
-                      <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(selectedReservation.status)}`}>
-                        {selectedReservation.status}
-                      </span>
-                    </DialogTitle>
-                    <DialogDescription>
-                      Détails de la réservation {selectedReservation.type === 'Location' ? 'de location' : 'de vente'}
-                    </DialogDescription>
-                  </DialogHeader>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4">Informations du bien</h3>
-                      <div className="space-y-3">
-                        <div>
-                          <span className="text-sm font-medium block">Titre</span>
-                          <span className="text-base">{selectedReservation.property?.title || 'N/A'}</span>
-                        </div>
-                        <div>
-                          <span className="text-sm font-medium block">Adresse</span>
-                          <span className="text-base">{selectedReservation.property?.address || 'N/A'}</span>
-                        </div>
-                        <div>
-                          <span className="text-sm font-medium block">Référence</span>
-                          <span className="text-base">{selectedReservation.property?.reference_number || 'N/A'}</span>
-                        </div>
-                        <div>
-                          <span className="text-sm font-medium block">Prix</span>
-                          <span className="text-base">{formatPrice(selectedReservation.property?.price || 0)}</span>
-                        </div>
-                        <div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="mt-2"
-                            onClick={() => handlePropertyClick(selectedReservation.property.id)}
-                          >
-                            Voir le bien
-                          </Button>
-                        </div>
+            {selectedReservation && (
+              <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+                <DialogHeader className="sticky top-0 bg-white z-10 pb-2 border-b">
+                  <DialogTitle className="flex justify-between items-center flex-wrap gap-2">
+                    <span>Réservation {selectedReservation.reservation_number}</span>
+                    <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(selectedReservation.status)}`}>
+                      {selectedReservation.status}
+                    </span>
+                  </DialogTitle>
+                  <DialogDescription>
+                    Détails de la réservation
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="space-y-5 mt-2">
+                  <div className="bg-gray-50 rounded-md p-4">
+                    <h3 className="text-sm font-medium mb-2">Détails du bien</h3>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Home className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm">{selectedReservation.property?.title || 'Bien non spécifié'}</span>
                       </div>
-
-                      <div className="mt-6">
-                        <h3 className="text-lg font-semibold mb-4">Actions</h3>
-                        {!isReservationClosed(selectedReservation.status) ? (
-                          <div className="space-y-4">
-                            <div>
-                              <span className="text-sm font-medium block mb-2">Changer le statut</span>
-                              <Select
-                                value={selectedReservation.status}
-                                onValueChange={handleStatusChange}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Statut" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="En attente">En attente</SelectItem>
-                                  <SelectItem value="Visite programmée">Visite programmée</SelectItem>
-                                  <SelectItem value="Fermée Gagnée">Fermée Gagnée</SelectItem>
-                                  <SelectItem value="Fermée Perdu">Fermée Perdu</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            {selectedReservation.status !== 'Visite programmée' && (
-                              <div>
-                                <span className="text-sm font-medium block mb-2">Programmer une visite</span>
-                                <input
-                                  type="datetime-local"
-                                  className="w-full px-3 py-2 border rounded"
-                                  onChange={(e) => handleAppointmentDateChange(e.target.valueAsDate || undefined)}
-                                  defaultValue={appointmentDate ? format(appointmentDate, "yyyy-MM-dd'T'HH:mm") : ''}
-                                />
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="bg-green-50 p-4 rounded border border-green-200">
-                            <div className="flex items-center">
-                              <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                              <span className="text-sm font-medium text-green-700">
-                                Cette réservation est fermée
-                              </span>
-                            </div>
-                          </div>
-                        )}
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm">{selectedReservation.property?.address || 'Adresse non spécifiée'}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Tag className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm">
+                          {selectedReservation.property?.price 
+                            ? formatPrice(selectedReservation.property.price)
+                            : 'Prix non spécifié'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Tag className="h-4 w-4 text-gray-500" />
+                        <button 
+                          className="text-xs text-blue-600 hover:underline"
+                          onClick={() => selectedReservation.property?.id && handlePropertyClick(selectedReservation.property.id)}
+                        >
+                          Réf: {selectedReservation.property?.reference_number || 'N/A'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gray-50 rounded-md p-4">
+                    <h3 className="text-sm font-medium mb-2">Détails client</h3>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm">{selectedReservation.client_phone}</span>
                       </div>
                       
-                      {showContractFields && (
-                        <div className="mt-6 border-t pt-4">
-                          <h3 className="text-lg font-semibold mb-4">Données du contrat</h3>
-                          <div className="space-y-4">
-                            <div>
-                              <label className="text-sm font-medium block mb-2">Numéro CIN</label>
-                              <Input
-                                value={clientCIN}
-                                onChange={(e) => setClientCIN(e.target.value)}
-                                placeholder="Numéro de CIN du client"
-                              />
-                            </div>
-                            
-                            {selectedReservation.type === 'Location' && (
-                              <>
-                                <div>
-                                  <label className="text-sm font-medium block mb-2">Date de début de location</label>
-                                  <Input
-                                    type="date"
-                                    value={rentalStartDate}
-                                    onChange={(e) => setRentalStartDate(e.target.value)}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="text-sm font-medium block mb-2">Date de fin de location</label>
-                                  <Input
-                                    type="date"
-                                    value={rentalEndDate}
-                                    onChange={(e) => setRentalEndDate(e.target.value)}
-                                  />
-                                </div>
-                              </>
-                            )}
-                            
-                            <div>
-                              <label className="text-sm font-medium block mb-2">Document d'identité (PDF)</label>
-                              <Input
-                                type="file"
-                                accept=".pdf"
-                                ref={fileInputRef}
-                                onChange={handleDocumentChange}
-                              />
-                            </div>
-                            
-                            <div className="flex space-x-2 mt-4">
-                              <Button 
-                                onClick={handleContractFinalization}
-                                disabled={isUploading}
+                      {clientDetails && (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-gray-500" />
+                            <span className="text-sm">{clientDetails.first_name} {clientDetails.last_name}</span>
+                          </div>
+                          {clientDetails.email && (
+                            <div className="flex items-center gap-2">
+                              <Mail className="h-4 w-4 text-gray-500" />
+                              <a 
+                                href={`mailto:${clientDetails.email}`} 
+                                className="text-sm text-blue-600 hover:underline"
                               >
-                                {isUploading ? "Traitement en cours..." : "Finaliser le contrat"}
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                onClick={resetContractFields}
-                                disabled={isUploading}
-                              >
-                                Annuler
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold">Informations du client</h3>
-                        <Button variant="ghost" size="sm" onClick={handleClientReservationsClick}>
-                          <List className="h-4 w-4 mr-1" />
-                          Réservations
-                        </Button>
-                      </div>
-
-                      {clientDetails ? (
-                        <div className="space-y-3">
-                          <div>
-                            <span className="text-sm font-medium block">Nom</span>
-                            <span className="text-base">{clientDetails.first_name || 'N/A'} {clientDetails.last_name || ''}</span>
-                          </div>
-                          <div>
-                            <span className="text-sm font-medium block">Téléphone</span>
-                            <span className="text-base">{clientDetails.phone_number || 'N/A'}</span>
-                          </div>
-                          <div>
-                            <span className="text-sm font-medium block">Email</span>
-                            <span className="text-base">{clientDetails.email || 'N/A'}</span>
-                          </div>
-                          {locationData && (
-                            <div>
-                              <span className="text-sm font-medium block">CIN</span>
-                              <span className="text-base">{locationData.client_cin || 'N/A'}</span>
+                                {clientDetails.email}
+                              </a>
                             </div>
                           )}
-                          
-                          {locationData && locationData.document_url && (
-                            <div className="mt-4">
+                          {locationData?.client_cin && (
+                            <div className="flex items-center gap-2">
+                              <FileText className="h-4 w-4 text-gray-500" />
+                              <span className="text-sm">CIN: {locationData.client_cin}</span>
+                            </div>
+                          )}
+                          {locationData?.document_url && (
+                            <div className="flex items-center gap-2">
+                              <FileText className="h-4 w-4 text-gray-500" />
                               <a 
                                 href={locationData.document_url} 
-                                target="_blank" 
+                                target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center text-blue-600 hover:text-blue-800"
+                                className="text-sm text-blue-600 hover:underline"
                               >
-                                <FileText className="h-4 w-4 mr-1" />
                                 Voir le document d'identité
                               </a>
                             </div>
                           )}
-
-                          {locationData && selectedReservation.type === 'Location' && (
-                            <div className="mt-4 space-y-3">
-                              <div>
-                                <span className="text-sm font-medium block">Période de location</span>
-                                {locationData.rental_start_date && locationData.rental_end_date ? (
-                                  <span className="text-base">
-                                    Du {format(new Date(locationData.rental_start_date), 'dd/MM/yyyy', { locale: fr })} 
-                                    {' '}au{' '}
-                                    {format(new Date(locationData.rental_end_date), 'dd/MM/yyyy', { locale: fr })}
-                                  </span>
-                                ) : (
-                                  <span className="text-base text-gray-500">Non définie</span>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="text-center p-6 bg-gray-50 rounded-lg">
-                          <User className="h-10 w-10 text-gray-400 mx-auto mb-2" />
-                          <p className="text-gray-500">Client non trouvé dans la base de données</p>
+                          <div className="mt-2">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-xs"
+                              onClick={handleClientReservationsClick}
+                            >
+                              <List className="h-4 w-4 mr-1" />
+                              Voir toutes les réservations
+                            </Button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gray-50 rounded-md p-4">
+                    <h3 className="text-sm font-medium mb-2">Détails de la réservation</h3>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm">
+                          Créée le: {format(new Date(selectedReservation.created_at), 'PPP', { locale: fr })}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Tag className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm">Type: {selectedReservation.type}</span>
+                      </div>
+                      
+                      {selectedReservation.appointment_date && (
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-gray-500" />
+                          <span className="text-sm">
+                            Rendez-vous: {format(new Date(selectedReservation.appointment_date), 'PPP', { locale: fr })}
+                          </span>
                         </div>
                       )}
-
-                      <div className="mt-6">
-                        <h3 className="text-lg font-semibold mb-4">Détails de la réservation</h3>
-                        <div className="space-y-3">
-                          <div>
-                            <span className="text-sm font-medium block">Type</span>
-                            <span className="text-base">{selectedReservation.type}</span>
-                          </div>
-                          <div>
-                            <span className="text-sm font-medium block">Date de création</span>
-                            <span className="text-base">
-                              {format(new Date(selectedReservation.created_at), 'dd MMMM yyyy à HH:mm', { locale: fr })}
-                            </span>
-                          </div>
-                          {selectedReservation.appointment_date && (
-                            <div>
-                              <span className="text-sm font-medium block">Rendez-vous programmé</span>
-                              <span className="text-base">
-                                {format(new Date(selectedReservation.appointment_date), 'dd MMMM yyyy à HH:mm', { locale: fr })}
-                              </span>
-                            </div>
-                          )}
+                    </div>
+                  </div>
+                  
+                  {!isReservationClosed(selectedReservation.status) && !showContractFields && (
+                    <div className="bg-gray-50 rounded-md p-4">
+                      <h3 className="text-sm font-medium mb-3">Actions</h3>
+                      
+                      <div className="mb-4">
+                        <label className="text-sm font-medium mb-1 block">
+                          {selectedReservation.appointment_date ? 'Modifier le rendez-vous' : 'Programmer un rendez-vous'}
+                        </label>
+                        <div className="flex space-x-2">
+                          <Input
+                            type="date"
+                            value={appointmentDate ? format(appointmentDate, 'yyyy-MM-dd') : ''}
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                handleAppointmentDateChange(new Date(e.target.value));
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <div className="flex flex-wrap gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleStatusChange('Fermée Gagnée')}
+                            className="bg-green-50 hover:bg-green-100 border-green-200"
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1 text-green-600" />
+                            Fermée Gagnée
+                          </Button>
+                          
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleStatusChange('Fermée Perdu')}
+                            className="bg-red-50 hover:bg-red-100 border-red-200"
+                          >
+                            Fermée Perdu
+                          </Button>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </>
-              )}
-            </DialogContent>
+                  )}
+                  
+                  {showContractFields && (
+                    <div className="bg-gray-50 rounded-md p-4">
+                      <h3 className="text-sm font-medium mb-3">Finaliser le contrat</h3>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-sm font-medium mb-1 block">
+                            Numéro CIN du client
+                          </label>
+                          <Input
+                            value={clientCIN}
+                            onChange={(e) => setClientCIN(e.target.value)}
+                            placeholder="Entrez le numéro CIN"
+                          />
+                        </div>
+                        
+                        {selectedReservation.type === 'Location' && (
+                          <>
+                            <div>
+                              <label className="text-sm font-medium mb-1 block">
+                                Date de début de location
+                              </label>
+                              <Input
+                                type="date"
+                                value={rentalStartDate}
+                                onChange={(e) => setRentalStartDate(e.target.value)}
+                              />
+                            </div>
+                            
+                            <div>
+                              <label className="text-sm font-medium mb-1 block">
+                                Date de fin de location
+                              </label>
+                              <Input
+                                type="date"
+                                value={rentalEndDate}
+                                onChange={(e) => setRentalEndDate(e.target.value)}
+                              />
+                            </div>
+                          </>
+                        )}
+                        
+                        <div>
+                          <label className="text-sm font-medium mb-1 block">
+                            Document d'identité (PDF)
+                          </label>
+                          <div className="flex items-center mt-1">
+                            <Input
+                              ref={fileInputRef}
+                              type="file"
+                              accept="application/pdf"
+                              onChange={handleDocumentChange}
+                              className="flex-1"
+                            />
+                          </div>
+                          {clientDocument && (
+                            <p className="text-xs text-green-600 mt-1">
+                              Fichier sélectionné: {clientDocument.name}
+                            </p>
+                          )}
+                        </div>
+                        
+                        <div className="flex justify-end space-x-2 mt-4">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={resetContractFields}
+                          >
+                            Annuler
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={handleContractFinalization}
+                            disabled={isUploading}
+                          >
+                            {isUploading ? (
+                              <>Traitement en cours...</>
+                            ) : (
+                              <>
+                                <Upload className="h-4 w-4 mr-1" />
+                                Finaliser
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            )}
           </Dialog>
-
+          
           <Sheet open={isClientReservationsOpen} onOpenChange={setIsClientReservationsOpen}>
-            <SheetContent className="sm:max-w-md overflow-y-auto">
+            <SheetContent>
               <SheetHeader>
-                <SheetTitle>Historique des réservations</SheetTitle>
+                <SheetTitle>Réservations du client</SheetTitle>
                 <SheetDescription>
-                  {clientDetails ? `${clientDetails.first_name || ''} ${clientDetails.last_name || ''}`.trim() : 'Client'}
+                  {clientDetails && `${clientDetails.first_name} ${clientDetails.last_name}`}
                 </SheetDescription>
               </SheetHeader>
-              
               <div className="mt-6">
                 {clientReservations.length === 0 ? (
-                  <div className="text-center p-6">
-                    <p className="text-gray-500">Aucune réservation trouvée pour ce client</p>
-                  </div>
+                  <p className="text-center text-gray-500">Aucune réservation trouvée</p>
                 ) : (
                   <div className="space-y-4">
                     {clientReservations.map(reservation => (
                       <div 
-                        key={reservation.id} 
-                        className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer"
+                        key={reservation.id}
+                        className="p-3 border rounded-md cursor-pointer hover:bg-gray-50"
                         onClick={() => handleClientReservationItemClick(reservation)}
                       >
-                        <div className="flex justify-between items-start mb-2">
+                        <div className="flex justify-between items-center mb-2">
                           <span className="font-medium">{reservation.reservation_number}</span>
                           <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(reservation.status)}`}>
                             {reservation.status}
                           </span>
                         </div>
-                        <div className="text-sm">{reservation.property?.title || 'Bien inconnu'}</div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          {format(new Date(reservation.created_at), 'dd/MM/yyyy', { locale: fr })}
+                        <div className="text-sm text-gray-600">
+                          <div className="flex items-center gap-1 mb-1">
+                            <Home className="h-3 w-3" />
+                            <span className="truncate">{reservation.property?.title || 'Bien non spécifié'}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            <span>{format(new Date(reservation.created_at), 'PP', { locale: fr })}</span>
+                          </div>
                         </div>
                       </div>
                     ))}
