@@ -114,8 +114,30 @@ const ProspectionPage = () => {
             return;
           }
 
-          setReservations(data || []);
-          setFilteredReservations(data || []);
+          const reservationsWithClientInfo = await Promise.all((data || []).map(async (reservation) => {
+            try {
+              const { data: clientData, error: clientError } = await supabase
+                .from('clients')
+                .select('*')
+                .eq('phone_number', reservation.client_phone)
+                .single();
+                
+              if (clientError && clientError.code !== 'PGRST116') {
+                console.error('Error fetching client details:', clientError);
+              }
+              
+              return {
+                ...reservation,
+                clientInfo: clientData || null
+              };
+            } catch (err) {
+              console.error('Error processing client data:', err);
+              return reservation;
+            }
+          }));
+
+          setReservations(reservationsWithClientInfo || []);
+          setFilteredReservations(reservationsWithClientInfo || []);
           
           const pendingCount = data ? data.filter(r => r.status === 'En attente').length : 0;
           setPendingOpportunitiesCount(pendingCount);
@@ -814,9 +836,11 @@ const ProspectionPage = () => {
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Tag className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                        <User className="h-4 w-4 text-gray-500 flex-shrink-0" />
                         <span className="text-sm text-gray-600">
-                          Réf: {reservation.property?.reference_number || 'N/A'}
+                          {reservation.clientInfo 
+                            ? `${reservation.clientInfo.first_name || ''} ${reservation.clientInfo.last_name || ''}`
+                            : 'Client non identifié'}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
