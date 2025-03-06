@@ -194,7 +194,7 @@ export function AgencySidebar() {
                       </Link>
                     </SidebarMenuButton>
                     {item.badgeCount && item.badgeCount > 0 && (
-                      <SidebarMenuBadge className="bg-red-500 text-white">
+                      <SidebarMenuBadge className="bg-red-500">
                         {item.badgeCount}
                       </SidebarMenuBadge>
                     )}
