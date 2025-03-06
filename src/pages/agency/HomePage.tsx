@@ -492,10 +492,10 @@ export default function AgencyHomePage() {
                       <div 
                         key={type} 
                         onClick={() => scrollToSection(`section-${type}`)}
-                        className="p-2 hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
+                        className="p-2 hover:bg-gray-100 rounded-md transition-colors cursor-pointer relative"
                         style={{ color: agency?.primary_color || '#000000' }}
                       >
-                        <span className="font-medium">
+                        <span className="font-medium relative inline-block after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-0.5 after:bottom-0 after:left-0 after:bg-current after:origin-bottom-right after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-bottom-left">
                           {propertyTypeLabels[type] || type}
                         </span>
                       </div>
