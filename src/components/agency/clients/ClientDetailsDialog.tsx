@@ -17,6 +17,7 @@ import {
   SheetDescription
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
 import { 
   User, 
   Phone, 
@@ -25,10 +26,17 @@ import {
   CalendarDays, 
   Tag,
   Clock,
-  MapPin
+  MapPin,
+  FileDown,
+  FileText,
+  Download
 } from "lucide-react";
 import { getAbsoluteUrl } from "@/utils/urlUtils";
 import { useAgencyContext } from "@/contexts/AgencyContext";
+import { jsPDF } from "jspdf";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale/fr";
+import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 
 type ClientDetailsDialogProps = {
@@ -68,6 +76,69 @@ export function ClientDetailsDialog({
     }
   };
   
+  const generateContractPDF = () => {
+    if (!client || !property || !reservation || !agency) {
+      toast.error("Impossible de générer le contrat: informations manquantes");
+      return;
+    }
+    
+    try {
+      // Create a new PDF document
+      const doc = new jsPDF();
+      
+      // Set font size and add title
+      doc.setFontSize(18);
+      doc.text("CONTRAT DE RÉSERVATION", 105, 20, { align: 'center' });
+      
+      // Add agency details
+      doc.setFontSize(12);
+      doc.text(`Agence: ${agency.agency_name || ''}`, 20, 40);
+      doc.text(`Date: ${format(new Date(), 'dd/MM/yyyy', { locale: fr })}`, 20, 50);
+      
+      // Add property details
+      doc.setFontSize(14);
+      doc.text("DÉTAILS DU BIEN", 20, 70);
+      doc.setFontSize(12);
+      doc.text(`Référence: ${property.reference_number}`, 20, 80);
+      doc.text(`Titre: ${property.title}`, 20, 90);
+      doc.text(`Adresse: ${property.address || 'Non spécifiée'}`, 20, 100);
+      doc.text(`Prix: ${new Intl.NumberFormat('fr-FR').format(property.price)} FCFA`, 20, 110);
+      
+      // Add client details
+      doc.setFontSize(14);
+      doc.text("DÉTAILS DU CLIENT", 20, 130);
+      doc.setFontSize(12);
+      doc.text(`Nom complet: ${client.first_name || ''} ${client.last_name || ''}`, 20, 140);
+      doc.text(`Téléphone: ${client.phone_number || ''}`, 20, 150);
+      doc.text(`Email: ${client.email || ''}`, 20, 160);
+      doc.text(`CIN: ${client.cin || 'Non spécifié'}`, 20, 170);
+      
+      // Add reservation details
+      doc.setFontSize(14);
+      doc.text("DÉTAILS DE LA RÉSERVATION", 20, 190);
+      doc.setFontSize(12);
+      doc.text(`Numéro de réservation: ${reservation.reservation_number}`, 20, 200);
+      doc.text(`Type: ${reservation.type}`, 20, 210);
+      doc.text(`Date de création: ${format(new Date(reservation.created_at), 'dd/MM/yyyy', { locale: fr })}`, 20, 220);
+      
+      // Add signature sections
+      doc.setFontSize(12);
+      doc.text("Signature du Client", 40, 250);
+      doc.text("Signature de l'Agent", 150, 250);
+      
+      doc.line(20, 260, 80, 260); // Client signature line
+      doc.line(130, 260, 190, 260); // Agent signature line
+      
+      // Save the PDF
+      doc.save(`Contrat_${reservation.reservation_number}.pdf`);
+      
+      toast.success('Contrat généré avec succès');
+    } catch (error) {
+      console.error('Error generating contract PDF:', error);
+      toast.error('Erreur lors de la génération du contrat');
+    }
+  };
+  
   // Content to display in both dialog and sheet
   const content = (
     <div className="space-y-6">
@@ -93,6 +164,39 @@ export function ClientDetailsDialog({
               <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               <span className="font-medium">Téléphone:</span>
               <span>{client.phone_number}</span>
+            </div>
+          )}
+          {client.cin && (
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <span className="font-medium">CIN:</span>
+              <span>{client.cin}</span>
+            </div>
+          )}
+          {client.id_document_url && (
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <a 
+                href={client.id_document_url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-sm text-blue-600 hover:underline"
+              >
+                Voir le document d'identité
+              </a>
+            </div>
+          )}
+          {reservation && property && (
+            <div className="mt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex items-center mt-2" 
+                onClick={generateContractPDF}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Télécharger le contrat
+              </Button>
             </div>
           )}
         </div>
