@@ -215,10 +215,12 @@ export type Database = {
       clients: {
         Row: {
           agency_id: string | null
+          cin: string | null
           created_at: string
           email: string | null
           first_name: string | null
           id: string
+          id_document_url: string | null
           last_name: string | null
           notifications_enabled: boolean | null
           phone_number: string | null
@@ -227,10 +229,12 @@ export type Database = {
         }
         Insert: {
           agency_id?: string | null
+          cin?: string | null
           created_at?: string
           email?: string | null
           first_name?: string | null
           id?: string
+          id_document_url?: string | null
           last_name?: string | null
           notifications_enabled?: boolean | null
           phone_number?: string | null
@@ -239,10 +243,12 @@ export type Database = {
         }
         Update: {
           agency_id?: string | null
+          cin?: string | null
           created_at?: string
           email?: string | null
           first_name?: string | null
           id?: string
+          id_document_url?: string | null
           last_name?: string | null
           notifications_enabled?: boolean | null
           phone_number?: string | null
