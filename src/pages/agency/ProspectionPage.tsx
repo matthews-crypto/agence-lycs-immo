@@ -54,6 +54,8 @@ interface Location {
   client_id: string;
   client_cin: string;
   document_url: string;
+  rental_start_date?: string | null;
+  rental_end_date?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -79,6 +81,9 @@ const ProspectionPage = () => {
   const [clientDocument, setClientDocument] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [locationData, setLocationData] = useState<Location | null>(null);
+  const [rentalStartDate, setRentalStartDate] = useState<string>("");
+  const [rentalEndDate, setRentalEndDate] = useState<string>("");
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { agency } = useAgencyContext();
@@ -253,6 +258,14 @@ const ProspectionPage = () => {
         setClientCIN(data.client_cin);
       }
       
+      if (data?.rental_start_date) {
+        setRentalStartDate(format(new Date(data.rental_start_date), 'yyyy-MM-dd'));
+      }
+      
+      if (data?.rental_end_date) {
+        setRentalEndDate(format(new Date(data.rental_end_date), 'yyyy-MM-dd'));
+      }
+      
     } catch (error) {
       console.error('Error in location data fetch operation:', error);
       setLocationData(null);
@@ -403,6 +416,8 @@ const ProspectionPage = () => {
     setShowContractFields(false);
     setClientCIN("");
     setClientDocument(null);
+    setRentalStartDate("");
+    setRentalEndDate("");
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -419,6 +434,23 @@ const ProspectionPage = () => {
     if (!clientDocument) {
       toast.error('Le document d\'identité est obligatoire');
       return;
+    }
+    
+    if (selectedReservation.type === 'Location') {
+      if (!rentalStartDate) {
+        toast.error('La date de début de location est obligatoire');
+        return;
+      }
+      
+      if (!rentalEndDate) {
+        toast.error('La date de fin de location est obligatoire');
+        return;
+      }
+      
+      if (new Date(rentalEndDate) <= new Date(rentalStartDate)) {
+        toast.error('La date de fin doit être postérieure à la date de début');
+        return;
+      }
     }
     
     try {
@@ -448,12 +480,17 @@ const ProspectionPage = () => {
       
       const documentUrl = publicUrlData.publicUrl;
       
-      const locationUpsertData = {
+      const locationUpsertData: any = {
         property_id: selectedReservation.property.id,
         client_id: clientDetails.id,
         client_cin: clientCIN,
         document_url: documentUrl
       };
+      
+      if (selectedReservation.type === 'Location') {
+        locationUpsertData.rental_start_date = new Date(rentalStartDate).toISOString();
+        locationUpsertData.rental_end_date = new Date(rentalEndDate).toISOString();
+      }
       
       if (locationData) {
         const { error: locationUpdateError } = await supabase
@@ -492,7 +529,17 @@ const ProspectionPage = () => {
         return;
       }
       
-      generateContractPDF(selectedReservation, clientDetails, clientCIN);
+      if (selectedReservation.type === 'Location') {
+        generateContractPDF(
+          selectedReservation, 
+          clientDetails, 
+          clientCIN, 
+          rentalStartDate, 
+          rentalEndDate
+        );
+      } else {
+        generateContractPDF(selectedReservation, clientDetails, clientCIN);
+      }
       
       if (selectedReservation) {
         const wasStatusPending = selectedReservation.status === 'En attente';
@@ -525,7 +572,13 @@ const ProspectionPage = () => {
     }
   };
 
-  const generateContractPDF = (reservation: Reservation, client: Client, cin: string) => {
+  const generateContractPDF = (
+    reservation: Reservation, 
+    client: Client, 
+    cin: string, 
+    startDate?: string, 
+    endDate?: string
+  ) => {
     try {
       const doc = new jsPDF();
       
@@ -570,12 +623,19 @@ const ProspectionPage = () => {
       doc.text(`Numéro de ${reservation.type.toLowerCase()}: ${reservation.reservation_number}`, 20, 220);
       doc.text(`Date de création: ${format(new Date(reservation.created_at), 'dd/MM/yyyy', { locale: fr })}`, 20, 230);
       
-      doc.setFontSize(12);
-      doc.text("Signature du Client", 40, 260);
-      doc.text("Signature de l'Agent", 150, 260);
+      if (reservation.type === 'Location' && startDate && endDate) {
+        doc.text(`Date de début: ${format(new Date(startDate), 'dd/MM/yyyy', { locale: fr })}`, 20, 240);
+        doc.text(`Date de fin: ${format(new Date(endDate), 'dd/MM/yyyy', { locale: fr })}`, 20, 250);
+      }
       
-      doc.line(20, 270, 80, 270);
-      doc.line(130, 270, 190, 270);
+      const signatureY = reservation.type === 'Location' ? 280 : 260;
+      
+      doc.setFontSize(12);
+      doc.text("Signature du Client", 40, signatureY);
+      doc.text("Signature de l'Agent", 150, signatureY);
+      
+      doc.line(20, signatureY + 10, 80, signatureY + 10);
+      doc.line(130, signatureY + 10, 190, signatureY + 10);
       
       doc.save(`Contrat_${reservation.reservation_number}.pdf`);
       
@@ -590,6 +650,23 @@ const ProspectionPage = () => {
     setSelectedReservation(reservation);
     
     setAppointmentDate(reservation.appointment_date ? new Date(reservation.appointment_date) : null);
+    
+    if (reservation.type === 'Location') {
+      if (reservation.rental_start_date) {
+        setRentalStartDate(format(new Date(reservation.rental_start_date), 'yyyy-MM-dd'));
+      } else {
+        setRentalStartDate("");
+      }
+      
+      if (reservation.rental_end_date) {
+        setRentalEndDate(format(new Date(reservation.rental_end_date), 'yyyy-MM-dd'));
+      } else {
+        setRentalEndDate("");
+      }
+    } else {
+      setRentalStartDate("");
+      setRentalEndDate("");
+    }
     
     if (reservation.client_phone) {
       fetchClientDetails(reservation.client_phone);
@@ -1076,6 +1153,32 @@ const ProspectionPage = () => {
                             placeholder="Entrez le numéro CIN"
                           />
                         </div>
+                        
+                        {selectedReservation.type === 'Location' && (
+                          <>
+                            <div>
+                              <label className="text-sm font-medium mb-1 block">
+                                Date de début de location
+                              </label>
+                              <Input
+                                type="date"
+                                value={rentalStartDate}
+                                onChange={(e) => setRentalStartDate(e.target.value)}
+                              />
+                            </div>
+                            
+                            <div>
+                              <label className="text-sm font-medium mb-1 block">
+                                Date de fin de location
+                              </label>
+                              <Input
+                                type="date"
+                                value={rentalEndDate}
+                                onChange={(e) => setRentalEndDate(e.target.value)}
+                              />
+                            </div>
+                          </>
+                        )}
                         
                         <div>
                           <label className="text-sm font-medium mb-1 block">
