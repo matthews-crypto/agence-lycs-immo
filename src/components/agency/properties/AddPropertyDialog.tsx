@@ -1,4 +1,3 @@
-
 import {useEffect, useState} from "react";
 import {useForm} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -185,46 +184,35 @@ export function AddPropertyDialog() {
     setLoading(true);
 
     try {
+      const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+      
+      const propertyData = {
+        title: data.title,
+        description: data.description,
+        property_type: data.property_type,
+        bedrooms: data.bedrooms,
+        price: data.price,
+        surface_area: data.surface_area,
+        address: data.address,
+        zone_id: data.zone_id,
+        region: data.region,
+        postal_code: data.postal_code,
+        agency_id: agency.id,
+        property_status: "DISPONIBLE" as const,
+        is_available: true,
+        is_furnished: data.is_furnished,
+        property_offer_type: data.property_type === "TERRAIN" ? "VENTE" : data.property_offer_type,
+        property_condition: data.property_condition as PropertyCondition | null,
+        vefa_availability_date: data.property_condition === "VEFA" ? data.vefa_availability_date : null,
+        amenities: [] as string[],
+      };
+
       let attempt = 0;
       let newProperty = null;
       let error = null;
       
       while (attempt < 3 && !newProperty) {
         attempt++;
-        
-        // Générer un suffixe aléatoire pour éviter les collisions de référence
-        // Cette valeur ne sera pas utilisée pour la référence finale,
-        // mais elle modifie les données insérées pour éviter l'erreur de duplication
-        const randomSuffix = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-        
-        const propertyData = {
-          title: data.title,
-          description: data.description,
-          property_type: data.property_type,
-          bedrooms: data.bedrooms,
-          price: data.price,
-          surface_area: data.surface_area,
-          address: data.address,
-          zone_id: data.zone_id,
-          region: data.region,
-          postal_code: data.postal_code,
-          agency_id: agency.id,
-          property_status: "DISPONIBLE" as const,
-          is_available: true,
-          is_furnished: data.is_furnished,
-          property_offer_type: data.property_type === "TERRAIN" ? "VENTE" : data.property_offer_type,
-          property_condition: data.property_condition as PropertyCondition | null,
-          vefa_availability_date: data.property_condition === "VEFA" ? data.vefa_availability_date : null,
-          amenities: [] as string[],
-          // Ajouter un champ temporaire unique pour éviter les collisions
-          _temp_id: randomSuffix,
-        };
-        
-        // Attendre un délai aléatoire entre les tentatives pour réduire les collisions
-        if (attempt > 1) {
-          await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 300));
-        }
-  
         const response = await supabase
           .from("properties")
           .insert(propertyData)
@@ -242,7 +230,7 @@ export function AddPropertyDialog() {
           break;
         }
         
-        console.log(`Tentative ${attempt} échouée, nouvelle tentative...`);
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
 
       if (error) {
