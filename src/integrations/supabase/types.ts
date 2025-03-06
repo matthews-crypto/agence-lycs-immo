@@ -390,6 +390,51 @@ export type Database = {
         }
         Relationships: []
       }
+      locations: {
+        Row: {
+          client_cin: string | null
+          client_id: string
+          created_at: string
+          document_url: string | null
+          id: string
+          property_id: string
+          updated_at: string
+        }
+        Insert: {
+          client_cin?: string | null
+          client_id: string
+          created_at?: string
+          document_url?: string | null
+          id?: string
+          property_id: string
+          updated_at?: string
+        }
+        Update: {
+          client_cin?: string | null
+          client_id?: string
+          created_at?: string
+          document_url?: string | null
+          id?: string
+          property_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "locations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "locations_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       properties: {
         Row: {
           address: string | null
@@ -748,6 +793,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_force_update_client: {
+        Args: {
+          p_client_id: string
+          p_cin: string
+          p_document_url: string
+        }
+        Returns: boolean
+      }
       create_agency_user_and_profile: {
         Args: {
           email: string
@@ -773,6 +826,14 @@ export type Database = {
           user_id: string
         }
         Returns: boolean
+      }
+      update_client_info: {
+        Args: {
+          client_id: string
+          client_cin: string
+          client_doc_url: string
+        }
+        Returns: undefined
       }
     }
     Enums: {
