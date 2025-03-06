@@ -54,12 +54,12 @@ export function ClientDetailsDialog({
     <div className="space-y-6">
       {/* Client Information Section */}
       <section>
-        <h3 className="text-lg font-medium">Contact Information</h3>
+        <h3 className="text-lg font-medium">Informations de Contact</h3>
         <Separator className="my-2" />
         <div className="grid gap-2">
           <div className="flex items-center gap-2">
             <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-            <span className="font-medium">Name:</span>
+            <span className="font-medium">Nom:</span>
             <span className="break-words">{client.first_name} {client.last_name}</span>
           </div>
           {client.email && (
@@ -72,7 +72,7 @@ export function ClientDetailsDialog({
           {client.phone_number && (
             <div className="flex items-center gap-2">
               <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              <span className="font-medium">Phone:</span>
+              <span className="font-medium">Téléphone:</span>
               <span>{client.phone_number}</span>
             </div>
           )}
@@ -82,24 +82,24 @@ export function ClientDetailsDialog({
       {/* Property Information Section */}
       {property && (
         <section>
-          <h3 className="text-lg font-medium">Property Information</h3>
+          <h3 className="text-lg font-medium">Informations du Bien</h3>
           <Separator className="my-2" />
           <div className="grid gap-2">
             <div className="flex items-center gap-2 flex-wrap">
               <Home className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              <span className="font-medium">Property:</span>
+              <span className="font-medium">Bien:</span>
               <span className="break-words">{property.title}</span>
             </div>
             {property.address && (
               <div className="flex items-start gap-2">
                 <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-1" />
-                <span className="font-medium mt-0.5">Address:</span>
+                <span className="font-medium mt-0.5">Adresse:</span>
                 <span className="break-words">{property.address}</span>
               </div>
             )}
             <div className="flex items-center gap-2">
               <Tag className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              <span className="font-medium">Price:</span>
+              <span className="font-medium">Prix:</span>
               <span>{property.price.toLocaleString()} €</span>
             </div>
             <div className="flex items-center gap-2">
@@ -115,18 +115,18 @@ export function ClientDetailsDialog({
       {reservation && (
         <section>
           <h3 className="text-lg font-medium">
-            {isRental ? 'Rental Information' : 'Sale Information'}
+            {isRental ? 'Informations de Location' : 'Informations de Vente'}
           </h3>
           <Separator className="my-2" />
           <div className="grid gap-2">
             <div className="flex items-center gap-2">
               <Tag className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              <span className="font-medium">Reference:</span>
+              <span className="font-medium">Référence:</span>
               <span>{reservation.reservation_number}</span>
             </div>
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              <span className="font-medium">Status:</span>
+              <span className="font-medium">Statut:</span>
               <span className="capitalize">{reservation.status.toLowerCase()}</span>
             </div>
             {isRental ? (
@@ -134,14 +134,14 @@ export function ClientDetailsDialog({
                 {reservation.rental_start_date && (
                   <div className="flex items-center gap-2 flex-wrap">
                     <CalendarDays className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    <span className="font-medium">Rental Start:</span>
+                    <span className="font-medium">Début de location:</span>
                     <span>{new Date(reservation.rental_start_date).toLocaleDateString()}</span>
                   </div>
                 )}
                 {reservation.rental_end_date && (
                   <div className="flex items-center gap-2 flex-wrap">
                     <CalendarDays className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    <span className="font-medium">Rental End:</span>
+                    <span className="font-medium">Fin de location:</span>
                     <span>{new Date(reservation.rental_end_date).toLocaleDateString()}</span>
                   </div>
                 )}
@@ -151,7 +151,7 @@ export function ClientDetailsDialog({
                 {reservation.appointment_date && (
                   <div className="flex items-center gap-2 flex-wrap">
                     <CalendarDays className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    <span className="font-medium">Sale Date:</span>
+                    <span className="font-medium">Date de vente:</span>
                     <span>{new Date(reservation.appointment_date).toLocaleDateString()}</span>
                   </div>
                 )}
@@ -169,10 +169,10 @@ export function ClientDetailsDialog({
       <SheetContent side="bottom" className="h-[85vh] overflow-y-auto">
         <SheetHeader className="text-left">
           <SheetTitle className="flex items-center gap-2 text-xl">
-            <User /> Client Information
+            <User /> Informations Client
           </SheetTitle>
           <SheetDescription>
-            Detailed information about {client.first_name} {client.last_name}
+            Informations détaillées sur {client.first_name} {client.last_name}
           </SheetDescription>
         </SheetHeader>
         
@@ -185,10 +185,10 @@ export function ClientDetailsDialog({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
-            <User /> Client Information
+            <User /> Informations Client
           </DialogTitle>
           <DialogDescription>
-            Detailed information about {client.first_name} {client.last_name}
+            Informations détaillées sur {client.first_name} {client.last_name}
           </DialogDescription>
         </DialogHeader>
         
