@@ -59,8 +59,12 @@ interface Location {
   updated_at: string;
 }
 
-const ProspectionPage = () => {
-  // ... rest of component implementation remains unchanged
+const ProspectionPage: React.FC = () => {
+  return (
+    <div>
+      <h1>Prospection Page</h1>
+    </div>
+  );
 };
 
 export default ProspectionPage;

@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster"
 import { Toaster as Sonner } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -30,7 +31,7 @@ import AgencyRegisterPage from "@/pages/agency/RegisterPage"
 import AgencyDashboardPage from "@/pages/agency/DashboardPage"
 import AgencyAgentsPage from "@/pages/agency/AgentsPage"
 import AgencySettingsPage from "@/pages/agency/SettingsPage"
-import AgencyProspectionPage from "@/pages/agency/ProspectionPage"
+import ProspectionPage from "@/pages/agency/ProspectionPage"
 import AppointmentsPage from "@/pages/agency/AppointmentsPage"
 import AgentDashboardPage from "@/pages/agency/agent/DashboardPage"
 import AgentPropertiesPage from "@/pages/agency/agent/PropertiesPage"
@@ -106,7 +107,7 @@ const App = () => (
                   />
                   <Route path="dashboard" element={<AgencyDashboardPage />} />
                   <Route path="agents" element={<AgencyAgentsPage />} />
-                  <Route path="prospection" element={<AgencyProspectionPage />} />
+                  <Route path="prospection" element={<ProspectionPage />} />
                   <Route path="appointments" element={<AppointmentsPage />} />
                   <Route path="settings" element={<AgencySettingsPage />} />
                   <Route
