@@ -46,7 +46,7 @@ export default function ClientsPage() {
       
       console.log("Fetching clients for agency:", agency.id);
       
-      // Get all active locations first
+      // Get all active locations first with full property details
       const { data: locationsData, error: locationsError } = await supabase
         .from('locations')
         .select(`
@@ -57,7 +57,7 @@ export default function ClientsPage() {
           rental_start_date,
           rental_end_date,
           statut,
-          properties (
+          properties:property_id (
             title,
             property_type,
             price,
@@ -108,23 +108,24 @@ export default function ClientsPage() {
           return null; // Skip clients without locations
         }
         
-        // Handle potentially undefined property data
-        const property = clientLocation.properties || {};
+        // Get property data safely
+        const propertyData = clientLocation.properties || {};
         
         return {
           id: client.id,
           first_name: client.first_name,
           last_name: client.last_name,
           phone_number: client.phone_number,
+          // Use CIN from locations table as specified
           cin: clientLocation.client_cin,
           property_id: clientLocation.property_id,
-          property_title: property.title || null,
+          property_title: propertyData.title || null,
           rental_start_date: clientLocation.rental_start_date,
           rental_end_date: clientLocation.rental_end_date,
           statut: clientLocation.statut || 'N/A',
-          property_type: property.property_type || null,
-          property_price: property.price || null,
-          property_address: property.address || null
+          property_type: propertyData.property_type || null,
+          property_price: propertyData.price || null,
+          property_address: propertyData.address || null
         };
       }).filter(Boolean) as Client[]; // Filter out null values and cast to Client[]
       
@@ -255,4 +256,3 @@ export default function ClientsPage() {
     </SidebarProvider>
   );
 }
-
