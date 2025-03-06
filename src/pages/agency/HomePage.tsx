@@ -472,46 +472,37 @@ export default function AgencyHomePage() {
               Accueil
             </button>
             
-            <div className="relative" ref={categoryMenuRef}>
+            <div className="relative group">
               <button
-                onClick={() => setShowCategoryMenu(!showCategoryMenu)}
                 className="text-white hover:text-white/90 transition-colors flex items-center gap-1"
               >
                 <span>Catégorie Offre</span>
-                <ChevronDown className={`h-4 w-4 transition-transform ${showCategoryMenu ? 'rotate-180' : ''}`} />
+                <ChevronDown className="h-4 w-4 transition-transform group-hover:rotate-180" />
               </button>
               
-              {showCategoryMenu && (
-                <div 
-                  className="absolute left-0 right-0 mt-2 py-4 bg-white shadow-lg rounded-b-lg w-[30rem] -left-1/2"
-                  style={{ zIndex: 50 }}
-                >
-                  <div className="grid grid-cols-2 gap-4 p-4">
-                    {propertyTypeGroups && Object.entries(propertyTypeGroups).map(([type, typeProperties]) => (
-                      typeProperties.length > 0 && (
-                        <div key={type} className="flex flex-col" onClick={() => scrollToSection(`section-${type}`)}>
-                          <h3 className="font-medium mb-2" style={{ color: agency?.primary_color || '#000000' }}>
-                            {propertyTypeLabels[type] || type}
-                          </h3>
-                          {typeProperties[0]?.photos?.[0] ? (
-                            <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden cursor-pointer">
-                              <img 
-                                src={typeProperties[0].photos[0]} 
-                                alt={propertyTypeLabels[type]} 
-                                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                              />
-                            </div>
-                          ) : (
-                            <div className="w-full aspect-[4/3] bg-gray-200 flex items-center justify-center rounded-lg cursor-pointer">
-                              <BedDouble className="w-12 h-12 text-gray-400" />
-                            </div>
-                          )}
-                        </div>
-                      )
-                    ))}
-                  </div>
+              <div 
+                className="absolute left-0 right-0 mt-2 py-4 bg-white shadow-lg rounded-b-lg w-[20rem] -left-1/4 
+                        opacity-0 invisible group-hover:opacity-100 group-hover:visible 
+                        transition-all duration-300 ease-in-out transform origin-top scale-95 group-hover:scale-100"
+                style={{ zIndex: 50 }}
+              >
+                <div className="p-2">
+                  {propertyTypeGroups && Object.entries(propertyTypeGroups).map(([type, typeProperties]) => (
+                    typeProperties.length > 0 && (
+                      <div 
+                        key={type} 
+                        onClick={() => scrollToSection(`section-${type}`)}
+                        className="p-2 hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
+                        style={{ color: agency?.primary_color || '#000000' }}
+                      >
+                        <span className="font-medium">
+                          {propertyTypeLabels[type] || type}
+                        </span>
+                      </div>
+                    )
+                  ))}
                 </div>
-              )}
+              </div>
             </div>
             
             <button
