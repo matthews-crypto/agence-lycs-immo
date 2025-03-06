@@ -52,8 +52,30 @@ export function AgencySidebar() {
     if (location.pathname.includes('/agency/prospection') && newProspections > 0) {
       // Mark all current notifications as viewed when visiting the prospection page
       setNewProspections(0);
+      
+      // Store IDs of viewed prospections
+      const fetchAndStoreViewedIds = async () => {
+        if (!agency?.id) return;
+        
+        const oneDayAgo = new Date();
+        oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+        
+        const { data } = await supabase
+          .from('reservations')
+          .select('id')
+          .eq('agency_id', agency.id)
+          .eq('status', 'En attente')
+          .gte('created_at', oneDayAgo.toISOString());
+          
+        if (data && data.length > 0) {
+          const ids = data.map(item => item.id);
+          setViewedProspectionIds(prev => [...prev, ...ids]);
+        }
+      };
+      
+      fetchAndStoreViewedIds();
     }
-  }, [location.pathname, newProspections]);
+  }, [location.pathname, newProspections, agency?.id]);
 
   useEffect(() => {
     const fetchRecentProspections = async () => {
@@ -62,6 +84,8 @@ export function AgencySidebar() {
       // Get timestamp for 24 hours ago
       const oneDayAgo = new Date();
       oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+      
+      console.log("Fetching recent prospections, agency id:", agency.id);
       
       const { data, error } = await supabase
         .from('reservations')
@@ -75,8 +99,12 @@ export function AgencySidebar() {
         return;
       }
       
+      console.log("Recent prospections data:", data);
+      console.log("Viewed prospection ids:", viewedProspectionIds);
+      
       // Filter out viewed prospections
       const unseenProspections = data?.filter(item => !viewedProspectionIds.includes(item.id)) || [];
+      console.log("Unseen prospections:", unseenProspections.length);
       setNewProspections(unseenProspections.length);
     };
     
@@ -84,6 +112,8 @@ export function AgencySidebar() {
     
     // Set up a real-time subscription for new prospections
     if (agency?.id) {
+      console.log("Setting up real-time subscription for agency:", agency.id);
+      
       const channel = supabase
         .channel('public:reservations')
         .on(
@@ -95,10 +125,13 @@ export function AgencySidebar() {
             filter: `agency_id=eq.${agency.id}`
           },
           (payload) => {
+            console.log("Received new reservation:", payload);
             if (payload.new && payload.new.status === 'En attente') {
               const newId = payload.new.id as string;
               if (!viewedProspectionIds.includes(newId)) {
+                console.log("Adding new prospection to count");
                 setNewProspections(prev => prev + 1);
+                toast.info("Nouvelle prospection reçue!");
               }
             }
           }
