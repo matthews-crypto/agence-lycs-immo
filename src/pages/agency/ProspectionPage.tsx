@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -991,7 +990,9 @@ const ProspectionPage = () => {
                       
                       {selectedReservation.status !== 'Visite programmée' && (
                         <div className="mb-4">
-                          <label className="text-sm font-medium mb-1 block">Programmer un rendez-vous</label>
+                          <label className="text-sm font-medium mb-1 block">
+                            {selectedReservation.appointment_date ? 'Modifier le rendez-vous' : 'Programmer un rendez-vous'}
+                          </label>
                           <div className="flex space-x-2">
                             <Input
                               type="date"
