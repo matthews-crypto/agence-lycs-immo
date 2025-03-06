@@ -95,12 +95,57 @@ export default function HomePage() {
   }, [heroApi, propertiesApi]);
 
   const filteredProperties = properties?.filter(property => {
-    const matchesSearch = !searchTerm || 
-      property.title?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      property.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      property.zone?.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      propertyTypeLabels[property.property_type]?.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSearch;
+    if (!searchTerm) return true;
+    
+    const prepositionsToIgnore = ['a', 'à', 'au', 'aux', 'avec', 'de', 'des', 'du', 'en', 'et', 
+      'dans', 'par', 'pour', 'sans', 'sur', 'le', 'la', 'les', 'un', 'une'];
+    
+    const searchWords = searchTerm.toLowerCase()
+      .split(' ')
+      .map(word => word.trim())
+      .filter(word => word.length > 0 && !prepositionsToIgnore.includes(word));
+    
+    if (searchWords.length === 0) return true;
+    
+    const valueContainsSearchWord = (value, words) => {
+      if (!value) return false;
+      const normalizedValue = value.toString().toLowerCase();
+      return words.some(word => normalizedValue.includes(word));
+    };
+
+    const transactionMapping = {
+      'louer': 'location',
+      'location': 'location',
+      'vendre': 'vente',
+      'vente': 'vente'
+    };
+    
+    return searchWords.every(word => {
+      const isTransactionTerm = Object.keys(transactionMapping).includes(word);
+      if (isTransactionTerm) {
+        const mappedTerm = transactionMapping[word];
+        const offerType = property.property_offer_type?.toLowerCase();
+        if (offerType === 'vente' && mappedTerm === 'vente') return true;
+        if (offerType === 'location' && mappedTerm === 'location') return true;
+      }
+
+      for (const [typeKey, typeLabel] of Object.entries(propertyTypeLabels)) {
+        const typeLabelLower = typeLabel.toLowerCase();
+        const wordLower = word.toLowerCase();
+        if (typeLabelLower.includes(wordLower) || wordLower.includes(typeLabelLower)) {
+          if (property.property_type === typeKey) {
+            return true;
+          }
+        }
+      }
+      
+      return (
+        valueContainsSearchWord(property.title, [word]) || 
+        valueContainsSearchWord(property.description, [word]) ||
+        valueContainsSearchWord(property.zone?.nom, [word]) ||
+        valueContainsSearchWord(property.region, [word])
+      );
+    });
   });
 
   const handlePropertyClick = (propertyId: string, agencySlug: string) => {
