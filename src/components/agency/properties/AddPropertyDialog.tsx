@@ -184,6 +184,8 @@ export function AddPropertyDialog() {
     setLoading(true);
 
     try {
+      const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+      
       const propertyData = {
         title: data.title,
         description: data.description,
@@ -205,14 +207,34 @@ export function AddPropertyDialog() {
         amenities: [] as string[],
       };
 
-      const { data: newProperty, error } = await supabase
-        .from("properties")
-        .insert(propertyData)
-        .select()
-        .single();
+      let attempt = 0;
+      let newProperty = null;
+      let error = null;
+      
+      while (attempt < 3 && !newProperty) {
+        attempt++;
+        const response = await supabase
+          .from("properties")
+          .insert(propertyData)
+          .select()
+          .single();
+          
+        error = response.error;
+        
+        if (!error) {
+          newProperty = response.data;
+          break;
+        }
+        
+        if (error.code !== '23505' || !error.message.includes('unique_reference_per_agency')) {
+          break;
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
 
       if (error) {
-        console.error("Error adding property:", error);
+        console.error("Error adding property (attempt " + attempt + "):", error);
         
         if (error.code === '23505' && error.message.includes('unique_reference_per_agency')) {
           toast({
@@ -224,7 +246,7 @@ export function AddPropertyDialog() {
           toast({
             variant: "destructive",
             title: "Erreur",
-            description: "Une erreur est survenue lors de la création de l'offre",
+            description: "Une erreur est survenue lors de la création de l'offre: " + error.message,
           });
         }
         
