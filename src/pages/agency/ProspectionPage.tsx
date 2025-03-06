@@ -63,7 +63,6 @@ interface Location {
 }
 
 const ProspectionPage = () => {
-  
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [filteredReservations, setFilteredReservations] = useState<Reservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -79,7 +78,6 @@ const ProspectionPage = () => {
   const [appointmentDate, setAppointmentDate] = useState<Date | null>(null);
   const [pendingOpportunitiesCount, setPendingOpportunitiesCount] = useState(0);
   
-  // New state variables for CIN and document upload
   const [showContractFields, setShowContractFields] = useState(false);
   const [clientCIN, setClientCIN] = useState("");
   const [clientDocument, setClientDocument] = useState<File | null>(null);
@@ -194,7 +192,6 @@ const ProspectionPage = () => {
 
       setClientDetails(data);
       
-      // Check if there's an existing location for this client and the selected property
       if (selectedReservation && data) {
         fetchLocationData(data.id, selectedReservation.property.id);
       }
@@ -205,7 +202,6 @@ const ProspectionPage = () => {
     }
   };
 
-  // New function to fetch location data
   const fetchLocationData = async (clientId: string, propertyId: string) => {
     try {
       const { data, error } = await supabase
@@ -216,7 +212,7 @@ const ProspectionPage = () => {
         .single();
 
       if (error) {
-        if (error.code !== 'PGRST116') { // Not found error
+        if (error.code !== 'PGRST116') {
           console.error('Error fetching location data:', error);
         }
         setLocationData(null);
@@ -365,7 +361,6 @@ const ProspectionPage = () => {
     const files = e.target.files;
     if (files && files.length > 0) {
       const file = files[0];
-      // Only allow PDF files
       if (file.type === 'application/pdf') {
         setClientDocument(file);
       } else {
@@ -384,11 +379,9 @@ const ProspectionPage = () => {
     }
   };
 
-  // Updated contract finalization to use locations table
   const handleContractFinalization = async () => {
     if (!selectedReservation || !clientDetails) return;
     
-    // Validation
     if (!clientCIN.trim()) {
       toast.error('Le numéro CIN est obligatoire');
       return;
@@ -402,7 +395,6 @@ const ProspectionPage = () => {
     try {
       setIsUploading(true);
       
-      // Upload document to Supabase Storage
       const fileName = `${clientDetails.id}_${Date.now()}.pdf`;
       const filePath = `${selectedReservation.id}/${fileName}`;
       
@@ -421,14 +413,12 @@ const ProspectionPage = () => {
         return;
       }
       
-      // Get the public URL
       const { data: publicUrlData } = supabase.storage
         .from('client_documents')
         .getPublicUrl(filePath);
       
       const documentUrl = publicUrlData.publicUrl;
       
-      // Create or update location record
       const locationUpsertData = {
         property_id: selectedReservation.property.id,
         client_id: clientDetails.id,
@@ -436,9 +426,7 @@ const ProspectionPage = () => {
         document_url: documentUrl
       };
       
-      // Check if location already exists
       if (locationData) {
-        // Update existing location
         const { error: locationUpdateError } = await supabase
           .from('locations')
           .update(locationUpsertData)
@@ -451,7 +439,6 @@ const ProspectionPage = () => {
           return;
         }
       } else {
-        // Create new location
         const { error: locationInsertError } = await supabase
           .from('locations')
           .insert(locationUpsertData);
@@ -464,7 +451,6 @@ const ProspectionPage = () => {
         }
       }
       
-      // Update property with client_id (as in the original handleStatusChange)
       const { error: propertyError } = await supabase
         .from('properties')
         .update({ client_id: clientDetails.id })
@@ -477,7 +463,6 @@ const ProspectionPage = () => {
         return;
       }
       
-      // Update reservation status
       const { error: statusError } = await supabase
         .from('reservations')
         .update({ status: 'Fermée Gagnée' })
@@ -490,10 +475,8 @@ const ProspectionPage = () => {
         return;
       }
       
-      // Generate contract PDF
       generateContractPDF(selectedReservation, clientDetails, clientCIN);
       
-      // Update local state
       if (selectedReservation) {
         const wasStatusPending = selectedReservation.status === 'En attente';
         
@@ -509,7 +492,6 @@ const ProspectionPage = () => {
         );
         setReservations(updatedReservations);
         
-        // Fetch updated location data
         fetchLocationData(clientDetails.id, selectedReservation.property.id);
         
         applyFilters();
@@ -525,22 +507,18 @@ const ProspectionPage = () => {
       setIsUploading(false);
     }
   };
-  
+
   const generateContractPDF = (reservation: Reservation, client: Client, cin: string) => {
     try {
-      // Create a new PDF document
       const doc = new jsPDF();
       
-      // Set font size and add title
       doc.setFontSize(18);
       doc.text("CONTRAT DE RÉSERVATION", 105, 20, { align: 'center' });
       
-      // Add agency details
       doc.setFontSize(12);
       doc.text(`Agence: ${agency?.agency_name || ''}`, 20, 40);
       doc.text(`Date: ${format(new Date(), 'dd/MM/yyyy', { locale: fr })}`, 20, 50);
       
-      // Add property details
       doc.setFontSize(14);
       doc.text("DÉTAILS DU BIEN", 20, 70);
       doc.setFontSize(12);
@@ -549,7 +527,6 @@ const ProspectionPage = () => {
       doc.text(`Adresse: ${reservation.property.address || 'Non spécifiée'}`, 20, 100);
       doc.text(`Prix: ${new Intl.NumberFormat('fr-FR').format(reservation.property.price)} FCFA`, 20, 110);
       
-      // Add client details
       doc.setFontSize(14);
       doc.text("DÉTAILS DU CLIENT", 20, 130);
       doc.setFontSize(12);
@@ -558,7 +535,6 @@ const ProspectionPage = () => {
       doc.text(`Email: ${client.email || ''}`, 20, 160);
       doc.text(`CIN: ${cin}`, 20, 170);
       
-      // Add reservation details
       doc.setFontSize(14);
       doc.text("DÉTAILS DE LA RÉSERVATION", 20, 190);
       doc.setFontSize(12);
@@ -566,15 +542,13 @@ const ProspectionPage = () => {
       doc.text(`Type: ${reservation.type}`, 20, 210);
       doc.text(`Date de création: ${format(new Date(reservation.created_at), 'dd/MM/yyyy', { locale: fr })}`, 20, 220);
       
-      // Add signature sections
       doc.setFontSize(12);
       doc.text("Signature du Client", 40, 250);
       doc.text("Signature de l'Agent", 150, 250);
       
-      doc.line(20, 260, 80, 260); // Client signature line
-      doc.line(130, 260, 190, 260); // Agent signature line
+      doc.line(20, 260, 80, 260);
+      doc.line(130, 260, 190, 260);
       
-      // Save the PDF
       doc.save(`Contrat_${reservation.reservation_number}.pdf`);
       
       toast.success('Contrat généré avec succès');
@@ -596,7 +570,6 @@ const ProspectionPage = () => {
     
     setIsDialogOpen(true);
     
-    // Reset contract fields when opening a new reservation
     resetContractFields();
   };
 
@@ -671,7 +644,6 @@ const ProspectionPage = () => {
     }
   };
 
-  // Modified to show contract fields instead of immediately changing status
   const handleFinalizeContractClick = () => {
     setShowContractFields(true);
   };
@@ -679,7 +651,6 @@ const ProspectionPage = () => {
   const handleStatusChange = async (newStatus: string) => {
     if (!selectedReservation) return;
     
-    // If user clicked "Fermée Gagnée", we show the CIN/document upload form
     if (newStatus === 'Fermée Gagnée') {
       handleFinalizeContractClick();
       return;
@@ -901,4 +872,320 @@ const ProspectionPage = () => {
                 </DialogHeader>
                 
                 <div className="space-y-5 mt-2">
-                  <div className="bg
+                  <div className="bg-gray-50 rounded-md p-4">
+                    <h3 className="text-sm font-medium mb-2">Détails du bien</h3>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Home className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm">{selectedReservation.property?.title || 'Bien non spécifié'}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm">{selectedReservation.property?.address || 'Adresse non spécifiée'}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Tag className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm">
+                          {selectedReservation.property?.price 
+                            ? formatPrice(selectedReservation.property.price)
+                            : 'Prix non spécifié'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Tag className="h-4 w-4 text-gray-500" />
+                        <button 
+                          className="text-xs text-blue-600 hover:underline"
+                          onClick={() => selectedReservation.property?.id && handlePropertyClick(selectedReservation.property.id)}
+                        >
+                          Réf: {selectedReservation.property?.reference_number || 'N/A'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gray-50 rounded-md p-4">
+                    <h3 className="text-sm font-medium mb-2">Détails client</h3>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-4 w-4 text-gray-500" />
+                        <a 
+                          href={`tel:${selectedReservation.client_phone}`} 
+                          className="text-sm text-blue-600 hover:underline"
+                        >
+                          {selectedReservation.client_phone}
+                        </a>
+                      </div>
+                      
+                      {clientDetails && (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-gray-500" />
+                            <span className="text-sm">{clientDetails.first_name} {clientDetails.last_name}</span>
+                          </div>
+                          {clientDetails.email && (
+                            <div className="flex items-center gap-2">
+                              <Mail className="h-4 w-4 text-gray-500" />
+                              <a 
+                                href={`mailto:${clientDetails.email}`} 
+                                className="text-sm text-blue-600 hover:underline"
+                              >
+                                {clientDetails.email}
+                              </a>
+                            </div>
+                          )}
+                          {locationData?.client_cin && (
+                            <div className="flex items-center gap-2">
+                              <FileText className="h-4 w-4 text-gray-500" />
+                              <span className="text-sm">CIN: {locationData.client_cin}</span>
+                            </div>
+                          )}
+                          {locationData?.document_url && (
+                            <div className="flex items-center gap-2">
+                              <FileText className="h-4 w-4 text-gray-500" />
+                              <a 
+                                href={locationData.document_url} 
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm text-blue-600 hover:underline"
+                              >
+                                Voir le document d'identité
+                              </a>
+                            </div>
+                          )}
+                          <div className="mt-2">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-xs"
+                              onClick={handleClientReservationsClick}
+                            >
+                              <List className="h-4 w-4 mr-1" />
+                              Voir toutes les réservations
+                            </Button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gray-50 rounded-md p-4">
+                    <h3 className="text-sm font-medium mb-2">Détails de la réservation</h3>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm">
+                          Créée le: {format(new Date(selectedReservation.created_at), 'PPP', { locale: fr })}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Tag className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm">Type: {selectedReservation.type}</span>
+                      </div>
+                      
+                      {selectedReservation.appointment_date && (
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-gray-500" />
+                          <span className="text-sm">
+                            Rendez-vous: {format(new Date(selectedReservation.appointment_date), 'PPP', { locale: fr })}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {!isReservationClosed(selectedReservation.status) && (
+                    <div className="bg-gray-50 rounded-md p-4">
+                      <h3 className="text-sm font-medium mb-3">Actions</h3>
+                      
+                      {selectedReservation.status !== 'Visite programmée' && (
+                        <div className="mb-4">
+                          <label className="text-sm font-medium mb-1 block">Programmer un rendez-vous</label>
+                          <div className="flex space-x-2">
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  className={cn(
+                                    "justify-start text-left font-normal",
+                                    !appointmentDate && "text-muted-foreground"
+                                  )}
+                                >
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                  {appointmentDate ? format(appointmentDate, 'PPP', { locale: fr }) : <span>Choisir une date</span>}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                  mode="single"
+                                  selected={appointmentDate || undefined}
+                                  onSelect={(date) => handleAppointmentDateChange(date)}
+                                  initialFocus
+                                  locale={fr}
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div>
+                        <label className="text-sm font-medium mb-1 block">Changer le statut</label>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedReservation.status !== 'En attente' && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleStatusChange('En attente')}
+                            >
+                              En attente
+                            </Button>
+                          )}
+                          
+                          {selectedReservation.status !== 'Visite programmée' && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleStatusChange('Visite programmée')}
+                            >
+                              Visite programmée
+                            </Button>
+                          )}
+                          
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleStatusChange('Fermée Gagnée')}
+                            className="bg-green-50 hover:bg-green-100 border-green-200"
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1 text-green-600" />
+                            Fermée Gagnée
+                          </Button>
+                          
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleStatusChange('Fermée Perdu')}
+                            className="bg-red-50 hover:bg-red-100 border-red-200"
+                          >
+                            Fermée Perdu
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {showContractFields && (
+                    <div className="bg-gray-50 rounded-md p-4">
+                      <h3 className="text-sm font-medium mb-3">Finaliser le contrat</h3>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-sm font-medium mb-1 block">
+                            Numéro CIN du client
+                          </label>
+                          <Input
+                            value={clientCIN}
+                            onChange={(e) => setClientCIN(e.target.value)}
+                            placeholder="Entrez le numéro CIN"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="text-sm font-medium mb-1 block">
+                            Document d'identité (PDF)
+                          </label>
+                          <div className="flex items-center mt-1">
+                            <Input
+                              ref={fileInputRef}
+                              type="file"
+                              accept="application/pdf"
+                              onChange={handleDocumentChange}
+                              className="flex-1"
+                            />
+                          </div>
+                          {clientDocument && (
+                            <p className="text-xs text-green-600 mt-1">
+                              Fichier sélectionné: {clientDocument.name}
+                            </p>
+                          )}
+                        </div>
+                        
+                        <div className="flex justify-end space-x-2 mt-4">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={resetContractFields}
+                          >
+                            Annuler
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={handleContractFinalization}
+                            disabled={isUploading}
+                          >
+                            {isUploading ? (
+                              <>Traitement en cours...</>
+                            ) : (
+                              <>
+                                <Upload className="h-4 w-4 mr-1" />
+                                Finaliser
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            )}
+          </Dialog>
+          
+          <Sheet open={isClientReservationsOpen} onOpenChange={setIsClientReservationsOpen}>
+            <SheetContent>
+              <SheetHeader>
+                <SheetTitle>Réservations du client</SheetTitle>
+                <SheetDescription>
+                  {clientDetails && `${clientDetails.first_name} ${clientDetails.last_name}`}
+                </SheetDescription>
+              </SheetHeader>
+              <div className="mt-6">
+                {clientReservations.length === 0 ? (
+                  <p className="text-center text-gray-500">Aucune réservation trouvée</p>
+                ) : (
+                  <div className="space-y-4">
+                    {clientReservations.map(reservation => (
+                      <div 
+                        key={reservation.id}
+                        className="p-3 border rounded-md cursor-pointer hover:bg-gray-50"
+                        onClick={() => handleClientReservationItemClick(reservation)}
+                      >
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="font-medium">{reservation.reservation_number}</span>
+                          <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(reservation.status)}`}>
+                            {reservation.status}
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          <div className="flex items-center gap-1 mb-1">
+                            <Home className="h-3 w-3" />
+                            <span className="truncate">{reservation.property?.title || 'Bien non spécifié'}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            <span>{format(new Date(reservation.created_at), 'PP', { locale: fr })}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
+    </SidebarProvider>
+  );
+};
+
+export default ProspectionPage;
