@@ -37,7 +37,6 @@ export function AgencySidebar() {
   const { logout } = useAgencyAuthStore()
   const { agency } = useAgencyContext()
   const [newProspections, setNewProspections] = useState(0)
-  const [viewedProspectionIds, setViewedProspectionIds] = useState<string[]>([])
 
   useEffect(() => {
     if (agency?.secondary_color) {
@@ -49,15 +48,58 @@ export function AgencySidebar() {
   // Clear notifications when visiting the prospection page
   useEffect(() => {
     if (location.pathname.includes('/agency/prospection')) {
-      // Mark all current notifications as viewed when visiting the prospection page
+      console.log("On prospection page - clearing notification count");
+      // Reset the notification count when visiting the prospection page
       setNewProspections(0);
-      
-      // Clear the viewed IDs array as they've now been seen
-      setViewedProspectionIds([]);
     }
   }, [location.pathname]);
 
+  // Setup real-time listener for new reservations
   useEffect(() => {
+    if (!agency?.id) return;
+    
+    console.log("Setting up real-time subscription for agency:", agency.id);
+    
+    // Enable the table for realtime
+    supabase.channel('schema-db-changes')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public',
+        table: 'reservations',
+        filter: `agency_id=eq.${agency.id}`
+      }, (payload) => {
+        console.log("Realtime event received:", payload);
+      })
+      .subscribe();
+    
+    // Set up a specific channel for new reservations
+    const channel = supabase
+      .channel('reservation-notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'reservations',
+          filter: `agency_id=eq.${agency.id}`
+        },
+        (payload) => {
+          console.log("New reservation inserted:", payload);
+          if (payload.new && payload.new.status === 'En attente') {
+            // Increment the notification count for new reservations
+            setNewProspections(prev => {
+              const newCount = prev + 1;
+              console.log("Incrementing notification count:", prev, "->", newCount);
+              return newCount;
+            });
+            // Show a toast notification for the new reservation
+            toast.info("Nouvelle prospection reçue!");
+          }
+        }
+      )
+      .subscribe();
+    
+    // Initial fetch of recent prospections
     const fetchRecentProspections = async () => {
       if (!agency?.id) return;
       
@@ -81,46 +123,19 @@ export function AgencySidebar() {
       
       console.log("Recent prospections data:", data);
       
-      if (data) {
-        // Count all prospections as new if we're not on the prospection page
-        if (!location.pathname.includes('/agency/prospection')) {
-          setNewProspections(data.length);
-        }
+      // Only set notifications if we're not on the prospection page
+      if (data && !location.pathname.includes('/agency/prospection')) {
+        setNewProspections(data.length);
+        console.log("Setting initial notification count to:", data.length);
       }
     };
     
     fetchRecentProspections();
     
-    // Set up a real-time subscription for new prospections
-    if (agency?.id) {
-      console.log("Setting up real-time subscription for agency:", agency.id);
-      
-      const channel = supabase
-        .channel('public:reservations')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'reservations',
-            filter: `agency_id=eq.${agency.id}`
-          },
-          (payload) => {
-            console.log("Received new reservation:", payload);
-            if (payload.new && payload.new.status === 'En attente') {
-              // Always increment the counter for new reservations
-              setNewProspections(prev => prev + 1);
-              // Show a toast notification for the new reservation
-              toast.info("Nouvelle prospection reçue!");
-            }
-          }
-        )
-        .subscribe();
-      
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
+    return () => {
+      console.log("Cleaning up real-time subscription");
+      supabase.removeChannel(channel);
+    };
   }, [agency?.id, location.pathname]);
 
   const handleLogout = async () => {
