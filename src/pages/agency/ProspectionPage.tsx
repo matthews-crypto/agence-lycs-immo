@@ -123,6 +123,10 @@ const ProspectionPage = () => {
           if (reservationParam) {
             setReservationRefFilter(reservationParam);
           }
+          
+          data?.forEach(reservation => {
+            loadClientName(reservation.client_phone, reservation.id);
+          });
         } catch (error) {
           console.error('Error in fetch operation:', error);
           toast.error('Une erreur est survenue');
@@ -134,6 +138,35 @@ const ProspectionPage = () => {
 
     fetchReservations();
   }, [agency?.id, reservationParam]);
+  
+  const loadClientName = async (phone: string, reservationId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('first_name, last_name')
+        .eq('phone_number', phone)
+        .single();
+      
+      const nameElement = document.getElementById(`client-name-${reservationId}`);
+      
+      if (error || !data) {
+        if (nameElement) {
+          nameElement.textContent = 'Client non identifié';
+        }
+        return;
+      }
+      
+      if (nameElement) {
+        nameElement.textContent = `${data.first_name || ''} ${data.last_name || ''}`.trim() || 'Client sans nom';
+      }
+    } catch (error) {
+      console.error('Error fetching client name:', error);
+      const nameElement = document.getElementById(`client-name-${reservationId}`);
+      if (nameElement) {
+        nameElement.textContent = 'Client non identifié';
+      }
+    }
+  };
 
   useEffect(() => {
     if (!agency?.id) return;
@@ -814,9 +847,9 @@ const ProspectionPage = () => {
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Tag className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                        <span className="text-sm text-gray-600">
-                          Réf: {reservation.property?.reference_number || 'N/A'}
+                        <User className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                        <span className="text-sm text-gray-600" id={`client-name-${reservation.id}`}>
+                          Chargement...
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
