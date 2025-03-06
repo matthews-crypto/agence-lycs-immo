@@ -134,7 +134,6 @@ export default function PublicPropertyDetailPage() {
         agency_id: agencyId,
         reservation_number: reservationNumberData,
         type: isRental ? 'LOCATION' : 'VENTE',
-        status: 'En attente',
         rental_start_date: isRental ? startDate : null,
         rental_end_date: isRental ? endDate : null
       };
