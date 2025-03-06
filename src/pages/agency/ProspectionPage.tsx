@@ -6,7 +6,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Clock, Home, User, Phone, CheckCircle, Search, MapPin, Tag, Mail, List, PieChart, Upload, FileCheck } from "lucide-react";
+import { Clock, Home, User, Phone, CheckCircle, Search, MapPin, Tag, Mail, List, PieChart } from "lucide-react";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale/fr";
@@ -20,11 +20,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { ClientDetailsDialog } from "@/components/agency/clients/ClientDetailsDialog";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
 
 interface Reservation {
   id: string;
@@ -37,8 +32,6 @@ interface Reservation {
   rental_start_date: string | null;
   rental_end_date: string | null;
   appointment_date: string | null;
-  agency_id: string;
-  property_id: string;
   property: {
     id: string;
     title: string;
@@ -54,25 +47,7 @@ interface Client {
   last_name: string;
   phone_number: string;
   email: string;
-  cin?: string;
-  id_document_url?: string;
-  agency_id?: string;
-  created_at?: string;
-  updated_at?: string;
-  user_id?: string | null;
-  notifications_enabled?: boolean;
 }
-
-const finalizeContractSchema = z.object({
-  cin: z.string().min(1, "Le numéro CIN est obligatoire"),
-  idDocument: z
-    .instanceof(File)
-    .refine((file) => file.size > 0, "Le document d'identité est obligatoire")
-    .refine(
-      (file) => file.type === "application/pdf",
-      "Le document doit être au format PDF"
-    )
-});
 
 const ProspectionPage = () => {
   const { agency } = useAgencyContext();
@@ -90,22 +65,12 @@ const ProspectionPage = () => {
   const [clientReservations, setClientReservations] = useState<Reservation[]>([]);
   const [appointmentDate, setAppointmentDate] = useState<Date | null>(null);
   const [pendingOpportunitiesCount, setPendingOpportunitiesCount] = useState(0);
-  const [showContractForm, setShowContractForm] = useState(false);
-  const [isSubmittingContract, setIsSubmittingContract] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   
   const location = useLocation();
   const navigate = useNavigate();
   const { agencySlug } = useParams();
   const queryParams = new URLSearchParams(location.search);
   const reservationParam = queryParams.get('reservation');
-
-  const finalizeContractForm = useForm<z.infer<typeof finalizeContractSchema>>({
-    resolver: zodResolver(finalizeContractSchema),
-    defaultValues: {
-      cin: "",
-    }
-  });
 
   useEffect(() => {
     const fetchReservations = async () => {
@@ -350,7 +315,6 @@ const ProspectionPage = () => {
     }
     
     setIsDialogOpen(true);
-    setShowContractForm(false);
   };
 
   const handleClientReservationsClick = () => {
@@ -424,89 +388,8 @@ const ProspectionPage = () => {
     }
   };
 
-  const handleFinalizeContract = async (values: z.infer<typeof finalizeContractSchema>) => {
-    if (!selectedReservation || !clientDetails || !agency?.id) return;
-    
-    setIsSubmittingContract(true);
-    
-    try {
-      const file = values.idDocument;
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}_${selectedReservation.client_phone}.${fileExt}`;
-      const filePath = `id_documents/${fileName}`;
-      
-      console.log('Would upload file to:', filePath);
-      
-      const { error: clientUpdateError } = await supabase
-        .from('clients')
-        .upsert({ 
-          id: clientDetails.id || undefined,
-          agency_id: agency.id,
-          phone_number: selectedReservation.client_phone,
-          first_name: clientDetails.first_name || '',
-          last_name: clientDetails.last_name || '',
-          email: clientDetails.email || '',
-          cin: values.cin,
-          id_document_url: filePath,
-          notifications_enabled: true,
-          user_id: null
-        }, {
-          onConflict: 'phone_number,agency_id'
-        });
-
-      if (clientUpdateError) {
-        throw new Error(`Erreur lors de la mise à jour du client: ${clientUpdateError.message}`);
-      }
-      
-      const { error: reservationUpdateError } = await supabase
-        .from('reservations')
-        .update({ status: 'Fermée Gagnée' })
-        .eq('id', selectedReservation.id);
-
-      if (reservationUpdateError) {
-        throw new Error(`Erreur lors de la mise à jour de la réservation: ${reservationUpdateError.message}`);
-      }
-      
-      generateAndDownloadContract(selectedReservation, {
-        ...clientDetails, 
-        cin: values.cin
-      }, values.cin);
-      
-      if (selectedReservation.status === 'En attente') {
-        setPendingOpportunitiesCount(count => Math.max(0, count - 1));
-      }
-      
-      const updatedReservation = { 
-        ...selectedReservation, 
-        status: 'Fermée Gagnée'
-      };
-      
-      setSelectedReservation(updatedReservation);
-      
-      const updatedReservations = reservations.map(res => 
-        res.id === selectedReservation.id ? updatedReservation : res
-      );
-      
-      setReservations(updatedReservations);
-      setShowContractForm(false);
-      
-      toast.success('Contrat finalisé avec succès');
-    } catch (error) {
-      console.error('Error finalizing contract:', error);
-      toast.error('Erreur lors de la finalisation du contrat');
-    } finally {
-      setIsSubmittingContract(false);
-      applyFilters();
-    }
-  };
-
   const handleStatusChange = async (newStatus: string) => {
     if (!selectedReservation) return;
-    
-    if (newStatus === 'Fermée Gagnée') {
-      setShowContractForm(true);
-      return;
-    }
     
     try {
       const { error } = await supabase
@@ -518,6 +401,20 @@ const ProspectionPage = () => {
         console.error('Error updating reservation status:', error);
         toast.error('Erreur lors de la mise à jour du statut');
         return;
+      }
+
+      if (newStatus === 'Fermée Gagnée' && clientDetails) {
+        const { error: propertyError } = await supabase
+          .from('properties')
+          .update({ client_id: clientDetails.id })
+          .eq('id', selectedReservation.property.id);
+
+        if (propertyError) {
+          console.error('Error updating property with client_id:', propertyError);
+          toast.error('Erreur lors de l\'association du client au bien');
+        } else {
+          toast.success('Client associé au bien avec succès');
+        }
       }
 
       toast.success('Statut mis à jour avec succès');
@@ -568,58 +465,6 @@ const ProspectionPage = () => {
 
   const isReservationClosed = (status: string) => {
     return status === 'Fermée Gagnée' || status === 'Fermée Perdu';
-  };
-
-  const onHandleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      setSelectedFile(file);
-      finalizeContractForm.setValue("idDocument", file);
-    }
-  };
-
-  const generateAndDownloadContract = (reservation: Reservation, client: Client, cin: string) => {
-    const contractText = `
-    CONTRAT DE VENTE IMMOBILIÈRE
-    ===========================
-    
-    Date: ${new Date().toLocaleDateString('fr-FR')}
-    
-    ENTRE LES SOUSSIGNÉS:
-    
-    L'AGENCE:
-    ${agency?.agency_name || ''}
-    Adresse: ${agency?.address || ''}
-    
-    ET
-    
-    L'ACHETEUR:
-    ${client.first_name} ${client.last_name}
-    Téléphone: ${client.phone_number}
-    Email: ${client.email || 'Non spécifié'}
-    Numéro CIN: ${cin}
-    
-    CONCERNANT LE BIEN:
-    Référence: ${reservation.property.reference_number}
-    Titre: ${reservation.property.title}
-    Adresse: ${reservation.property.address || 'Non spécifiée'}
-    Prix: ${reservation.property.price.toLocaleString()} FCFA
-    
-    RÉSERVATION:
-    Numéro de réservation: ${reservation.reservation_number}
-    `;
-    
-    const blob = new Blob([contractText], { type: 'text/plain' });
-    
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Contrat_${reservation.reservation_number}_${Date.now()}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    
-    URL.revokeObjectURL(url);
-    document.body.removeChild(a);
   };
 
   if (isLoading) {
@@ -890,4 +735,136 @@ const ProspectionPage = () => {
                       
                       {selectedReservation.rental_end_date && (
                         <div className="flex items-center gap-3">
-                          <Clock className="h-5 w-5 text-gray-5
+                          <Clock className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                          <div>
+                            <p className="font-medium">
+                              {format(new Date(selectedReservation.rental_end_date), 'PPP', { locale: fr })}
+                            </p>
+                            <p className="text-xs text-muted-foreground">Date de fin</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                    <h3 className="font-semibold text-lg border-b pb-2">Type de transaction</h3>
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium capitalize">{selectedReservation.type.toLowerCase()}</p>
+                        <p className="text-xs text-muted-foreground">Type de prospection</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                    <h3 className="font-semibold text-lg border-b pb-2">Date de rendez-vous</h3>
+                    <div className="flex items-start gap-3">
+                      <CalendarIcon className="h-5 w-5 text-gray-500 mt-2 flex-shrink-0" />
+                      <div className="w-full">
+                        {isReservationClosed(selectedReservation.status) ? (
+                          <div className="text-gray-700">
+                            {selectedReservation.appointment_date 
+                              ? format(new Date(selectedReservation.appointment_date), "dd/MM/yyyy")
+                              : "Aucune date de rendez-vous"}
+                          </div>
+                        ) : (
+                          <Input
+                            type="date"
+                            value={appointmentDate ? format(appointmentDate, "yyyy-MM-dd") : ""}
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                handleAppointmentDateChange(new Date(e.target.value));
+                              }
+                            }}
+                            className="w-full"
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col gap-3 pt-2">
+                    {isReservationClosed(selectedReservation.status) ? (
+                      <div className="bg-green-50 border border-green-200 rounded-md p-4 text-center">
+                        <CheckCircle className="h-6 w-6 mx-auto text-green-500 mb-2" />
+                        <p className="text-gray-800 font-medium">Opportunité conclue</p>
+                        <p className="text-sm text-gray-500">Cette opportunité a été traitée et est désormais fermée.</p>
+                      </div>
+                    ) : (
+                      <>
+                        <Button 
+                          variant="destructive" 
+                          onClick={() => handleStatusChange('Fermée Perdu')}
+                        >
+                          Fermée Perdu
+                        </Button>
+                        <Button 
+                          variant="default" 
+                          onClick={() => handleStatusChange('Fermée Gagnée')}
+                        >
+                          Fermée Gagnée
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </DialogContent>
+            )}
+          </Dialog>
+
+          <Sheet open={isClientReservationsOpen} onOpenChange={setIsClientReservationsOpen}>
+            <SheetContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+              <SheetHeader>
+                <SheetTitle>
+                  Toutes les réservations du client
+                  {clientDetails && (
+                    <span className="block text-sm font-normal mt-1">
+                      {clientDetails.first_name} {clientDetails.last_name} - {clientDetails.phone_number}
+                    </span>
+                  )}
+                </SheetTitle>
+              </SheetHeader>
+
+              <div className="overflow-x-auto mt-6">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Référence</TableHead>
+                      <TableHead>Bien</TableHead>
+                      <TableHead>Statut</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {clientReservations.map(reservation => (
+                      <TableRow 
+                        key={reservation.id} 
+                        className="cursor-pointer hover:bg-gray-50"
+                        onClick={() => handleClientReservationItemClick(reservation)}
+                      >
+                        <TableCell className="font-medium">{reservation.reservation_number}</TableCell>
+                        <TableCell>{reservation.property?.title || 'Non spécifié'}</TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(reservation.status)}`}>
+                            {reservation.status}
+                          </span>
+                        </TableCell>
+                        <TableCell>{reservation.type}</TableCell>
+                        <TableCell>{format(new Date(reservation.created_at), 'dd/MM/yyyy', { locale: fr })}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
+    </SidebarProvider>
+  );
+};
+
+export default ProspectionPage;
