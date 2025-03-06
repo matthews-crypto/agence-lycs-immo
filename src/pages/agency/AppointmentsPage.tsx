@@ -111,13 +111,12 @@ export default function AppointmentsPage() {
                   locale={fr}
                   className="rounded-md"
                   components={{
-                    Day: ({ date, ...props }) => {
-                      const customClass = getDayClassName(date)
+                    Day: ({ day, ...props }) => {
+                      const customClass = getDayClassName(day)
                       return (
-                        <div
+                        <button
                           {...props}
                           className={`${props.className || ''} ${customClass}`}
-                          role="button"
                         />
                       )
                     }
