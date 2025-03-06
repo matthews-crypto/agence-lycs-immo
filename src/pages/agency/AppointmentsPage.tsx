@@ -94,7 +94,7 @@ export default function AppointmentsPage() {
             </div>
           ) : (
             <div className="mt-4">
-              <p className="mb-4">Total des rendez-vous: <Badge variant="primary">{reservations.length}</Badge></p>
+              <p className="mb-4">Total des rendez-vous: <Badge variant="default">{reservations.length}</Badge></p>
               <Calendar 
                 mode="single"
                 onDayClick={handleDayClick}
