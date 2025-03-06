@@ -1,4 +1,3 @@
-
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import {
   LayoutDashboard,
@@ -47,35 +46,16 @@ export function AgencySidebar() {
     }
   }, [agency?.secondary_color, agency?.primary_color]);
 
-  // Check if we're on the prospection page and mark as viewed
+  // Clear notifications when visiting the prospection page
   useEffect(() => {
-    if (location.pathname.includes('/agency/prospection') && newProspections > 0) {
+    if (location.pathname.includes('/agency/prospection')) {
       // Mark all current notifications as viewed when visiting the prospection page
       setNewProspections(0);
       
-      // Store IDs of viewed prospections
-      const fetchAndStoreViewedIds = async () => {
-        if (!agency?.id) return;
-        
-        const oneDayAgo = new Date();
-        oneDayAgo.setDate(oneDayAgo.getDate() - 1);
-        
-        const { data } = await supabase
-          .from('reservations')
-          .select('id')
-          .eq('agency_id', agency.id)
-          .eq('status', 'En attente')
-          .gte('created_at', oneDayAgo.toISOString());
-          
-        if (data && data.length > 0) {
-          const ids = data.map(item => item.id);
-          setViewedProspectionIds(prev => [...prev, ...ids]);
-        }
-      };
-      
-      fetchAndStoreViewedIds();
+      // Clear the viewed IDs array as they've now been seen
+      setViewedProspectionIds([]);
     }
-  }, [location.pathname, newProspections, agency?.id]);
+  }, [location.pathname]);
 
   useEffect(() => {
     const fetchRecentProspections = async () => {
@@ -100,12 +80,13 @@ export function AgencySidebar() {
       }
       
       console.log("Recent prospections data:", data);
-      console.log("Viewed prospection ids:", viewedProspectionIds);
       
-      // Filter out viewed prospections
-      const unseenProspections = data?.filter(item => !viewedProspectionIds.includes(item.id)) || [];
-      console.log("Unseen prospections:", unseenProspections.length);
-      setNewProspections(unseenProspections.length);
+      if (data) {
+        // Count all prospections as new if we're not on the prospection page
+        if (!location.pathname.includes('/agency/prospection')) {
+          setNewProspections(data.length);
+        }
+      }
     };
     
     fetchRecentProspections();
@@ -127,12 +108,10 @@ export function AgencySidebar() {
           (payload) => {
             console.log("Received new reservation:", payload);
             if (payload.new && payload.new.status === 'En attente') {
-              const newId = payload.new.id as string;
-              if (!viewedProspectionIds.includes(newId)) {
-                console.log("Adding new prospection to count");
-                setNewProspections(prev => prev + 1);
-                toast.info("Nouvelle prospection reçue!");
-              }
+              // Always increment the counter for new reservations
+              setNewProspections(prev => prev + 1);
+              // Show a toast notification for the new reservation
+              toast.info("Nouvelle prospection reçue!");
             }
           }
         )
@@ -142,7 +121,7 @@ export function AgencySidebar() {
         supabase.removeChannel(channel);
       };
     }
-  }, [agency?.id, viewedProspectionIds]);
+  }, [agency?.id, location.pathname]);
 
   const handleLogout = async () => {
     try {
