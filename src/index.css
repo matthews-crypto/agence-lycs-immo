@@ -100,9 +100,3 @@
     @apply bg-background text-foreground;
   }
 }
-
-/* Suppression du fix qui causait des problèmes */
-/* .rdp:not(.popover-content .rdp) {
-  display: none !important;
-} */
-

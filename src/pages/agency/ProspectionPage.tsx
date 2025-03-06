@@ -17,9 +17,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
-import { Calendar } from "@/components/ui/calendar";
 
 interface Reservation {
   id: string;
@@ -304,9 +301,10 @@ const ProspectionPage = () => {
     setStatusFilter("");
   };
 
-  const handleAppointmentDateChange = async (date: Date | undefined) => {
-    if (!date || !selectedReservation) return;
+  const handleAppointmentDateChange = async (dateString: string) => {
+    if (!dateString || !selectedReservation) return;
     
+    const date = new Date(dateString);
     setAppointmentDate(date);
     
     try {
@@ -682,33 +680,16 @@ const ProspectionPage = () => {
                     <div className="flex items-start gap-3">
                       <CalendarIcon className="h-5 w-5 text-gray-500 mt-2 flex-shrink-0" />
                       <div className="w-full">
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                "w-full justify-start text-left font-normal",
-                                !appointmentDate && "text-muted-foreground"
-                              )}
-                            >
-                              {appointmentDate ? (
-                                format(appointmentDate, "PPP", { locale: fr })
-                              ) : (
-                                <span>Sélectionner une date</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={appointmentDate || undefined}
-                              onSelect={(date) => handleAppointmentDateChange(date)}
-                              initialFocus
-                              className="pointer-events-auto"
-                            />
-                          </PopoverContent>
-                        </Popover>
+                        <Input
+                          type="date"
+                          value={appointmentDate ? format(appointmentDate, "yyyy-MM-dd") : ""}
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              handleAppointmentDateChange(e.target.value);
+                            }
+                          }}
+                          className="w-full"
+                        />
                       </div>
                     </div>
                   </div>
