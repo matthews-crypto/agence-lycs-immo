@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -431,17 +430,13 @@ const ProspectionPage = () => {
     setIsSubmittingContract(true);
     
     try {
-      // 1. Upload the ID document to Supabase storage
       const file = values.idDocument;
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}_${selectedReservation.client_phone}.${fileExt}`;
       const filePath = `id_documents/${fileName}`;
       
-      // Instead of actual file upload (which would require storage setup)
-      // we'll just simulate it for now
       console.log('Would upload file to:', filePath);
       
-      // 2. Update client record with CIN and document URL
       const { error: clientUpdateError } = await supabase
         .from('clients')
         .upsert({ 
@@ -463,7 +458,6 @@ const ProspectionPage = () => {
         throw new Error(`Erreur lors de la mise à jour du client: ${clientUpdateError.message}`);
       }
       
-      // 3. Update reservation status
       const { error: reservationUpdateError } = await supabase
         .from('reservations')
         .update({ status: 'Fermée Gagnée' })
@@ -473,13 +467,11 @@ const ProspectionPage = () => {
         throw new Error(`Erreur lors de la mise à jour de la réservation: ${reservationUpdateError.message}`);
       }
       
-      // 4. Generate and download contract
       generateAndDownloadContract(selectedReservation, {
         ...clientDetails, 
         cin: values.cin
       }, values.cin);
       
-      // Update UI
       if (selectedReservation.status === 'En attente') {
         setPendingOpportunitiesCount(count => Math.max(0, count - 1));
       }
@@ -1111,7 +1103,13 @@ const ProspectionPage = () => {
       {selectedReservation && clientDetails && (
         <ClientDetailsDialog
           client={{
-            ...clientDetails,
+            id: clientDetails.id,
+            first_name: clientDetails.first_name,
+            last_name: clientDetails.last_name,
+            phone_number: clientDetails.phone_number,
+            email: clientDetails.email || '',
+            cin: clientDetails.cin || '',
+            id_document_url: clientDetails.id_document_url || '',
             agency_id: agency?.id || '',
             created_at: clientDetails.created_at || new Date().toISOString(),
             updated_at: clientDetails.updated_at || new Date().toISOString(),
@@ -1119,11 +1117,15 @@ const ProspectionPage = () => {
             user_id: clientDetails.user_id || null
           }}
           property={{
-            ...selectedReservation.property,
+            id: selectedReservation.property?.id || '',
+            title: selectedReservation.property?.title || '',
+            address: selectedReservation.property?.address || '',
+            reference_number: selectedReservation.property?.reference_number || '',
+            price: selectedReservation.property?.price || 0,
             agency_id: agency?.id || '',
             client_id: '',
-            created_at: '',
-            updated_at: '',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
             description: '',
             detailed_description: '',
             property_type: '',
@@ -1136,10 +1138,31 @@ const ProspectionPage = () => {
             is_available: true,
             is_furnished: false,
             view_count: 0,
-            zone_id: 0
+            zone_id: 0,
+            location_lat: null,
+            location_lng: null,
+            postal_code: '',
+            preview_description: '',
+            property_condition: null,
+            property_offer_type: 'VENTE',
+            region: '',
+            virtual_tour_url: null,
+            vefa_availability_date: null,
+            year_built: null
           }}
           reservation={{
-            ...selectedReservation
+            id: selectedReservation.id,
+            reservation_number: selectedReservation.reservation_number,
+            client_phone: selectedReservation.client_phone,
+            status: selectedReservation.status,
+            type: selectedReservation.type,
+            created_at: selectedReservation.created_at,
+            updated_at: selectedReservation.updated_at,
+            rental_start_date: selectedReservation.rental_start_date || '',
+            rental_end_date: selectedReservation.rental_end_date || '',
+            appointment_date: selectedReservation.appointment_date || '',
+            agency_id: agency?.id || '',
+            property_id: selectedReservation.property?.id || ''
           }}
           isOpen={false}
           onClose={() => {}}
