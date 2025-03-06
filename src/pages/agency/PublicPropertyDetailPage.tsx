@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -77,18 +76,22 @@ export default function PublicPropertyDetailPage() {
       startDate?: string;
       endDate?: string;
     }) => {
-      const { data: existingReservation, error: reservationCheckError } = await supabase
-        .from("reservations")
-        .select("*")
-        .eq("property_id", propertyId)
-        .eq("client_phone", phone)
-        .single();
+      const isRental = property?.property_offer_type === 'LOCATION';
+      
+      if (!isRental) {
+        const { data: existingReservation, error: reservationCheckError } = await supabase
+          .from("reservations")
+          .select("*")
+          .eq("property_id", propertyId)
+          .eq("client_phone", phone)
+          .single();
 
-      if (reservationCheckError?.code !== "PGRST116") {
-        if (existingReservation) {
-          throw new Error("Vous avez déjà réservé ce bien");
+        if (reservationCheckError?.code !== "PGRST116") {
+          if (existingReservation) {
+            throw new Error("Vous avez déjà réservé ce bien pour un achat");
+          }
+          if (reservationCheckError) throw reservationCheckError;
         }
-        if (reservationCheckError) throw reservationCheckError;
       }
 
       const { data: reservationNumberData, error: reservationNumberError } = await supabase
@@ -128,14 +131,13 @@ export default function PublicPropertyDetailPage() {
         client = existingClient;
       }
 
-      const isRental = property?.property_offer_type === 'LOCATION';
       const reservationData = {
         client_phone: phone,
         property_id: propertyId,
         agency_id: agencyId,
         reservation_number: reservationNumberData,
         type: isRental ? 'LOCATION' : 'VENTE',
-        status: 'En attente', // Changed from 'PENDING' to 'En attente'
+        status: 'En attente',
         rental_start_date: isRental ? startDate : null,
         rental_end_date: isRental ? endDate : null
       };
