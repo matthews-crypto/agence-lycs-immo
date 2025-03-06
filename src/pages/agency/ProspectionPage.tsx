@@ -408,8 +408,8 @@ const ProspectionPage = () => {
         <AgencySidebar />
         <div className="flex-1 p-4 md:p-8">
           <div className="flex flex-col items-start mb-6">
-            <h1 className="text-2xl md:text-3xl font-bold">Gestion des Prospections</h1>
-            <p className="text-muted-foreground mt-2">Consultez et gérez vos demandes de prospection</p>
+            <h1 className="text-2xl md:text-3xl font-bold">Gestion des Opportunités</h1>
+            <p className="text-muted-foreground mt-2">Consultez et gérez vos demandes d'opportunités</p>
           </div>
 
           <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
