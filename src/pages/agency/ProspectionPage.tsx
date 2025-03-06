@@ -502,7 +502,7 @@ const ProspectionPage = () => {
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                        <CalendarIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
                         <span className="text-sm">
                           {format(new Date(reservation.created_at), 'PP', { locale: fr })}
                         </span>
