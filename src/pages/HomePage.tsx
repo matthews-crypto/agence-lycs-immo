@@ -112,14 +112,37 @@ export default function HomePage() {
       const normalizedValue = value.toString().toLowerCase();
       return words.some(word => normalizedValue.includes(word));
     };
+
+    const transactionMapping = {
+      'louer': 'location',
+      'location': 'location',
+      'vendre': 'vente',
+      'vente': 'vente'
+    };
     
-    return searchWords.every(word => (
-      valueContainsSearchWord(property.title, [word]) || 
-      valueContainsSearchWord(property.description, [word]) ||
-      valueContainsSearchWord(property.zone?.nom, [word]) ||
-      valueContainsSearchWord(propertyTypeLabels[property.property_type], [word]) ||
-      valueContainsSearchWord(property.region, [word])
-    ));
+    return searchWords.every(word => {
+      const isTransactionTerm = Object.keys(transactionMapping).includes(word);
+      if (isTransactionTerm) {
+        const mappedTerm = transactionMapping[word];
+        const offerType = property.property_offer_type?.toLowerCase();
+        if (offerType === 'vente' && mappedTerm === 'vente') return true;
+        if (offerType === 'location' && mappedTerm === 'location') return true;
+      }
+
+      for (const [typeKey, typeLabel] of Object.entries(propertyTypeLabels)) {
+        if (typeLabel.toLowerCase().includes(word) && property.property_type === typeKey) {
+          return true;
+        }
+      }
+      
+      return (
+        valueContainsSearchWord(property.title, [word]) || 
+        valueContainsSearchWord(property.description, [word]) ||
+        valueContainsSearchWord(property.zone?.nom, [word]) ||
+        valueContainsSearchWord(propertyTypeLabels[property.property_type], [word]) ||
+        valueContainsSearchWord(property.region, [word])
+      );
+    });
   });
 
   const handlePropertyClick = (propertyId: string, agencySlug: string) => {
