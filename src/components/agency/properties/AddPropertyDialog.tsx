@@ -73,6 +73,7 @@ export function AddPropertyDialog() {
   const [availableCities, setAvailableCities] = useState<Zone[]>([]);
   const [isLocation, setIsLocation] = useState(false);
   const [isVente, setIsVente] = useState(true);
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { agency } = useAgencyContext();
   const navigate = useNavigate();
@@ -180,6 +181,8 @@ export function AddPropertyDialog() {
       return;
     }
 
+    setLoading(true);
+
     try {
       const propertyData = {
         title: data.title,
@@ -208,7 +211,26 @@ export function AddPropertyDialog() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error adding property:", error);
+        
+        if (error.code === '23505' && error.message.includes('unique_reference_per_agency')) {
+          toast({
+            variant: "destructive",
+            title: "Erreur de référence",
+            description: "Un problème est survenu avec la génération de la référence. Veuillez réessayer.",
+          });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Erreur",
+            description: "Une erreur est survenue lors de la création de l'offre",
+          });
+        }
+        
+        setLoading(false);
+        return;
+      }
 
       toast({
         title: "Succès",
@@ -216,6 +238,7 @@ export function AddPropertyDialog() {
       });
       setOpen(false);
       form.reset();
+      setLoading(false);
       
       navigate(`/${agency.slug}/properties/${newProperty.id}/images`);
     } catch (error) {
@@ -223,8 +246,9 @@ export function AddPropertyDialog() {
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: "Une erreur est survenue lors de la creation de l'offre",
+        description: "Une erreur est survenue lors de la création de l'offre",
       });
+      setLoading(false);
     }
   };
 
@@ -553,10 +577,13 @@ export function AddPropertyDialog() {
                 type="button"
                 variant="outline"
                 onClick={() => setOpen(false)}
+                disabled={loading}
               >
                 Annuler
               </Button>
-              <Button type="submit">Créer</Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? 'Création en cours...' : 'Créer'}
+              </Button>
             </div>
           </form>
         </Form>
