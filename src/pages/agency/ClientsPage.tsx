@@ -34,6 +34,14 @@ type Client = {
   property_address: string | null;
 };
 
+// Define the structure of property data to ensure type safety
+type PropertyData = {
+  title?: string | null;
+  property_type?: string | null;
+  price?: number | null;
+  address?: string | null;
+};
+
 export default function ClientsPage() {
   const { agency } = useAgencyContext();
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -108,8 +116,8 @@ export default function ClientsPage() {
           return null; // Skip clients without locations
         }
         
-        // Get property data safely
-        const propertyData = clientLocation.properties || {};
+        // Get property data safely - explicitly cast to PropertyData type
+        const propertyData = clientLocation.properties as PropertyData || {};
         
         return {
           id: client.id,
@@ -119,13 +127,13 @@ export default function ClientsPage() {
           // Use CIN from locations table as specified
           cin: clientLocation.client_cin,
           property_id: clientLocation.property_id,
-          property_title: propertyData.title || null,
+          property_title: propertyData?.title || null,
           rental_start_date: clientLocation.rental_start_date,
           rental_end_date: clientLocation.rental_end_date,
           statut: clientLocation.statut || 'N/A',
-          property_type: propertyData.property_type || null,
-          property_price: propertyData.price || null,
-          property_address: propertyData.address || null
+          property_type: propertyData?.property_type || null,
+          property_price: propertyData?.price || null,
+          property_address: propertyData?.address || null
         };
       }).filter(Boolean) as Client[]; // Filter out null values and cast to Client[]
       
