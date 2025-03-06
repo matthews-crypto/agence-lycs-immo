@@ -537,8 +537,10 @@ const ProspectionPage = () => {
         }
       }
       
+      const transactionType = reservation.type === 'Vente' ? 'CONTRAT DE VENTE' : 'CONTRAT DE LOCATION';
+      
       doc.setFontSize(18);
-      doc.text("CONTRAT DE RÉSERVATION", 105, 40, { align: 'center' });
+      doc.text(transactionType, 105, 40, { align: 'center' });
       
       doc.setFontSize(12);
       doc.text(`Agence: ${agency?.agency_name || ''}`, 20, 60);
@@ -551,7 +553,9 @@ const ProspectionPage = () => {
       doc.text(`Référence: ${reservation.property.reference_number}`, 20, 110);
       doc.text(`Titre: ${reservation.property.title}`, 20, 120);
       doc.text(`Adresse: ${reservation.property.address || 'Non spécifiée'}`, 20, 130);
-      doc.text(`Prix: ${new Intl.NumberFormat('fr-FR').format(reservation.property.price)} FCFA`, 20, 140);
+      
+      const formattedPrice = new Intl.NumberFormat('fr-FR').format(reservation.property.price).replace('/', '');
+      doc.text(`Prix: ${formattedPrice} FCFA`, 20, 140);
       
       doc.setFontSize(14);
       doc.text("DÉTAILS DU CLIENT", 20, 160);
@@ -561,18 +565,17 @@ const ProspectionPage = () => {
       doc.text(`CIN: ${cin}`, 20, 190);
       
       doc.setFontSize(14);
-      doc.text("DÉTAILS DE LA RÉSERVATION", 20, 210);
+      doc.text("DÉTAILS DE LA TRANSACTION", 20, 210);
       doc.setFontSize(12);
-      doc.text(`Numéro de réservation: ${reservation.reservation_number}`, 20, 220);
-      doc.text(`Type: ${reservation.type}`, 20, 230);
-      doc.text(`Date de création: ${format(new Date(reservation.created_at), 'dd/MM/yyyy', { locale: fr })}`, 20, 240);
+      doc.text(`Numéro de ${reservation.type.toLowerCase()}: ${reservation.reservation_number}`, 20, 220);
+      doc.text(`Date de création: ${format(new Date(reservation.created_at), 'dd/MM/yyyy', { locale: fr })}`, 20, 230);
       
       doc.setFontSize(12);
-      doc.text("Signature du Client", 40, 270);
-      doc.text("Signature de l'Agent", 150, 270);
+      doc.text("Signature du Client", 40, 260);
+      doc.text("Signature de l'Agent", 150, 260);
       
-      doc.line(20, 280, 80, 280);
-      doc.line(130, 280, 190, 280);
+      doc.line(20, 270, 80, 270);
+      doc.line(130, 270, 190, 270);
       
       doc.save(`Contrat_${reservation.reservation_number}.pdf`);
       
