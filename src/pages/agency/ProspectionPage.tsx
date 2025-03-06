@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -70,7 +69,6 @@ const ProspectionPage = () => {
   const [appointmentDate, setAppointmentDate] = useState<Date | null>(null);
   const [pendingOpportunitiesCount, setPendingOpportunitiesCount] = useState(0);
   
-  // New state variables for CIN and document upload
   const [showContractFields, setShowContractFields] = useState(false);
   const [clientCIN, setClientCIN] = useState("");
   const [clientDocument, setClientDocument] = useState<File | null>(null);
@@ -184,7 +182,6 @@ const ProspectionPage = () => {
 
       setClientDetails(data);
       
-      // Set CIN if available from client details
       if (data?.cin) {
         setClientCIN(data.cin);
       }
@@ -326,7 +323,6 @@ const ProspectionPage = () => {
     const files = e.target.files;
     if (files && files.length > 0) {
       const file = files[0];
-      // Only allow PDF files
       if (file.type === 'application/pdf') {
         setClientDocument(file);
       } else {
@@ -348,7 +344,6 @@ const ProspectionPage = () => {
   const handleContractFinalization = async () => {
     if (!selectedReservation || !clientDetails) return;
     
-    // Validation
     if (!clientCIN.trim()) {
       toast.error('Le numéro CIN est obligatoire');
       return;
@@ -362,9 +357,17 @@ const ProspectionPage = () => {
     try {
       setIsUploading(true);
       
-      // Upload document to Supabase Storage
       const fileName = `${clientDetails.id}_${Date.now()}.pdf`;
       const filePath = `${selectedReservation.id}/${fileName}`;
+      
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const bucketExists = buckets?.some(bucket => bucket.name === 'client_documents');
+      
+      if (!bucketExists) {
+        await supabase.storage.createBucket('client_documents', {
+          public: false,
+        });
+      }
       
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('client_documents')
@@ -381,14 +384,12 @@ const ProspectionPage = () => {
         return;
       }
       
-      // Get the public URL
       const { data: publicUrlData } = supabase.storage
         .from('client_documents')
         .getPublicUrl(filePath);
       
       const documentUrl = publicUrlData.publicUrl;
       
-      // Update client with CIN and document URL
       const { error: clientUpdateError } = await supabase
         .from('clients')
         .update({ 
@@ -404,7 +405,6 @@ const ProspectionPage = () => {
         return;
       }
       
-      // Update property with client_id (as in the original handleStatusChange)
       const { error: propertyError } = await supabase
         .from('properties')
         .update({ client_id: clientDetails.id })
@@ -417,7 +417,6 @@ const ProspectionPage = () => {
         return;
       }
       
-      // Update reservation status
       const { error: statusError } = await supabase
         .from('reservations')
         .update({ status: 'Fermée Gagnée' })
@@ -430,10 +429,8 @@ const ProspectionPage = () => {
         return;
       }
       
-      // Generate contract PDF
       generateContractPDF(selectedReservation, clientDetails, clientCIN);
       
-      // Update local state
       if (selectedReservation) {
         const wasStatusPending = selectedReservation.status === 'En attente';
         
@@ -449,7 +446,6 @@ const ProspectionPage = () => {
         );
         setReservations(updatedReservations);
         
-        // Update client details in local state
         setClientDetails({
           ...clientDetails,
           cin: clientCIN,
@@ -469,22 +465,18 @@ const ProspectionPage = () => {
       setIsUploading(false);
     }
   };
-  
+
   const generateContractPDF = (reservation: Reservation, client: Client, cin: string) => {
     try {
-      // Create a new PDF document
       const doc = new jsPDF();
       
-      // Set font size and add title
       doc.setFontSize(18);
       doc.text("CONTRAT DE RÉSERVATION", 105, 20, { align: 'center' });
       
-      // Add agency details
       doc.setFontSize(12);
       doc.text(`Agence: ${agency?.agency_name || ''}`, 20, 40);
       doc.text(`Date: ${format(new Date(), 'dd/MM/yyyy', { locale: fr })}`, 20, 50);
       
-      // Add property details
       doc.setFontSize(14);
       doc.text("DÉTAILS DU BIEN", 20, 70);
       doc.setFontSize(12);
@@ -493,7 +485,6 @@ const ProspectionPage = () => {
       doc.text(`Adresse: ${reservation.property.address || 'Non spécifiée'}`, 20, 100);
       doc.text(`Prix: ${new Intl.NumberFormat('fr-FR').format(reservation.property.price)} FCFA`, 20, 110);
       
-      // Add client details
       doc.setFontSize(14);
       doc.text("DÉTAILS DU CLIENT", 20, 130);
       doc.setFontSize(12);
@@ -502,7 +493,6 @@ const ProspectionPage = () => {
       doc.text(`Email: ${client.email || ''}`, 20, 160);
       doc.text(`CIN: ${cin}`, 20, 170);
       
-      // Add reservation details
       doc.setFontSize(14);
       doc.text("DÉTAILS DE LA RÉSERVATION", 20, 190);
       doc.setFontSize(12);
@@ -510,15 +500,13 @@ const ProspectionPage = () => {
       doc.text(`Type: ${reservation.type}`, 20, 210);
       doc.text(`Date de création: ${format(new Date(reservation.created_at), 'dd/MM/yyyy', { locale: fr })}`, 20, 220);
       
-      // Add signature sections
       doc.setFontSize(12);
       doc.text("Signature du Client", 40, 250);
       doc.text("Signature de l'Agent", 150, 250);
       
-      doc.line(20, 260, 80, 260); // Client signature line
-      doc.line(130, 260, 190, 260); // Agent signature line
+      doc.line(20, 260, 80, 260);
+      doc.line(130, 260, 190, 260);
       
-      // Save the PDF
       doc.save(`Contrat_${reservation.reservation_number}.pdf`);
       
       toast.success('Contrat généré avec succès');
@@ -540,7 +528,6 @@ const ProspectionPage = () => {
     
     setIsDialogOpen(true);
     
-    // Reset contract fields when opening a new reservation
     resetContractFields();
   };
 
@@ -615,7 +602,6 @@ const ProspectionPage = () => {
     }
   };
 
-  // Modified to show contract fields instead of immediately changing status
   const handleFinalizeContractClick = () => {
     setShowContractFields(true);
   };
@@ -623,7 +609,6 @@ const ProspectionPage = () => {
   const handleStatusChange = async (newStatus: string) => {
     if (!selectedReservation) return;
     
-    // If user clicked "Fermée Gagnée", we show the CIN/document upload form
     if (newStatus === 'Fermée Gagnée') {
       handleFinalizeContractClick();
       return;
@@ -955,7 +940,6 @@ const ProspectionPage = () => {
                         </div>
                       )}
                       
-                      {/* Appointment date picker */}
                       {!isReservationClosed(selectedReservation.status) && (
                         <div className="flex flex-col gap-2 mt-1">
                           <p className="text-sm font-medium">Programmer une visite</p>
@@ -992,7 +976,6 @@ const ProspectionPage = () => {
                     </div>
                   </div>
 
-                  {/* Contract finalization fields */}
                   {showContractFields && (
                     <div className="bg-blue-50 p-4 rounded-lg space-y-3 border border-blue-200">
                       <h3 className="font-semibold text-lg border-b pb-2 border-blue-200">Finalisation du contrat</h3>
