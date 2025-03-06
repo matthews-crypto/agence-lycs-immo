@@ -354,6 +354,11 @@ const ProspectionPage = () => {
       return;
     }
     
+    console.log('Début finalisation contrat:', { 
+      client: clientDetails, 
+      reservation: selectedReservation 
+    });
+    
     try {
       setIsUploading(true);
       
@@ -389,6 +394,13 @@ const ProspectionPage = () => {
         })
         .eq('id', clientDetails.id);
       
+      console.log('Résultat mise à jour client:', { 
+        error: clientUpdateError, 
+        clientId: clientDetails.id, 
+        cin: clientCIN, 
+        url: documentUrl 
+      });
+      
       if (clientUpdateError) {
         console.error('Error updating client details:', clientUpdateError);
         toast.error('Erreur lors de la mise à jour des informations du client');
@@ -401,6 +413,12 @@ const ProspectionPage = () => {
         .update({ client_id: clientDetails.id })
         .eq('id', selectedReservation.property.id);
       
+      console.log('Résultat mise à jour bien:', { 
+        error: propertyError, 
+        propertyId: selectedReservation.property.id, 
+        clientId: clientDetails.id 
+      });
+      
       if (propertyError) {
         console.error('Error updating property with client_id:', propertyError);
         toast.error('Erreur lors de l\'association du client au bien');
@@ -412,6 +430,11 @@ const ProspectionPage = () => {
         .from('reservations')
         .update({ status: 'Fermée Gagnée' })
         .eq('id', selectedReservation.id);
+      
+      console.log('Résultat mise à jour statut:', { 
+        error: statusError, 
+        reservationId: selectedReservation.id 
+      });
       
       if (statusError) {
         console.error('Error updating reservation status:', statusError);
