@@ -54,6 +54,8 @@ interface Location {
   client_id: string;
   client_cin: string;
   document_url: string;
+  rental_start_date?: string | null;
+  rental_end_date?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -79,6 +81,9 @@ const ProspectionPage = () => {
   const [clientDocument, setClientDocument] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [locationData, setLocationData] = useState<Location | null>(null);
+  const [rentalStartDate, setRentalStartDate] = useState<string>("");
+  const [rentalEndDate, setRentalEndDate] = useState<string>("");
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { agency } = useAgencyContext();
@@ -123,6 +128,10 @@ const ProspectionPage = () => {
           if (reservationParam) {
             setReservationRefFilter(reservationParam);
           }
+          
+          data?.forEach(reservation => {
+            loadClientName(reservation.client_phone, reservation.id);
+          });
         } catch (error) {
           console.error('Error in fetch operation:', error);
           toast.error('Une erreur est survenue');
@@ -134,6 +143,35 @@ const ProspectionPage = () => {
 
     fetchReservations();
   }, [agency?.id, reservationParam]);
+  
+  const loadClientName = async (phone: string, reservationId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('first_name, last_name')
+        .eq('phone_number', phone)
+        .single();
+      
+      const nameElement = document.getElementById(`client-name-${reservationId}`);
+      
+      if (error || !data) {
+        if (nameElement) {
+          nameElement.textContent = 'Client non identifié';
+        }
+        return;
+      }
+      
+      if (nameElement) {
+        nameElement.textContent = `${data.first_name || ''} ${data.last_name || ''}`.trim() || 'Client sans nom';
+      }
+    } catch (error) {
+      console.error('Error fetching client name:', error);
+      const nameElement = document.getElementById(`client-name-${reservationId}`);
+      if (nameElement) {
+        nameElement.textContent = 'Client non identifié';
+      }
+    }
+  };
 
   useEffect(() => {
     if (!agency?.id) return;
@@ -218,6 +256,14 @@ const ProspectionPage = () => {
       setLocationData(data);
       if (data?.client_cin) {
         setClientCIN(data.client_cin);
+      }
+      
+      if (data?.rental_start_date) {
+        setRentalStartDate(format(new Date(data.rental_start_date), 'yyyy-MM-dd'));
+      }
+      
+      if (data?.rental_end_date) {
+        setRentalEndDate(format(new Date(data.rental_end_date), 'yyyy-MM-dd'));
       }
       
     } catch (error) {
@@ -370,6 +416,8 @@ const ProspectionPage = () => {
     setShowContractFields(false);
     setClientCIN("");
     setClientDocument(null);
+    setRentalStartDate("");
+    setRentalEndDate("");
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -386,6 +434,23 @@ const ProspectionPage = () => {
     if (!clientDocument) {
       toast.error('Le document d\'identité est obligatoire');
       return;
+    }
+    
+    if (selectedReservation.type === 'Location') {
+      if (!rentalStartDate) {
+        toast.error('La date de début de location est obligatoire');
+        return;
+      }
+      
+      if (!rentalEndDate) {
+        toast.error('La date de fin de location est obligatoire');
+        return;
+      }
+      
+      if (new Date(rentalEndDate) <= new Date(rentalStartDate)) {
+        toast.error('La date de fin doit être postérieure à la date de début');
+        return;
+      }
     }
     
     try {
@@ -415,12 +480,17 @@ const ProspectionPage = () => {
       
       const documentUrl = publicUrlData.publicUrl;
       
-      const locationUpsertData = {
+      const locationUpsertData: any = {
         property_id: selectedReservation.property.id,
         client_id: clientDetails.id,
         client_cin: clientCIN,
         document_url: documentUrl
       };
+      
+      if (selectedReservation.type === 'Location') {
+        locationUpsertData.rental_start_date = new Date(rentalStartDate).toISOString();
+        locationUpsertData.rental_end_date = new Date(rentalEndDate).toISOString();
+      }
       
       if (locationData) {
         const { error: locationUpdateError } = await supabase
@@ -459,7 +529,17 @@ const ProspectionPage = () => {
         return;
       }
       
-      generateContractPDF(selectedReservation, clientDetails, clientCIN);
+      if (selectedReservation.type === 'Location') {
+        generateContractPDF(
+          selectedReservation, 
+          clientDetails, 
+          clientCIN, 
+          rentalStartDate, 
+          rentalEndDate
+        );
+      } else {
+        generateContractPDF(selectedReservation, clientDetails, clientCIN);
+      }
       
       if (selectedReservation) {
         const wasStatusPending = selectedReservation.status === 'En attente';
@@ -492,46 +572,70 @@ const ProspectionPage = () => {
     }
   };
 
-  const generateContractPDF = (reservation: Reservation, client: Client, cin: string) => {
+  const generateContractPDF = (
+    reservation: Reservation, 
+    client: Client, 
+    cin: string, 
+    startDate?: string, 
+    endDate?: string
+  ) => {
     try {
       const doc = new jsPDF();
       
+      if (agency?.logo_url) {
+        try {
+          doc.addImage(agency.logo_url, 'JPEG', 20, 10, 40, 25);
+        } catch (error) {
+          console.error('Error adding logo to PDF:', error);
+        }
+      }
+      
+      const transactionType = reservation.type === 'Vente' ? 'CONTRAT DE VENTE' : 'CONTRAT DE LOCATION';
+      
       doc.setFontSize(18);
-      doc.text("CONTRAT DE RÉSERVATION", 105, 20, { align: 'center' });
+      doc.text(transactionType, 105, 40, { align: 'center' });
       
       doc.setFontSize(12);
-      doc.text(`Agence: ${agency?.agency_name || ''}`, 20, 40);
-      doc.text(`Date: ${format(new Date(), 'dd/MM/yyyy', { locale: fr })}`, 20, 50);
+      doc.text(`Agence: ${agency?.agency_name || ''}`, 20, 60);
+      doc.text(`NINEA/RCC: ${agency?.license_number || 'Non spécifié'}`, 20, 70);
+      doc.text(`Date: ${format(new Date(), 'dd/MM/yyyy', { locale: fr })}`, 20, 80);
       
       doc.setFontSize(14);
-      doc.text("DÉTAILS DU BIEN", 20, 70);
+      doc.text("DÉTAILS DU BIEN", 20, 100);
       doc.setFontSize(12);
-      doc.text(`Référence: ${reservation.property.reference_number}`, 20, 80);
-      doc.text(`Titre: ${reservation.property.title}`, 20, 90);
-      doc.text(`Adresse: ${reservation.property.address || 'Non spécifiée'}`, 20, 100);
-      doc.text(`Prix: ${new Intl.NumberFormat('fr-FR').format(reservation.property.price)} FCFA`, 20, 110);
+      doc.text(`Référence: ${reservation.property.reference_number}`, 20, 110);
+      doc.text(`Titre: ${reservation.property.title}`, 20, 120);
+      doc.text(`Adresse: ${reservation.property.address || 'Non spécifiée'}`, 20, 130);
+      
+      const formattedPrice = new Intl.NumberFormat('fr-FR').format(reservation.property.price).replace(/\//g, '');
+      doc.text(`Prix: ${formattedPrice} FCFA`, 20, 140);
       
       doc.setFontSize(14);
-      doc.text("DÉTAILS DU CLIENT", 20, 130);
+      doc.text("DÉTAILS DU CLIENT", 20, 160);
       doc.setFontSize(12);
-      doc.text(`Nom complet: ${client.first_name || ''} ${client.last_name || ''}`, 20, 140);
-      doc.text(`Téléphone: ${client.phone_number || ''}`, 20, 150);
-      doc.text(`Email: ${client.email || ''}`, 20, 160);
-      doc.text(`CIN: ${cin}`, 20, 170);
+      doc.text(`Nom complet: ${client.first_name || ''} ${client.last_name || ''}`, 20, 170);
+      doc.text(`Téléphone: ${client.phone_number || ''}`, 20, 180);
+      doc.text(`CIN: ${cin}`, 20, 190);
       
       doc.setFontSize(14);
-      doc.text("DÉTAILS DE LA RÉSERVATION", 20, 190);
+      doc.text("DÉTAILS DE LA TRANSACTION", 20, 210);
       doc.setFontSize(12);
-      doc.text(`Numéro de réservation: ${reservation.reservation_number}`, 20, 200);
-      doc.text(`Type: ${reservation.type}`, 20, 210);
-      doc.text(`Date de création: ${format(new Date(reservation.created_at), 'dd/MM/yyyy', { locale: fr })}`, 20, 220);
+      doc.text(`Numéro de ${reservation.type.toLowerCase()}: ${reservation.reservation_number}`, 20, 220);
+      doc.text(`Date de création: ${format(new Date(reservation.created_at), 'dd/MM/yyyy', { locale: fr })}`, 20, 230);
+      
+      if (reservation.type === 'Location' && startDate && endDate) {
+        doc.text(`Date de début: ${format(new Date(startDate), 'dd/MM/yyyy', { locale: fr })}`, 20, 240);
+        doc.text(`Date de fin: ${format(new Date(endDate), 'dd/MM/yyyy', { locale: fr })}`, 20, 250);
+      }
+      
+      const signatureY = reservation.type === 'Location' ? 280 : 260;
       
       doc.setFontSize(12);
-      doc.text("Signature du Client", 40, 250);
-      doc.text("Signature de l'Agent", 150, 250);
+      doc.text("Signature du Client", 40, signatureY);
+      doc.text("Signature de l'Agent", 150, signatureY);
       
-      doc.line(20, 260, 80, 260);
-      doc.line(130, 260, 190, 260);
+      doc.line(20, signatureY + 10, 80, signatureY + 10);
+      doc.line(130, signatureY + 10, 190, signatureY + 10);
       
       doc.save(`Contrat_${reservation.reservation_number}.pdf`);
       
@@ -546,6 +650,23 @@ const ProspectionPage = () => {
     setSelectedReservation(reservation);
     
     setAppointmentDate(reservation.appointment_date ? new Date(reservation.appointment_date) : null);
+    
+    if (reservation.type === 'Location') {
+      if (reservation.rental_start_date) {
+        setRentalStartDate(format(new Date(reservation.rental_start_date), 'yyyy-MM-dd'));
+      } else {
+        setRentalStartDate("");
+      }
+      
+      if (reservation.rental_end_date) {
+        setRentalEndDate(format(new Date(reservation.rental_end_date), 'yyyy-MM-dd'));
+      } else {
+        setRentalEndDate("");
+      }
+    } else {
+      setRentalStartDate("");
+      setRentalEndDate("");
+    }
     
     if (reservation.client_phone) {
       fetchClientDetails(reservation.client_phone);
@@ -814,9 +935,9 @@ const ProspectionPage = () => {
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Tag className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                        <span className="text-sm text-gray-600">
-                          Réf: {reservation.property?.reference_number || 'N/A'}
+                        <User className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                        <span className="text-sm text-gray-600" id={`client-name-${reservation.id}`}>
+                          Chargement...
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -972,7 +1093,7 @@ const ProspectionPage = () => {
                     </div>
                   </div>
                   
-                  {!isReservationClosed(selectedReservation.status) && (
+                  {!isReservationClosed(selectedReservation.status) && !showContractFields && (
                     <div className="bg-gray-50 rounded-md p-4">
                       <h3 className="text-sm font-medium mb-3">Actions</h3>
                       
@@ -1032,6 +1153,32 @@ const ProspectionPage = () => {
                             placeholder="Entrez le numéro CIN"
                           />
                         </div>
+                        
+                        {selectedReservation.type === 'Location' && (
+                          <>
+                            <div>
+                              <label className="text-sm font-medium mb-1 block">
+                                Date de début de location
+                              </label>
+                              <Input
+                                type="date"
+                                value={rentalStartDate}
+                                onChange={(e) => setRentalStartDate(e.target.value)}
+                              />
+                            </div>
+                            
+                            <div>
+                              <label className="text-sm font-medium mb-1 block">
+                                Date de fin de location
+                              </label>
+                              <Input
+                                type="date"
+                                value={rentalEndDate}
+                                onChange={(e) => setRentalEndDate(e.target.value)}
+                              />
+                            </div>
+                          </>
+                        )}
                         
                         <div>
                           <label className="text-sm font-medium mb-1 block">
