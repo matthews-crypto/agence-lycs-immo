@@ -188,17 +188,16 @@ export function AgencySidebar() {
                       className="transition-colors hover:text-white data-[active=true]:bg-sidebar-primary"
                       data-active={location.pathname === item.url}
                     >
-                      <Link to={item.url} className="relative">
+                      <Link to={item.url}>
                         <item.icon className="h-4 w-4" />
                         <span>{item.title}</span>
-                        
-                        {item.badgeCount && item.badgeCount > 0 && (
-                          <div className="absolute -top-2 -right-2 flex items-center justify-center h-5 w-5 bg-red-500 text-white text-xs font-bold rounded-full">
-                            {item.badgeCount}
-                          </div>
-                        )}
                       </Link>
                     </SidebarMenuButton>
+                    {item.badgeCount && item.badgeCount > 0 && (
+                      <SidebarMenuBadge className="bg-red-500">
+                        {item.badgeCount}
+                      </SidebarMenuBadge>
+                    )}
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
