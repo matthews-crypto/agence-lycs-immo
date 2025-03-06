@@ -394,23 +394,16 @@ const ProspectionPage = () => {
       });
       
       const { error: clientUpdateError } = await supabase.rpc(
-        'update_client_info',
+        'admin_force_update_client',
         { 
-          client_id: clientDetails.id,
-          client_cin: clientCIN,
-          client_doc_url: documentUrl 
+          p_client_id: clientDetails.id,
+          p_cin: clientCIN,
+          p_document_url: documentUrl 
         }
       );
       
       console.log('Résultat mise à jour client:', { 
         error: clientUpdateError
-      });
-      
-      console.log('Résultat mise à jour client:', { 
-        error: clientUpdateError, 
-        clientId: clientDetails.id, 
-        cin: clientCIN, 
-        url: documentUrl 
       });
       
       if (clientUpdateError) {

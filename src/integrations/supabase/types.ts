@@ -748,6 +748,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_force_update_client: {
+        Args: {
+          p_client_id: string
+          p_cin: string
+          p_document_url: string
+        }
+        Returns: boolean
+      }
       create_agency_user_and_profile: {
         Args: {
           email: string
