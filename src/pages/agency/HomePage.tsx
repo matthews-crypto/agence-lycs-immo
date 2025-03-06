@@ -361,7 +361,9 @@ export default function AgencyHomePage() {
       }
 
       for (const [typeKey, typeLabel] of Object.entries(propertyTypeLabels)) {
-        if (typeLabel.toLowerCase().includes(word) && property.property_type === typeKey) {
+        const typeLabelLower = typeLabel.toLowerCase();
+        if ((typeLabelLower.includes(word) || word.includes(typeLabelLower)) && 
+            property.property_type === typeKey) {
           return true;
         }
       }
