@@ -386,6 +386,13 @@ const ProspectionPage = () => {
       
       const documentUrl = publicUrlData.publicUrl;
       
+      console.log('Valeurs avant mise à jour client:', { 
+        clientId: clientDetails.id,
+        cin: clientCIN, 
+        documentUrl: documentUrl,
+        clientDetailsComplet: clientDetails
+      });
+      
       const { error: clientUpdateError } = await supabase
         .from('clients')
         .update({ 
@@ -393,6 +400,10 @@ const ProspectionPage = () => {
           id_document_url: documentUrl 
         })
         .eq('id', clientDetails.id);
+      
+      console.log('Résultat mise à jour client:', { 
+        error: clientUpdateError
+      });
       
       console.log('Résultat mise à jour client:', { 
         error: clientUpdateError, 
