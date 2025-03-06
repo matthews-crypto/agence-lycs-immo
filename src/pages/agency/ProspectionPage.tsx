@@ -7,7 +7,6 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Clock, Home, User, Phone, CheckCircle, Search, MapPin, Tag, Mail, List, PieChart, FileText, Upload } from "lucide-react";
-import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale/fr";
 import { toast } from "sonner";
@@ -17,9 +16,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
-import { Calendar } from "@/components/ui/calendar";
 import { jsPDF } from 'jspdf';
 
 interface Reservation {
@@ -908,12 +904,7 @@ const ProspectionPage = () => {
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <Phone className="h-4 w-4 text-gray-500" />
-                        <a 
-                          href={`tel:${selectedReservation.client_phone}`} 
-                          className="text-sm text-blue-600 hover:underline"
-                        >
-                          {selectedReservation.client_phone}
-                        </a>
+                        <span className="text-sm">{selectedReservation.client_phone}</span>
                       </div>
                       
                       {clientDetails && (
@@ -1001,35 +992,20 @@ const ProspectionPage = () => {
                         <div className="mb-4">
                           <label className="text-sm font-medium mb-1 block">Programmer un rendez-vous</label>
                           <div className="flex space-x-2">
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  className={cn(
-                                    "justify-start text-left font-normal",
-                                    !appointmentDate && "text-muted-foreground"
-                                  )}
-                                >
-                                  <CalendarIcon className="mr-2 h-4 w-4" />
-                                  {appointmentDate ? format(appointmentDate, 'PPP', { locale: fr }) : <span>Choisir une date</span>}
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0">
-                                <Calendar
-                                  mode="single"
-                                  selected={appointmentDate || undefined}
-                                  onSelect={(date) => handleAppointmentDateChange(date)}
-                                  initialFocus
-                                  locale={fr}
-                                />
-                              </PopoverContent>
-                            </Popover>
+                            <Input
+                              type="date"
+                              value={appointmentDate ? format(appointmentDate, 'yyyy-MM-dd') : ''}
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  handleAppointmentDateChange(new Date(e.target.value));
+                                }
+                              }}
+                            />
                           </div>
                         </div>
                       )}
                       
                       <div>
-                        <label className="text-sm font-medium mb-1 block">Changer le statut</label>
                         <div className="flex flex-wrap gap-2">
                           {selectedReservation.status !== 'En attente' && (
                             <Button 
@@ -1038,16 +1014,6 @@ const ProspectionPage = () => {
                               onClick={() => handleStatusChange('En attente')}
                             >
                               En attente
-                            </Button>
-                          )}
-                          
-                          {selectedReservation.status !== 'Visite programmée' && (
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleStatusChange('Visite programmée')}
-                            >
-                              Visite programmée
                             </Button>
                           )}
                           
