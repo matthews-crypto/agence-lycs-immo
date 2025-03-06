@@ -23,10 +23,12 @@ export default function AgentAppointmentsPage() {
   const { agencySlug } = useParams()
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
 
   const { data: reservations = [], isLoading } = useQuery({
     queryKey: ['agent-appointments', agencySlug],
     queryFn: async () => {
+      console.log("Fetching agent appointments for agency:", agencySlug)
       const { data, error } = await supabase
         .from('reservations')
         .select(`
@@ -46,6 +48,7 @@ export default function AgentAppointmentsPage() {
       }
       
       console.log("Fetched agent reservations:", data)
+      console.log("Sample appointment date format:", data?.[0]?.appointment_date)
       return data as Reservation[]
     }
   })
@@ -53,6 +56,7 @@ export default function AgentAppointmentsPage() {
   const handleDayClick = (date: Date) => {
     const formattedClickedDate = format(date, 'yyyy-MM-dd')
     console.log("Clicked date:", formattedClickedDate)
+    setSelectedDate(date)
     
     // Find reservation that matches the clicked date
     const reservation = reservations.find(
@@ -70,13 +74,20 @@ export default function AgentAppointmentsPage() {
 
   const getDayClassName = (date: Date) => {
     const formattedDate = format(date, 'yyyy-MM-dd')
+    
     const hasAppointment = reservations.some(
       (r) => r.appointment_date && 
       format(new Date(r.appointment_date), 'yyyy-MM-dd') === formattedDate
     )
     
-    return hasAppointment ? 'bg-primary text-primary-foreground rounded-full cursor-pointer' : ''
+    return hasAppointment ? 'bg-primary text-primary-foreground rounded-full font-bold' : ''
   }
+
+  console.log("Calendar rendering with:", {
+    isLoading,
+    reservationsCount: reservations.length,
+    reservationDates: reservations.map(r => r.appointment_date ? format(new Date(r.appointment_date), 'yyyy-MM-dd') : 'no date')
+  })
 
   return (
     <div className="container mx-auto py-8">
@@ -93,19 +104,26 @@ export default function AgentAppointmentsPage() {
           <p className="mb-4">Total des rendez-vous: <Badge variant="default">{reservations.length}</Badge></p>
           <Calendar 
             mode="single"
-            onDayClick={handleDayClick}
-            modifiersClassNames={{
-              selected: 'bg-primary text-primary-foreground'
-            }}
-            className="rounded-md border shadow-sm max-w-full pointer-events-auto"
+            selected={selectedDate}
+            onSelect={(date) => date && handleDayClick(date)}
             locale={fr}
+            classNames={{
+              day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+              day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+            }}
+            className="rounded-md border shadow p-3"
             components={{
-              Day: ({ date, ...props }: { date: Date } & React.HTMLAttributes<HTMLDivElement>) => (
-                <div
-                  {...props}
-                  className={`${props.className || ''} ${getDayClassName(date)}`}
-                />
-              )
+              Day: ({ date, ...props }) => {
+                // Apply custom styling to days with appointments
+                const customClass = getDayClassName(date);
+                return (
+                  <div
+                    {...props}
+                    className={`${props.className || ''} ${customClass}`}
+                    role="button"
+                  />
+                );
+              }
             }}
           />
         </div>
