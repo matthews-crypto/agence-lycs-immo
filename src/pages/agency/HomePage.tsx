@@ -326,12 +326,32 @@ export default function AgencyHomePage() {
   };
 
   const filteredProperties = properties?.filter(property => {
-    const matchesSearch = !searchTerm || 
-      property.title?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      property.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      property.zone?.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      propertyTypeLabels[property.property_type]?.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSearch;
+    if (!searchTerm) return true;
+    
+    const prepositionsToIgnore = ['a', 'à', 'au', 'aux', 'avec', 'de', 'des', 'du', 'en', 'et', 
+      'dans', 'par', 'pour', 'sans', 'sur', 'le', 'la', 'les', 'un', 'une'];
+    
+    const searchWords = searchTerm.toLowerCase()
+      .split(' ')
+      .map(word => word.trim())
+      .filter(word => word.length > 0 && !prepositionsToIgnore.includes(word));
+    
+    if (searchWords.length === 0) return true;
+    
+    const valueContainsSearchWord = (value, words) => {
+      if (!value) return false;
+      const normalizedValue = value.toString().toLowerCase();
+      return words.some(word => normalizedValue.includes(word));
+    };
+    
+    return searchWords.every(word => (
+      valueContainsSearchWord(property.title, [word]) || 
+      valueContainsSearchWord(property.description, [word]) ||
+      valueContainsSearchWord(property.zone?.nom, [word]) ||
+      valueContainsSearchWord(propertyTypeLabels[property.property_type], [word]) ||
+      valueContainsSearchWord(property.property_offer_type, [word]) ||
+      valueContainsSearchWord(property.region, [word])
+    ));
   });
 
   const zones = [...new Set(properties?.map(p => p.zone?.nom).filter(Boolean))];
