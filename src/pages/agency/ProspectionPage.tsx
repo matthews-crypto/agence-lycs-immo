@@ -529,42 +529,50 @@ const ProspectionPage = () => {
     try {
       const doc = new jsPDF();
       
+      if (agency?.logo_url) {
+        try {
+          doc.addImage(agency.logo_url, 'JPEG', 20, 10, 40, 25);
+        } catch (error) {
+          console.error('Error adding logo to PDF:', error);
+        }
+      }
+      
       doc.setFontSize(18);
-      doc.text("CONTRAT DE RÉSERVATION", 105, 20, { align: 'center' });
+      doc.text("CONTRAT DE RÉSERVATION", 105, 40, { align: 'center' });
       
       doc.setFontSize(12);
-      doc.text(`Agence: ${agency?.agency_name || ''}`, 20, 40);
-      doc.text(`Date: ${format(new Date(), 'dd/MM/yyyy', { locale: fr })}`, 20, 50);
+      doc.text(`Agence: ${agency?.agency_name || ''}`, 20, 60);
+      doc.text(`NINEA/RCC: ${agency?.license_number || 'Non spécifié'}`, 20, 70);
+      doc.text(`Date: ${format(new Date(), 'dd/MM/yyyy', { locale: fr })}`, 20, 80);
       
       doc.setFontSize(14);
-      doc.text("DÉTAILS DU BIEN", 20, 70);
+      doc.text("DÉTAILS DU BIEN", 20, 100);
       doc.setFontSize(12);
-      doc.text(`Référence: ${reservation.property.reference_number}`, 20, 80);
-      doc.text(`Titre: ${reservation.property.title}`, 20, 90);
-      doc.text(`Adresse: ${reservation.property.address || 'Non spécifiée'}`, 20, 100);
-      doc.text(`Prix: ${new Intl.NumberFormat('fr-FR').format(reservation.property.price)} FCFA`, 20, 110);
+      doc.text(`Référence: ${reservation.property.reference_number}`, 20, 110);
+      doc.text(`Titre: ${reservation.property.title}`, 20, 120);
+      doc.text(`Adresse: ${reservation.property.address || 'Non spécifiée'}`, 20, 130);
+      doc.text(`Prix: ${new Intl.NumberFormat('fr-FR').format(reservation.property.price)} FCFA`, 20, 140);
       
       doc.setFontSize(14);
-      doc.text("DÉTAILS DU CLIENT", 20, 130);
+      doc.text("DÉTAILS DU CLIENT", 20, 160);
       doc.setFontSize(12);
-      doc.text(`Nom complet: ${client.first_name || ''} ${client.last_name || ''}`, 20, 140);
-      doc.text(`Téléphone: ${client.phone_number || ''}`, 20, 150);
-      doc.text(`Email: ${client.email || ''}`, 20, 160);
-      doc.text(`CIN: ${cin}`, 20, 170);
+      doc.text(`Nom complet: ${client.first_name || ''} ${client.last_name || ''}`, 20, 170);
+      doc.text(`Téléphone: ${client.phone_number || ''}`, 20, 180);
+      doc.text(`CIN: ${cin}`, 20, 190);
       
       doc.setFontSize(14);
-      doc.text("DÉTAILS DE LA RÉSERVATION", 20, 190);
+      doc.text("DÉTAILS DE LA RÉSERVATION", 20, 210);
       doc.setFontSize(12);
-      doc.text(`Numéro de réservation: ${reservation.reservation_number}`, 20, 200);
-      doc.text(`Type: ${reservation.type}`, 20, 210);
-      doc.text(`Date de création: ${format(new Date(reservation.created_at), 'dd/MM/yyyy', { locale: fr })}`, 20, 220);
+      doc.text(`Numéro de réservation: ${reservation.reservation_number}`, 20, 220);
+      doc.text(`Type: ${reservation.type}`, 20, 230);
+      doc.text(`Date de création: ${format(new Date(reservation.created_at), 'dd/MM/yyyy', { locale: fr })}`, 20, 240);
       
       doc.setFontSize(12);
-      doc.text("Signature du Client", 40, 250);
-      doc.text("Signature de l'Agent", 150, 250);
+      doc.text("Signature du Client", 40, 270);
+      doc.text("Signature de l'Agent", 150, 270);
       
-      doc.line(20, 260, 80, 260);
-      doc.line(130, 260, 190, 260);
+      doc.line(20, 280, 80, 280);
+      doc.line(130, 280, 190, 280);
       
       doc.save(`Contrat_${reservation.reservation_number}.pdf`);
       
