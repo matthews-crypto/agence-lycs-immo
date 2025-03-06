@@ -398,6 +398,9 @@ export type Database = {
           document_url: string | null
           id: string
           property_id: string
+          rental_end_date: string | null
+          rental_start_date: string | null
+          statut: string
           updated_at: string
         }
         Insert: {
@@ -407,6 +410,9 @@ export type Database = {
           document_url?: string | null
           id?: string
           property_id: string
+          rental_end_date?: string | null
+          rental_start_date?: string | null
+          statut?: string
           updated_at?: string
         }
         Update: {
@@ -416,6 +422,9 @@ export type Database = {
           document_url?: string | null
           id?: string
           property_id?: string
+          rental_end_date?: string | null
+          rental_start_date?: string | null
+          statut?: string
           updated_at?: string
         }
         Relationships: [
