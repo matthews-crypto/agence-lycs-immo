@@ -38,6 +38,7 @@ export function AgencySidebar() {
   const { logout } = useAgencyAuthStore()
   const { agency } = useAgencyContext()
   const [newProspections, setNewProspections] = useState(0)
+  const [viewedProspectionIds, setViewedProspectionIds] = useState<string[]>([])
 
   useEffect(() => {
     if (agency?.secondary_color) {
@@ -45,6 +46,14 @@ export function AgencySidebar() {
       document.documentElement.style.setProperty('--sidebar-primary', agency.secondary_color);
     }
   }, [agency?.secondary_color, agency?.primary_color]);
+
+  // Check if we're on the prospection page and mark as viewed
+  useEffect(() => {
+    if (location.pathname.includes('/agency/prospection') && newProspections > 0) {
+      // Mark all current notifications as viewed when visiting the prospection page
+      setNewProspections(0);
+    }
+  }, [location.pathname, newProspections]);
 
   useEffect(() => {
     const fetchRecentProspections = async () => {
@@ -66,7 +75,9 @@ export function AgencySidebar() {
         return;
       }
       
-      setNewProspections(data?.length || 0);
+      // Filter out viewed prospections
+      const unseenProspections = data?.filter(item => !viewedProspectionIds.includes(item.id)) || [];
+      setNewProspections(unseenProspections.length);
     };
     
     fetchRecentProspections();
@@ -85,7 +96,10 @@ export function AgencySidebar() {
           },
           (payload) => {
             if (payload.new && payload.new.status === 'En attente') {
-              setNewProspections(prev => prev + 1);
+              const newId = payload.new.id as string;
+              if (!viewedProspectionIds.includes(newId)) {
+                setNewProspections(prev => prev + 1);
+              }
             }
           }
         )
@@ -95,7 +109,7 @@ export function AgencySidebar() {
         supabase.removeChannel(channel);
       };
     }
-  }, [agency?.id]);
+  }, [agency?.id, viewedProspectionIds]);
 
   const handleLogout = async () => {
     try {
