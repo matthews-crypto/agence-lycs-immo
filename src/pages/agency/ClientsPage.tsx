@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { AgencySidebar } from "@/components/agency/AgencySidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,7 +22,6 @@ type Client = {
   id: string;
   first_name: string | null;
   last_name: string | null;
-  email: string | null;
   phone_number: string | null;
   cin: string | null;
   property_id: string | null;
@@ -47,63 +46,87 @@ export default function ClientsPage() {
       
       console.log("Fetching clients for agency:", agency.id);
       
-      const { data, error } = await supabase
+      // Get all active locations first
+      const { data: locationsData, error: locationsError } = await supabase
+        .from('locations')
+        .select(`
+          id,
+          client_id,
+          client_cin,
+          property_id,
+          rental_start_date,
+          rental_end_date,
+          statut,
+          properties (
+            title,
+            property_type,
+            price,
+            address
+          )
+        `)
+        .eq('statut', 'EN COURS');
+
+      if (locationsError) {
+        console.error("Error fetching locations:", locationsError);
+        throw locationsError;
+      }
+      
+      console.log("Locations data:", locationsData);
+      
+      if (!locationsData || locationsData.length === 0) {
+        return [];
+      }
+      
+      // Get the client IDs from active locations
+      const clientIds = locationsData.map(location => location.client_id);
+      
+      // Get client details
+      const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
         .select(`
           id,
-          first_name,
+          first_name, 
           last_name,
-          email,
-          phone_number,
-          cin,
-          locations (
-            property_id,
-            rental_start_date,
-            rental_end_date,
-            statut,
-            properties (
-              title,
-              property_type,
-              price,
-              address
-            )
-          )
+          phone_number
         `)
         .eq('agency_id', agency.id)
-        .eq('locations.statut', 'EN COURS');
-        
-      if (error) {
-        console.error("Error fetching clients:", error);
-        throw error;
+        .in('id', clientIds);
+      
+      if (clientsError) {
+        console.error("Error fetching clients:", clientsError);
+        throw clientsError;
       }
       
-      console.log("Raw client data:", data);
+      console.log("Clients data:", clientsData);
       
-      // Transform data to flatten the structure
-      const formattedClients = data.map((client) => {
-        // Make sure locations is an array and has at least one element
-        const locations = client.locations || [];
-        const location = locations.length > 0 ? locations[0] : {};
-        // Make sure properties exists
-        const property = location.properties || {};
+      // Map clients with their location info
+      const formattedClients = clientsData.map(client => {
+        // Find the corresponding location for this client
+        const clientLocation = locationsData.find(loc => loc.client_id === client.id);
+        
+        if (!clientLocation) {
+          return null; // Skip clients without locations
+        }
+        
+        // Handle potentially undefined property data
+        const property = clientLocation.properties || {};
         
         return {
           id: client.id,
           first_name: client.first_name,
           last_name: client.last_name,
-          email: client.email,
           phone_number: client.phone_number,
-          cin: client.cin,
-          property_id: location.property_id || null,
+          cin: clientLocation.client_cin,
+          property_id: clientLocation.property_id,
           property_title: property.title || null,
-          rental_start_date: location.rental_start_date || null,
-          rental_end_date: location.rental_end_date || null,
-          statut: location.statut || 'N/A',
+          rental_start_date: clientLocation.rental_start_date,
+          rental_end_date: clientLocation.rental_end_date,
+          statut: clientLocation.statut || 'N/A',
           property_type: property.property_type || null,
           property_price: property.price || null,
           property_address: property.address || null
         };
-      });
+      }).filter(Boolean) as Client[]; // Filter out null values and cast to Client[]
       
       console.log("Formatted client data:", formattedClients);
       return formattedClients;
@@ -164,7 +187,6 @@ export default function ClientsPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
-                      <p><strong>Email:</strong> {client.email || "Non renseigné"}</p>
                       <p><strong>Téléphone:</strong> {client.phone_number || "Non renseigné"}</p>
                       <p><strong>CIN:</strong> {client.cin || "Non renseigné"}</p>
                       {client.rental_start_date && (
@@ -202,7 +224,6 @@ export default function ClientsPage() {
                   <div className="space-y-2">
                     <h3 className="text-lg font-semibold">Information personnelle</h3>
                     <p><strong>Nom complet:</strong> {selectedClient.first_name} {selectedClient.last_name}</p>
-                    <p><strong>Email:</strong> {selectedClient.email || "Non renseigné"}</p>
                     <p><strong>Téléphone:</strong> {selectedClient.phone_number || "Non renseigné"}</p>
                     <p><strong>CIN:</strong> {selectedClient.cin || "Non renseigné"}</p>
                   </div>
@@ -234,3 +255,4 @@ export default function ClientsPage() {
     </SidebarProvider>
   );
 }
+
