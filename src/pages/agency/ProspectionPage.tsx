@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -885,3 +886,263 @@ const ProspectionPage = () => {
                   <div className="bg-gray-50 p-4 rounded-lg space-y-3">
                     <h3 className="font-semibold text-lg border-b pb-2">Contact client</h3>
                     <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <Phone className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                        <p>{selectedReservation.client_phone}</p>
+                      </div>
+                      
+                      {clientDetails && (
+                        <>
+                          <div className="flex items-start gap-3">
+                            <User className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                            <div>
+                              <p className="font-medium">{clientDetails.first_name} {clientDetails.last_name}</p>
+                              {clientDetails.cin && (
+                                <p className="text-xs text-gray-500">CIN: {clientDetails.cin}</p>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {clientDetails.email && (
+                            <div className="flex items-center gap-3">
+                              <Mail className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                              <p className="text-sm">{clientDetails.email}</p>
+                            </div>
+                          )}
+                          
+                          {clientDetails.id_document_url && (
+                            <div className="flex items-center gap-3">
+                              <FileText className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                              <a 
+                                href={clientDetails.id_document_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-sm text-blue-600 hover:underline"
+                              >
+                                Voir le document d'identité
+                              </a>
+                            </div>
+                          )}
+                          
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="flex items-center mt-2" 
+                            onClick={handleClientReservationsClick}
+                          >
+                            <List className="h-4 w-4 mr-2" />
+                            Voir les réservations du client
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                    <h3 className="font-semibold text-lg border-b pb-2">Détails de la réservation</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <Clock className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm">Créée le {format(new Date(selectedReservation.created_at), 'PP', { locale: fr })}</p>
+                        </div>
+                      </div>
+                      
+                      {selectedReservation.type && (
+                        <div className="flex items-center gap-3">
+                          <Tag className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                          <p className="text-sm">Type: {selectedReservation.type}</p>
+                        </div>
+                      )}
+                      
+                      {/* Appointment date picker */}
+                      {!isReservationClosed(selectedReservation.status) && (
+                        <div className="flex flex-col gap-2 mt-1">
+                          <p className="text-sm font-medium">Programmer une visite</p>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-full justify-start text-left font-normal",
+                                  !appointmentDate && "text-muted-foreground"
+                                )}
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {appointmentDate ? (
+                                  format(appointmentDate, "PPP", { locale: fr })
+                                ) : (
+                                  <span>Choisir une date</span>
+                                )}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                              <Calendar
+                                mode="single"
+                                selected={appointmentDate}
+                                onSelect={handleAppointmentDateChange}
+                                initialFocus
+                                disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                                locale={fr}
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Contract finalization fields */}
+                  {showContractFields && (
+                    <div className="bg-blue-50 p-4 rounded-lg space-y-3 border border-blue-200">
+                      <h3 className="font-semibold text-lg border-b pb-2 border-blue-200">Finalisation du contrat</h3>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-sm font-medium mb-1 block">Numéro CIN du client</label>
+                          <Input
+                            value={clientCIN}
+                            onChange={(e) => setClientCIN(e.target.value)}
+                            placeholder="Entrez le numéro CIN"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="text-sm font-medium mb-1 block">Document d'identité (PDF uniquement)</label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="file"
+                              ref={fileInputRef}
+                              onChange={handleDocumentChange}
+                              accept=".pdf"
+                              className="flex-1"
+                            />
+                            {clientDocument && (
+                              <div className="flex items-center text-green-600">
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                <span className="text-xs">Fichier sélectionné</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="flex justify-end space-x-2 mt-4">
+                          <Button 
+                            variant="outline" 
+                            onClick={resetContractFields}
+                            disabled={isUploading}
+                          >
+                            Annuler
+                          </Button>
+                          <Button 
+                            variant="default" 
+                            onClick={handleContractFinalization}
+                            disabled={isUploading}
+                          >
+                            {isUploading ? (
+                              <>
+                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Traitement...
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="h-4 w-4 mr-2" />
+                                Finaliser le contrat
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h3 className="font-semibold text-lg border-b pb-2">Statut de l'opportunité</h3>
+                    <div className="mt-3">
+                      {isReservationClosed(selectedReservation.status) ? (
+                        <div className="p-2 rounded bg-gray-100">
+                          <p className="text-center text-gray-600">
+                            Cette opportunité est clôturée
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-2">
+                          {!showContractFields && (
+                            <>
+                              <Button 
+                                variant="outline" 
+                                className="bg-green-50 border-green-200 hover:bg-green-100 hover:text-green-800"
+                                onClick={() => handleStatusChange('Fermée Gagnée')}
+                              >
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Fermée Gagnée
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                className="bg-red-50 border-red-200 hover:bg-red-100 hover:text-red-800"
+                                onClick={() => handleStatusChange('Fermée Perdu')}
+                              >
+                                Fermée Perdu
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </DialogContent>
+            )}
+          </Dialog>
+
+          <Sheet open={isClientReservationsOpen} onOpenChange={setIsClientReservationsOpen}>
+            <SheetContent className="sm:max-w-lg">
+              <SheetHeader>
+                <SheetTitle>Réservations du client</SheetTitle>
+                <SheetDescription>
+                  {clientDetails && `${clientDetails.first_name} ${clientDetails.last_name}`}
+                </SheetDescription>
+              </SheetHeader>
+              <div className="mt-6 space-y-4">
+                {clientReservations.length === 0 ? (
+                  <p className="text-center text-muted-foreground">Aucune réservation trouvée</p>
+                ) : (
+                  <div className="space-y-3">
+                    {clientReservations.map((reservation) => (
+                      <div 
+                        key={reservation.id} 
+                        className="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                        onClick={() => handleClientReservationItemClick(reservation)}
+                      >
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="font-medium">{reservation.reservation_number}</span>
+                          <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(reservation.status)}`}>
+                            {reservation.status}
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          <div className="flex items-center gap-1 mb-1">
+                            <Home className="h-3 w-3" />
+                            <span className="truncate">{reservation.property?.title || 'Bien non spécifié'}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            <span>{format(new Date(reservation.created_at), 'PP', { locale: fr })}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
+    </SidebarProvider>
+  );
+};
+
+export default ProspectionPage;
