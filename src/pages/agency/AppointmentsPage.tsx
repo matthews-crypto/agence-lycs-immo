@@ -8,6 +8,7 @@ import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { format } from "date-fns"
+import { fr } from "date-fns/locale"
 import { Badge } from "@/components/ui/badge"
 
 interface Reservation {
@@ -102,6 +103,7 @@ export default function AppointmentsPage() {
                   selected: 'bg-primary text-primary-foreground'
                 }}
                 className="rounded-md border shadow-sm max-w-full pointer-events-auto"
+                locale={fr}
                 components={{
                   Day: ({ date, ...props }: { date: Date } & React.HTMLAttributes<HTMLDivElement>) => (
                     <div
@@ -123,7 +125,7 @@ export default function AppointmentsPage() {
                 <div className="space-y-4">
                   <div>
                     <p className="font-medium">Date:</p>
-                    <p>{format(new Date(selectedReservation.appointment_date), 'PPP')}</p>
+                    <p>{format(new Date(selectedReservation.appointment_date), 'PPP', { locale: fr })}</p>
                   </div>
                   <div>
                     <p className="font-medium">Numéro de téléphone du client:</p>
