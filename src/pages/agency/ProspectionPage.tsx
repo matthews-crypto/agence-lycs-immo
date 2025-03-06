@@ -62,3 +62,5 @@ interface Location {
 const ProspectionPage = () => {
   // ... rest of component implementation remains unchanged
 };
+
+export default ProspectionPage;
