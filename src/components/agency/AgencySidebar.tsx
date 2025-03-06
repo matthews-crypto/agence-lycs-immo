@@ -22,18 +22,22 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuBadge,
 } from "@/components/ui/sidebar"
 import { useAgencyAuthStore } from "@/stores/useAgencyAuthStore"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { useAgencyContext } from "@/contexts/AgencyContext"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
+import { Badge } from "@/components/ui/badge"
+import { supabase } from "@/integrations/supabase/client"
 
 export function AgencySidebar() {
   const location = useLocation()
   const navigate = useNavigate()
   const { logout } = useAgencyAuthStore()
   const { agency } = useAgencyContext()
+  const [newProspections, setNewProspections] = useState(0)
 
   useEffect(() => {
     if (agency?.secondary_color) {
@@ -41,6 +45,57 @@ export function AgencySidebar() {
       document.documentElement.style.setProperty('--sidebar-primary', agency.secondary_color);
     }
   }, [agency?.secondary_color, agency?.primary_color]);
+
+  useEffect(() => {
+    const fetchRecentProspections = async () => {
+      if (!agency?.id) return;
+      
+      // Get timestamp for 24 hours ago
+      const oneDayAgo = new Date();
+      oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+      
+      const { data, error } = await supabase
+        .from('reservations')
+        .select('id')
+        .eq('agency_id', agency.id)
+        .eq('status', 'En attente')
+        .gte('created_at', oneDayAgo.toISOString());
+      
+      if (error) {
+        console.error('Error fetching recent prospections:', error);
+        return;
+      }
+      
+      setNewProspections(data?.length || 0);
+    };
+    
+    fetchRecentProspections();
+    
+    // Set up a real-time subscription for new prospections
+    if (agency?.id) {
+      const channel = supabase
+        .channel('public:reservations')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'reservations',
+            filter: `agency_id=eq.${agency.id}`
+          },
+          (payload) => {
+            if (payload.new && payload.new.status === 'En attente') {
+              setNewProspections(prev => prev + 1);
+            }
+          }
+        )
+        .subscribe();
+      
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [agency?.id]);
 
   const handleLogout = async () => {
     try {
@@ -76,6 +131,7 @@ export function AgencySidebar() {
           title: "Opportunité",
           icon: FileSearch,
           url: `/${agency?.slug}/agency/prospection`,
+          notificationCount: newProspections,
         },
         {
           title: "Rendez-vous",
@@ -146,6 +202,13 @@ export function AgencySidebar() {
                       <Link to={item.url}>
                         <item.icon className="h-4 w-4" />
                         <span>{item.title}</span>
+                        {item.notificationCount > 0 && (
+                          <SidebarMenuBadge>
+                            <Badge variant="success" className="ml-auto">
+                              {item.notificationCount}
+                            </Badge>
+                          </SidebarMenuBadge>
+                        )}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
