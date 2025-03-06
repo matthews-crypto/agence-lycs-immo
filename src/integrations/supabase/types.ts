@@ -774,6 +774,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      update_client_info: {
+        Args: {
+          client_id: string
+          client_cin: string
+          client_doc_url: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       appointment_status: "RESERVEE" | "ACHETEE" | "ANNULEE"
