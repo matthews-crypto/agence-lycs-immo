@@ -1,3 +1,4 @@
+
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import {
   LayoutDashboard,
@@ -21,22 +22,18 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuBadge,
 } from "@/components/ui/sidebar"
 import { useAgencyAuthStore } from "@/stores/useAgencyAuthStore"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { useAgencyContext } from "@/contexts/AgencyContext"
-import { useEffect, useState } from "react"
-import { Badge } from "@/components/ui/badge"
-import { supabase } from "@/integrations/supabase/client"
+import { useEffect } from "react"
 
 export function AgencySidebar() {
   const location = useLocation()
   const navigate = useNavigate()
   const { logout } = useAgencyAuthStore()
   const { agency } = useAgencyContext()
-  const [newProspections, setNewProspections] = useState(0)
 
   useEffect(() => {
     if (agency?.secondary_color) {
@@ -44,99 +41,6 @@ export function AgencySidebar() {
       document.documentElement.style.setProperty('--sidebar-primary', agency.secondary_color);
     }
   }, [agency?.secondary_color, agency?.primary_color]);
-
-  // Clear notifications when visiting the prospection page
-  useEffect(() => {
-    if (location.pathname.includes('/agency/prospection')) {
-      console.log("On prospection page - clearing notification count");
-      // Reset the notification count when visiting the prospection page
-      setNewProspections(0);
-    }
-  }, [location.pathname]);
-
-  // Setup real-time listener for new reservations
-  useEffect(() => {
-    if (!agency?.id) return;
-    
-    console.log("Setting up real-time subscription for agency:", agency.id);
-    
-    // Enable the table for realtime
-    supabase.channel('schema-db-changes')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public',
-        table: 'reservations',
-        filter: `agency_id=eq.${agency.id}`
-      }, (payload) => {
-        console.log("Realtime event received:", payload);
-      })
-      .subscribe();
-    
-    // Set up a specific channel for new reservations
-    const channel = supabase
-      .channel('reservation-notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'reservations',
-          filter: `agency_id=eq.${agency.id}`
-        },
-        (payload) => {
-          console.log("New reservation inserted:", payload);
-          if (payload.new && payload.new.status === 'En attente') {
-            // Increment the notification count for new reservations
-            setNewProspections(prev => {
-              const newCount = prev + 1;
-              console.log("Incrementing notification count:", prev, "->", newCount);
-              return newCount;
-            });
-            // Show a toast notification for the new reservation
-            toast.info("Nouvelle prospection reçue!");
-          }
-        }
-      )
-      .subscribe();
-    
-    // Initial fetch of recent prospections
-    const fetchRecentProspections = async () => {
-      if (!agency?.id) return;
-      
-      // Get timestamp for 24 hours ago
-      const oneDayAgo = new Date();
-      oneDayAgo.setDate(oneDayAgo.getDate() - 1);
-      
-      console.log("Fetching recent prospections, agency id:", agency.id);
-      
-      const { data, error } = await supabase
-        .from('reservations')
-        .select('id')
-        .eq('agency_id', agency.id)
-        .eq('status', 'En attente')
-        .gte('created_at', oneDayAgo.toISOString());
-      
-      if (error) {
-        console.error('Error fetching recent prospections:', error);
-        return;
-      }
-      
-      console.log("Recent prospections data:", data);
-      
-      // Only set notifications if we're not on the prospection page
-      if (data && !location.pathname.includes('/agency/prospection')) {
-        setNewProspections(data.length);
-        console.log("Setting initial notification count to:", data.length);
-      }
-    };
-    
-    fetchRecentProspections();
-    
-    return () => {
-      console.log("Cleaning up real-time subscription");
-      supabase.removeChannel(channel);
-    };
-  }, [agency?.id, location.pathname]);
 
   const handleLogout = async () => {
     try {
@@ -172,7 +76,6 @@ export function AgencySidebar() {
           title: "Opportunité",
           icon: FileSearch,
           url: `/${agency?.slug}/agency/prospection`,
-          notificationCount: newProspections,
         },
         {
           title: "Rendez-vous",
@@ -243,13 +146,6 @@ export function AgencySidebar() {
                       <Link to={item.url}>
                         <item.icon className="h-4 w-4" />
                         <span>{item.title}</span>
-                        {item.notificationCount > 0 && (
-                          <SidebarMenuBadge>
-                            <Badge variant="success" className="ml-auto">
-                              {item.notificationCount}
-                            </Badge>
-                          </SidebarMenuBadge>
-                        )}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
