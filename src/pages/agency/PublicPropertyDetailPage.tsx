@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -134,6 +135,7 @@ export default function PublicPropertyDetailPage() {
         agency_id: agencyId,
         reservation_number: reservationNumberData,
         type: isRental ? 'LOCATION' : 'VENTE',
+        status: 'En attente', // Changed from 'PENDING' to 'En attente'
         rental_start_date: isRental ? startDate : null,
         rental_end_date: isRental ? endDate : null
       };
