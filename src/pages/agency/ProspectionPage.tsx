@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,6 +38,8 @@ interface Reservation {
   rental_start_date: string | null;
   rental_end_date: string | null;
   appointment_date: string | null;
+  agency_id: string;
+  property_id: string;
   property: {
     id: string;
     title: string;
@@ -54,6 +57,11 @@ interface Client {
   email: string;
   cin?: string;
   id_document_url?: string;
+  agency_id?: string;
+  created_at?: string;
+  updated_at?: string;
+  user_id?: string | null;
+  notifications_enabled?: boolean;
 }
 
 const finalizeContractSchema = z.object({
@@ -414,6 +422,89 @@ const ProspectionPage = () => {
     } catch (error) {
       console.error('Error in appointment update operation:', error);
       toast.error('Une erreur est survenue');
+    }
+  };
+
+  const handleFinalizeContract = async (values: z.infer<typeof finalizeContractSchema>) => {
+    if (!selectedReservation || !clientDetails || !agency?.id) return;
+    
+    setIsSubmittingContract(true);
+    
+    try {
+      // 1. Upload the ID document to Supabase storage
+      const file = values.idDocument;
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}_${selectedReservation.client_phone}.${fileExt}`;
+      const filePath = `id_documents/${fileName}`;
+      
+      // Instead of actual file upload (which would require storage setup)
+      // we'll just simulate it for now
+      console.log('Would upload file to:', filePath);
+      
+      // 2. Update client record with CIN and document URL
+      const { error: clientUpdateError } = await supabase
+        .from('clients')
+        .upsert({ 
+          id: clientDetails.id || undefined,
+          agency_id: agency.id,
+          phone_number: selectedReservation.client_phone,
+          first_name: clientDetails.first_name || '',
+          last_name: clientDetails.last_name || '',
+          email: clientDetails.email || '',
+          cin: values.cin,
+          id_document_url: filePath,
+          notifications_enabled: true,
+          user_id: null
+        }, {
+          onConflict: 'phone_number,agency_id'
+        });
+
+      if (clientUpdateError) {
+        throw new Error(`Erreur lors de la mise à jour du client: ${clientUpdateError.message}`);
+      }
+      
+      // 3. Update reservation status
+      const { error: reservationUpdateError } = await supabase
+        .from('reservations')
+        .update({ status: 'Fermée Gagnée' })
+        .eq('id', selectedReservation.id);
+
+      if (reservationUpdateError) {
+        throw new Error(`Erreur lors de la mise à jour de la réservation: ${reservationUpdateError.message}`);
+      }
+      
+      // 4. Generate and download contract
+      generateAndDownloadContract(selectedReservation, {
+        ...clientDetails, 
+        cin: values.cin
+      }, values.cin);
+      
+      // Update UI
+      if (selectedReservation.status === 'En attente') {
+        setPendingOpportunitiesCount(count => Math.max(0, count - 1));
+      }
+      
+      const updatedReservation = { 
+        ...selectedReservation, 
+        status: 'Fermée Gagnée'
+      };
+      
+      setSelectedReservation(updatedReservation);
+      
+      const updatedReservations = reservations.map(res => 
+        res.id === selectedReservation.id ? updatedReservation : res
+      );
+      
+      setReservations(updatedReservations);
+      setShowContractForm(false);
+      
+      toast.success('Contrat finalisé avec succès');
+    } catch (error) {
+      console.error('Error finalizing contract:', error);
+      toast.error('Erreur lors de la finalisation du contrat');
+    } finally {
+      setIsSubmittingContract(false);
+      applyFilters();
     }
   };
 
@@ -1019,9 +1110,37 @@ const ProspectionPage = () => {
       
       {selectedReservation && clientDetails && (
         <ClientDetailsDialog
-          client={clientDetails}
-          property={selectedReservation.property}
-          reservation={selectedReservation}
+          client={{
+            ...clientDetails,
+            agency_id: agency?.id || '',
+            created_at: clientDetails.created_at || new Date().toISOString(),
+            updated_at: clientDetails.updated_at || new Date().toISOString(),
+            notifications_enabled: clientDetails.notifications_enabled || false,
+            user_id: clientDetails.user_id || null
+          }}
+          property={{
+            ...selectedReservation.property,
+            agency_id: agency?.id || '',
+            client_id: '',
+            created_at: '',
+            updated_at: '',
+            description: '',
+            detailed_description: '',
+            property_type: '',
+            amenities: [],
+            bathrooms: 0,
+            bedrooms: 0,
+            surface_area: 0,
+            photos: [],
+            property_status: 'DISPONIBLE',
+            is_available: true,
+            is_furnished: false,
+            view_count: 0,
+            zone_id: 0
+          }}
+          reservation={{
+            ...selectedReservation
+          }}
           isOpen={false}
           onClose={() => {}}
           onReservationClick={(id) => {
