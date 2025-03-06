@@ -101,7 +101,7 @@ export default function AppointmentsPage() {
                 modifiersClassNames={{
                   selected: 'bg-primary text-primary-foreground'
                 }}
-                className="rounded-md border"
+                className="rounded-md border shadow-sm max-w-full"
                 components={{
                   Day: ({ date, ...props }: { date: Date } & React.HTMLAttributes<HTMLDivElement>) => (
                     <div

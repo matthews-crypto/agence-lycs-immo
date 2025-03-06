@@ -101,7 +101,8 @@
   }
 }
 
-/* Fix for calendar display issues */
-.rdp:not(.popover-content .rdp) {
+/* Suppression du fix qui causait des problèmes */
+/* .rdp:not(.popover-content .rdp) {
   display: none !important;
-}
+} */
+
