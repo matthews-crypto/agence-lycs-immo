@@ -6,7 +6,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Clock, Home, User, Phone, CheckCircle, Search, MapPin, Tag, Mail, List } from "lucide-react";
+import { Clock, Home, User, Phone, CheckCircle, Search, MapPin, Tag, Mail, List, PieChart } from "lucide-react";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale/fr";
@@ -64,6 +64,7 @@ const ProspectionPage = () => {
   const [isClientReservationsOpen, setIsClientReservationsOpen] = useState(false);
   const [clientReservations, setClientReservations] = useState<Reservation[]>([]);
   const [appointmentDate, setAppointmentDate] = useState<Date | null>(null);
+  const [pendingOpportunitiesCount, setPendingOpportunitiesCount] = useState(0);
   
   const location = useLocation();
   const navigate = useNavigate();
@@ -100,6 +101,9 @@ const ProspectionPage = () => {
           setReservations(data || []);
           setFilteredReservations(data || []);
           
+          const pendingCount = data ? data.filter(r => r.status === 'En attente').length : 0;
+          setPendingOpportunitiesCount(pendingCount);
+          
           if (reservationParam) {
             setReservationRefFilter(reservationParam);
           }
@@ -114,6 +118,39 @@ const ProspectionPage = () => {
 
     fetchReservations();
   }, [agency?.id, reservationParam]);
+
+  useEffect(() => {
+    if (!agency?.id) return;
+    
+    const channel = supabase
+      .channel('prospection-reservations')
+      .on('postgres_changes', 
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'reservations',
+          filter: `agency_id=eq.${agency.id}`
+        },
+        (payload) => {
+          console.log('New reservation detected:', payload);
+          setReservations(prev => {
+            const newReservation = payload.new as Reservation;
+            if (prev.find(r => r.id === newReservation.id)) return prev;
+            
+            if (newReservation.status === 'En attente') {
+              setPendingOpportunitiesCount(count => count + 1);
+            }
+            
+            return [newReservation, ...prev];
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [agency?.id]);
 
   useEffect(() => {
     applyFilters();
@@ -338,6 +375,11 @@ const ProspectionPage = () => {
           res.id === selectedReservation.id ? updatedReservation : res
         );
         setReservations(updatedReservations);
+        
+        if (selectedReservation.status === 'En attente') {
+          setPendingOpportunitiesCount(count => Math.max(0, count - 1));
+        }
+        
         applyFilters();
       }
     } catch (error) {
@@ -364,6 +406,15 @@ const ProspectionPage = () => {
       toast.success('Statut mis à jour avec succès');
       
       if (selectedReservation) {
+        const wasStatusPending = selectedReservation.status === 'En attente';
+        const isNewStatusPending = newStatus === 'En attente';
+        
+        if (wasStatusPending && !isNewStatusPending) {
+          setPendingOpportunitiesCount(count => Math.max(0, count - 1));
+        } else if (!wasStatusPending && isNewStatusPending) {
+          setPendingOpportunitiesCount(count => count + 1);
+        }
+        
         const updatedReservation = { ...selectedReservation, status: newStatus };
         setSelectedReservation(updatedReservation);
         
@@ -410,6 +461,18 @@ const ProspectionPage = () => {
           <div className="flex flex-col items-start mb-6">
             <h1 className="text-2xl md:text-3xl font-bold">Gestion des Opportunités</h1>
             <p className="text-muted-foreground mt-2">Consultez et gérez vos demandes d'opportunités</p>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
+            <div className="flex items-center space-x-4">
+              <div className="bg-blue-50 p-3 rounded-full">
+                <PieChart className="h-8 w-8 text-blue-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">{pendingOpportunitiesCount}</h2>
+                <p className="text-sm text-gray-500">Opportunités en attente à traiter</p>
+              </div>
+            </div>
           </div>
 
           <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">

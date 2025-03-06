@@ -22,18 +22,21 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuBadge,
 } from "@/components/ui/sidebar"
 import { useAgencyAuthStore } from "@/stores/useAgencyAuthStore"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { useAgencyContext } from "@/contexts/AgencyContext"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
+import { supabase } from "@/integrations/supabase/client"
 
 export function AgencySidebar() {
   const location = useLocation()
   const navigate = useNavigate()
   const { logout } = useAgencyAuthStore()
   const { agency } = useAgencyContext()
+  const [newOpportunityCount, setNewOpportunityCount] = useState(0)
 
   useEffect(() => {
     if (agency?.secondary_color) {
@@ -41,6 +44,47 @@ export function AgencySidebar() {
       document.documentElement.style.setProperty('--sidebar-primary', agency.secondary_color);
     }
   }, [agency?.secondary_color, agency?.primary_color]);
+
+  // Reset notification count when visiting the prospection page
+  useEffect(() => {
+    if (location.pathname.includes('/agency/prospection')) {
+      console.log('Resetting opportunity count - visiting prospection page');
+      setNewOpportunityCount(0);
+    }
+  }, [location.pathname]);
+
+  // Subscribe to new reservations
+  useEffect(() => {
+    if (!agency?.id) return;
+
+    console.log('Setting up realtime subscription for reservations');
+    
+    const channel = supabase
+      .channel('agency-reservations')
+      .on('postgres_changes', 
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'reservations',
+          filter: `agency_id=eq.${agency.id}`
+        },
+        (payload) => {
+          console.log('New reservation received:', payload);
+          setNewOpportunityCount(prev => prev + 1);
+          toast.success('Nouvelle opportunité reçue!', {
+            position: 'top-right',
+          });
+        }
+      )
+      .subscribe((status) => {
+        console.log('Subscription status:', status);
+      });
+
+    return () => {
+      console.log('Cleaning up realtime subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [agency?.id]);
 
   const handleLogout = async () => {
     try {
@@ -76,6 +120,7 @@ export function AgencySidebar() {
           title: "Opportunité",
           icon: FileSearch,
           url: `/${agency?.slug}/agency/prospection`,
+          badgeCount: newOpportunityCount,
         },
         {
           title: "Rendez-vous",
@@ -148,6 +193,11 @@ export function AgencySidebar() {
                         <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
+                    {item.badgeCount && item.badgeCount > 0 && (
+                      <SidebarMenuBadge className="bg-red-500">
+                        {item.badgeCount}
+                      </SidebarMenuBadge>
+                    )}
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
