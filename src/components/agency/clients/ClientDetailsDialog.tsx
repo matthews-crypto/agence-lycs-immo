@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useNavigate } from "react-router-dom";
 import { 
   Dialog, 
   DialogContent, 
@@ -26,6 +27,8 @@ import {
   Clock,
   MapPin
 } from "lucide-react";
+import { getAbsoluteUrl } from "@/utils/urlUtils";
+import { useAgencyContext } from "@/contexts/AgencyContext";
 import type { Tables } from "@/integrations/supabase/types";
 
 type ClientDetailsDialogProps = {
@@ -34,6 +37,7 @@ type ClientDetailsDialogProps = {
   reservation: Tables<"reservations"> | null;
   isOpen: boolean;
   onClose: () => void;
+  onReservationClick?: (reservationId: string) => void;
 };
 
 export function ClientDetailsDialog({ 
@@ -41,13 +45,28 @@ export function ClientDetailsDialog({
   property, 
   reservation, 
   isOpen, 
-  onClose 
+  onClose,
+  onReservationClick
 }: ClientDetailsDialogProps) {
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
+  const { agency } = useAgencyContext();
   
   if (!client) return null;
   
   const isRental = reservation?.type === 'LOCATION';
+
+  const handlePropertyClick = () => {
+    if (property && agency) {
+      navigate(`/${agency.slug}/properties/${property.id}`);
+    }
+  };
+
+  const handleReservationClick = () => {
+    if (reservation && onReservationClick) {
+      onReservationClick(reservation.id);
+    }
+  };
   
   // Content to display in both dialog and sheet
   const content = (
@@ -88,7 +107,12 @@ export function ClientDetailsDialog({
             <div className="flex items-center gap-2 flex-wrap">
               <Home className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               <span className="font-medium">Bien:</span>
-              <span className="break-words">{property.title}</span>
+              <button 
+                onClick={handlePropertyClick} 
+                className="text-blue-600 hover:underline break-words"
+              >
+                {property.title}
+              </button>
             </div>
             {property.address && (
               <div className="flex items-start gap-2">
@@ -100,7 +124,7 @@ export function ClientDetailsDialog({
             <div className="flex items-center gap-2">
               <Tag className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               <span className="font-medium">Prix:</span>
-              <span>{property.price.toLocaleString()} €</span>
+              <span>{property.price.toLocaleString()} FCFA</span>
             </div>
             <div className="flex items-center gap-2">
               <Home className="h-4 w-4 text-muted-foreground flex-shrink-0" />
@@ -122,7 +146,12 @@ export function ClientDetailsDialog({
             <div className="flex items-center gap-2">
               <Tag className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               <span className="font-medium">Référence:</span>
-              <span>{reservation.reservation_number}</span>
+              <button 
+                onClick={handleReservationClick}
+                className="text-blue-600 hover:underline"
+              >
+                {reservation.reservation_number}
+              </button>
             </div>
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
