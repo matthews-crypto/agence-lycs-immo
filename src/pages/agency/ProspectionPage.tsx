@@ -827,7 +827,7 @@ const ProspectionPage = () => {
                       </div>
                       <div className="flex items-center gap-2">
                         <Tag className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                        <span className="text-xs text-gray-600">
+                        <span className="text-sm text-gray-600">
                           Réf: {reservation.property?.reference_number || 'N/A'}
                         </span>
                       </div>
@@ -988,37 +988,25 @@ const ProspectionPage = () => {
                     <div className="bg-gray-50 rounded-md p-4">
                       <h3 className="text-sm font-medium mb-3">Actions</h3>
                       
-                      {selectedReservation.status !== 'Visite programmée' && (
-                        <div className="mb-4">
-                          <label className="text-sm font-medium mb-1 block">
-                            {selectedReservation.appointment_date ? 'Modifier le rendez-vous' : 'Programmer un rendez-vous'}
-                          </label>
-                          <div className="flex space-x-2">
-                            <Input
-                              type="date"
-                              value={appointmentDate ? format(appointmentDate, 'yyyy-MM-dd') : ''}
-                              onChange={(e) => {
-                                if (e.target.value) {
-                                  handleAppointmentDateChange(new Date(e.target.value));
-                                }
-                              }}
-                            />
-                          </div>
+                      <div className="mb-4">
+                        <label className="text-sm font-medium mb-1 block">
+                          {selectedReservation.appointment_date ? 'Modifier le rendez-vous' : 'Programmer un rendez-vous'}
+                        </label>
+                        <div className="flex space-x-2">
+                          <Input
+                            type="date"
+                            value={appointmentDate ? format(appointmentDate, 'yyyy-MM-dd') : ''}
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                handleAppointmentDateChange(new Date(e.target.value));
+                              }
+                            }}
+                          />
                         </div>
-                      )}
+                      </div>
                       
                       <div>
                         <div className="flex flex-wrap gap-2">
-                          {selectedReservation.status !== 'En attente' && (
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleStatusChange('En attente')}
-                            >
-                              En attente
-                            </Button>
-                          )}
-                          
                           <Button 
                             variant="outline" 
                             size="sm"
