@@ -1,9 +1,10 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MapPin, User, BedDouble, ChevronUp, Phone, Mail, ChevronDown, Briefcase, Search, Filter } from "lucide-react";
+import { MapPin, User, BedDouble, ChevronUp, Phone, Mail, ChevronDown, Briefcase, Search, Filter, Home, Tags, Info } from "lucide-react";
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { useNavigate } from "react-router-dom";
 import { AuthDrawer } from "@/components/agency/AuthDrawer";
@@ -467,15 +468,17 @@ export default function AgencyHomePage() {
           <div className="flex items-center gap-8">
             <button
               onClick={() => scrollToTop()}
-              className="text-white hover:text-white/90 transition-colors"
+              className="text-white hover:text-white/90 transition-colors flex items-center gap-2"
             >
-              Accueil
+              <Home className="h-4 w-4" />
+              <span>Accueil</span>
             </button>
             
             <div className="relative group">
               <button
-                className="text-white hover:text-white/90 transition-colors flex items-center gap-1"
+                className="text-white hover:text-white/90 transition-colors flex items-center gap-2"
               >
+                <Tags className="h-4 w-4" />
                 <span>Catégorie Offre</span>
                 <ChevronDown className="h-4 w-4 transition-transform group-hover:rotate-180" />
               </button>
@@ -507,9 +510,10 @@ export default function AgencyHomePage() {
             
             <button
               onClick={() => scrollToSection('services')}
-              className="text-white hover:text-white/90 transition-colors"
+              className="text-white hover:text-white/90 transition-colors flex items-center gap-2"
             >
-              À propos
+              <Info className="h-4 w-4" />
+              <span>À propos</span>
             </button>
           </div>
           <div className="flex justify-end">
