@@ -554,7 +554,7 @@ const ProspectionPage = () => {
       doc.text(`Titre: ${reservation.property.title}`, 20, 120);
       doc.text(`Adresse: ${reservation.property.address || 'Non spécifiée'}`, 20, 130);
       
-      const formattedPrice = new Intl.NumberFormat('fr-FR').format(reservation.property.price).replace('/', '');
+      const formattedPrice = new Intl.NumberFormat('fr-FR').format(reservation.property.price).replace(/\//g, '');
       doc.text(`Prix: ${formattedPrice} FCFA`, 20, 140);
       
       doc.setFontSize(14);
