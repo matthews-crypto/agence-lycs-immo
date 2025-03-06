@@ -16,6 +16,7 @@ export default function ClientsPage() {
   const [reservations, setReservations] = useState<Tables<"reservations">[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [locations, setLocations] = useState<Tables<"locations">[]>([]);
 
   // Get the selected client, property and reservation
   const selectedClient = clients.find(client => client.id === selectedClientId) || null;
@@ -24,18 +25,15 @@ export default function ClientsPage() {
   const selectedProperty = selectedClient && properties.length > 0 
     ? properties.find(property => {
         // Look for a connection in the locations table instead of using client_id
-        const location = locations.find(loc => 
+        return locations.some(loc => 
           loc.client_id === selectedClient.id && loc.property_id === property.id
         );
-        return location !== undefined;
       }) || null
     : null;
     
   const selectedReservation = selectedProperty
     ? reservations.find(reservation => reservation.property_id === selectedProperty.id) || null
     : null;
-
-  const [locations, setLocations] = useState<Tables<"locations">[]>([]);
 
   useEffect(() => {
     const fetchClients = async () => {
