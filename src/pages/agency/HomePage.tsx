@@ -362,9 +362,11 @@ export default function AgencyHomePage() {
 
       for (const [typeKey, typeLabel] of Object.entries(propertyTypeLabels)) {
         const typeLabelLower = typeLabel.toLowerCase();
-        if ((typeLabelLower.includes(word) || word.includes(typeLabelLower)) && 
-            property.property_type === typeKey) {
-          return true;
+        const wordLower = word.toLowerCase();
+        if (typeLabelLower.includes(wordLower) || wordLower.includes(typeLabelLower)) {
+          if (property.property_type === typeKey) {
+            return true;
+          }
         }
       }
       
@@ -372,8 +374,6 @@ export default function AgencyHomePage() {
         valueContainsSearchWord(property.title, [word]) || 
         valueContainsSearchWord(property.description, [word]) ||
         valueContainsSearchWord(property.zone?.nom, [word]) ||
-        valueContainsSearchWord(propertyTypeLabels[property.property_type], [word]) ||
-        valueContainsSearchWord(property.property_offer_type, [word]) ||
         valueContainsSearchWord(property.region, [word])
       );
     });
