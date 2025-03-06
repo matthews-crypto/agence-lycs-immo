@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster"
 import { Toaster as Sonner } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -34,6 +35,7 @@ import AgencyProspectionPage from "@/pages/agency/ProspectionPage"
 import AppointmentsPage from "@/pages/agency/AppointmentsPage"
 import AgentDashboardPage from "@/pages/agency/agent/DashboardPage"
 import AgentPropertiesPage from "@/pages/agency/agent/PropertiesPage"
+import AgentAppointmentsPage from "@/pages/agency/agent/AppointmentsPage"
 import ClientDashboardPage from "@/pages/agency/client/DashboardPage"
 import ClientFavoritesPage from "@/pages/agency/client/FavoritesPage"
 import ClientAppointmentsPage from "@/pages/agency/client/AppointmentsPage"
@@ -123,6 +125,10 @@ const App = () => (
                   <Route
                     path="properties"
                     element={<AgentPropertiesPage />}
+                  />
+                  <Route
+                    path="appointments"
+                    element={<AgentAppointmentsPage />}
                   />
                 </Route>
 

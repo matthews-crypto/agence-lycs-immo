@@ -100,3 +100,8 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Fix for calendar display issues */
+.rdp:not(.popover-content .rdp) {
+  display: none !important;
+}

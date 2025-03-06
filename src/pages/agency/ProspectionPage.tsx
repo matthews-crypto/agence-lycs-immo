@@ -17,6 +17,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { Calendar } from "@/components/ui/calendar";
 
 interface Reservation {
   id: string;
@@ -301,10 +304,9 @@ const ProspectionPage = () => {
     setStatusFilter("");
   };
 
-  const handleAppointmentDateChange = async (dateString: string) => {
-    if (!dateString || !selectedReservation) return;
+  const handleAppointmentDateChange = async (date: Date | undefined) => {
+    if (!date || !selectedReservation) return;
     
-    const date = new Date(dateString);
     setAppointmentDate(date);
     
     try {
@@ -502,7 +504,7 @@ const ProspectionPage = () => {
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <CalendarIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                        <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
                         <span className="text-sm">
                           {format(new Date(reservation.created_at), 'PP', { locale: fr })}
                         </span>
@@ -685,7 +687,7 @@ const ProspectionPage = () => {
                           value={appointmentDate ? format(appointmentDate, "yyyy-MM-dd") : ""}
                           onChange={(e) => {
                             if (e.target.value) {
-                              handleAppointmentDateChange(e.target.value);
+                              handleAppointmentDateChange(new Date(e.target.value));
                             }
                           }}
                           className="w-full"
