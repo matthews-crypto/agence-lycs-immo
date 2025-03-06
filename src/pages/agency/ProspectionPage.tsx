@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -401,6 +402,21 @@ const ProspectionPage = () => {
         console.error('Error updating reservation status:', error);
         toast.error('Erreur lors de la mise à jour du statut');
         return;
+      }
+
+      // If status is changed to "Fermée Gagnée", update the property with client_id
+      if (newStatus === 'Fermée Gagnée' && clientDetails) {
+        const { error: propertyError } = await supabase
+          .from('properties')
+          .update({ client_id: clientDetails.id })
+          .eq('id', selectedReservation.property.id);
+
+        if (propertyError) {
+          console.error('Error updating property with client_id:', propertyError);
+          toast.error('Erreur lors de l\'association du client au bien');
+        } else {
+          toast.success('Client associé au bien avec succès');
+        }
       }
 
       toast.success('Statut mis à jour avec succès');

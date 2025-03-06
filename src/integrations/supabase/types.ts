@@ -391,6 +391,7 @@ export type Database = {
           amenities: string[] | null
           bathrooms: number | null
           bedrooms: number | null
+          client_id: string | null
           created_at: string
           description: string | null
           detailed_description: string | null
@@ -426,6 +427,7 @@ export type Database = {
           amenities?: string[] | null
           bathrooms?: number | null
           bedrooms?: number | null
+          client_id?: string | null
           created_at?: string
           description?: string | null
           detailed_description?: string | null
@@ -463,6 +465,7 @@ export type Database = {
           amenities?: string[] | null
           bathrooms?: number | null
           bedrooms?: number | null
+          client_id?: string | null
           created_at?: string
           description?: string | null
           detailed_description?: string | null
@@ -500,6 +503,13 @@ export type Database = {
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "properties_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
           {
