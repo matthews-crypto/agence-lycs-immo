@@ -1,3 +1,4 @@
+
 import { useParams } from "react-router-dom"
 import { AgencySidebar } from "@/components/agency/AgencySidebar"
 import { SidebarProvider } from "@/components/ui/sidebar"
@@ -7,6 +8,7 @@ import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { format } from "date-fns"
+import { Badge } from "@/components/ui/badge"
 
 interface Reservation {
   id: string
@@ -23,7 +25,7 @@ export default function AppointmentsPage() {
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
-  const { data: reservations = [] } = useQuery({
+  const { data: reservations = [], isLoading } = useQuery({
     queryKey: ['agency-appointments', agencySlug],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -39,16 +41,28 @@ export default function AppointmentsPage() {
         `)
         .not('appointment_date', 'is', null)
       
-      if (error) throw error
+      if (error) {
+        console.error("Error fetching reservations:", error)
+        throw error
+      }
+      
+      console.log("Fetched reservations:", data)
       return data as Reservation[]
     }
   })
 
   const handleDayClick = (date: Date) => {
+    const formattedClickedDate = format(date, 'yyyy-MM-dd')
+    console.log("Clicked date:", formattedClickedDate)
+    
+    // Find reservation that matches the clicked date
     const reservation = reservations.find(
       (r) => r.appointment_date && 
-      format(new Date(r.appointment_date), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
+      format(new Date(r.appointment_date), 'yyyy-MM-dd') === formattedClickedDate
     )
+    
+    console.log("Found reservation:", reservation)
+    
     if (reservation) {
       setSelectedReservation(reservation)
       setIsDialogOpen(true)
@@ -56,10 +70,12 @@ export default function AppointmentsPage() {
   }
 
   const getDayClassName = (date: Date) => {
+    const formattedDate = format(date, 'yyyy-MM-dd')
     const hasAppointment = reservations.some(
       (r) => r.appointment_date && 
-      format(new Date(r.appointment_date), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
+      format(new Date(r.appointment_date), 'yyyy-MM-dd') === formattedDate
     )
+    
     return hasAppointment ? 'bg-primary text-primary-foreground rounded-full cursor-pointer' : ''
   }
 
@@ -70,32 +86,33 @@ export default function AppointmentsPage() {
         <div className="flex-1 p-8">
           <h1 className="text-2xl font-bold mb-4">Rendez-vous</h1>
           
-          <div className="mt-4">
-            <Calendar 
-              mode="single"
-              onDayClick={handleDayClick}
-              modifiersClassNames={{
-                selected: 'bg-primary text-primary-foreground'
-              }}
-              modifiers={{
-                hasAppointment: (date) => {
-                  return reservations.some(
-                    (r) => r.appointment_date && 
-                    format(new Date(r.appointment_date), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
+          {isLoading ? (
+            <p>Chargement des rendez-vous...</p>
+          ) : reservations.length === 0 ? (
+            <div className="text-center py-10">
+              <p>Aucun rendez-vous n'a été programmé.</p>
+            </div>
+          ) : (
+            <div className="mt-4">
+              <p className="mb-4">Total des rendez-vous: <Badge variant="primary">{reservations.length}</Badge></p>
+              <Calendar 
+                mode="single"
+                onDayClick={handleDayClick}
+                modifiersClassNames={{
+                  selected: 'bg-primary text-primary-foreground'
+                }}
+                className="rounded-md border"
+                components={{
+                  Day: ({ date, ...props }: { date: Date } & React.HTMLAttributes<HTMLDivElement>) => (
+                    <div
+                      {...props}
+                      className={`${props.className || ''} ${getDayClassName(date)}`}
+                    />
                   )
-                }
-              }}
-              className="rounded-md border"
-              components={{
-                Day: ({ date, ...props }: { date: Date } & React.HTMLAttributes<HTMLDivElement>) => (
-                  <div
-                    {...props}
-                    className={`${props.className || ''} ${getDayClassName(date)}`}
-                  />
-                )
-              }}
-            />
-          </div>
+                }}
+              />
+            </div>
+          )}
 
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogContent>
