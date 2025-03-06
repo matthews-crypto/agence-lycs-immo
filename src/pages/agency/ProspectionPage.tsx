@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -404,7 +403,6 @@ const ProspectionPage = () => {
         return;
       }
 
-      // If status is changed to "Fermée Gagnée", update the property with client_id
       if (newStatus === 'Fermée Gagnée' && clientDetails) {
         const { error: propertyError } = await supabase
           .from('properties')
@@ -463,6 +461,10 @@ const ProspectionPage = () => {
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('fr-FR').format(price) + ' FCFA';
+  };
+
+  const isReservationClosed = (status: string) => {
+    return status === 'Fermée Gagnée' || status === 'Fermée Perdu';
   };
 
   if (isLoading) {
@@ -650,7 +652,7 @@ const ProspectionPage = () => {
                       
                       {selectedReservation.property?.address && (
                         <div className="flex items-start gap-3">
-                          <MapPin className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                          <MapPin className="h-5 w-5 text-gray-500 flex-shrink-0" />
                           <p className="text-sm">{selectedReservation.property?.address}</p>
                         </div>
                       )}
@@ -761,33 +763,51 @@ const ProspectionPage = () => {
                     <div className="flex items-start gap-3">
                       <CalendarIcon className="h-5 w-5 text-gray-500 mt-2 flex-shrink-0" />
                       <div className="w-full">
-                        <Input
-                          type="date"
-                          value={appointmentDate ? format(appointmentDate, "yyyy-MM-dd") : ""}
-                          onChange={(e) => {
-                            if (e.target.value) {
-                              handleAppointmentDateChange(new Date(e.target.value));
-                            }
-                          }}
-                          className="w-full"
-                        />
+                        {isReservationClosed(selectedReservation.status) ? (
+                          <div className="text-gray-700">
+                            {selectedReservation.appointment_date 
+                              ? format(new Date(selectedReservation.appointment_date), "dd/MM/yyyy")
+                              : "Aucune date de rendez-vous"}
+                          </div>
+                        ) : (
+                          <Input
+                            type="date"
+                            value={appointmentDate ? format(appointmentDate, "yyyy-MM-dd") : ""}
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                handleAppointmentDateChange(new Date(e.target.value));
+                              }
+                            }}
+                            className="w-full"
+                          />
+                        )}
                       </div>
                     </div>
                   </div>
                   
                   <div className="flex flex-col gap-3 pt-2">
-                    <Button 
-                      variant="destructive" 
-                      onClick={() => handleStatusChange('Fermée Perdu')}
-                    >
-                      Fermée Perdu
-                    </Button>
-                    <Button 
-                      variant="default" 
-                      onClick={() => handleStatusChange('Fermée Gagnée')}
-                    >
-                      Fermée Gagnée
-                    </Button>
+                    {isReservationClosed(selectedReservation.status) ? (
+                      <div className="bg-green-50 border border-green-200 rounded-md p-4 text-center">
+                        <CheckCircle className="h-6 w-6 mx-auto text-green-500 mb-2" />
+                        <p className="text-gray-800 font-medium">Opportunité conclue</p>
+                        <p className="text-sm text-gray-500">Cette opportunité a été traitée et est désormais fermée.</p>
+                      </div>
+                    ) : (
+                      <>
+                        <Button 
+                          variant="destructive" 
+                          onClick={() => handleStatusChange('Fermée Perdu')}
+                        >
+                          Fermée Perdu
+                        </Button>
+                        <Button 
+                          variant="default" 
+                          onClick={() => handleStatusChange('Fermée Gagnée')}
+                        >
+                          Fermée Gagnée
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               </DialogContent>
