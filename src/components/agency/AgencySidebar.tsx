@@ -182,7 +182,7 @@ export function AgencySidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 {group.items.map((item) => (
-                  <SidebarMenuItem key={item.title}>
+                  <SidebarMenuItem key={item.title} className="relative">
                     <SidebarMenuButton
                       asChild
                       className="transition-colors hover:text-white data-[active=true]:bg-sidebar-primary"
@@ -193,10 +193,10 @@ export function AgencySidebar() {
                         <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
-                    {item.badgeCount && item.badgeCount > 0 && (
-                      <SidebarMenuBadge className="bg-red-500">
+                    {item.badgeCount > 0 && item.title === "Opportunité" && (
+                      <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                         {item.badgeCount}
-                      </SidebarMenuBadge>
+                      </div>
                     )}
                   </SidebarMenuItem>
                 ))}
