@@ -1016,7 +1016,7 @@ const ProspectionPage = () => {
                     </div>
                   </div>
                   
-                  {!isReservationClosed(selectedReservation.status) && (
+                  {!isReservationClosed(selectedReservation.status) && !showContractFields && (
                     <div className="bg-gray-50 rounded-md p-4">
                       <h3 className="text-sm font-medium mb-3">Actions</h3>
                       
