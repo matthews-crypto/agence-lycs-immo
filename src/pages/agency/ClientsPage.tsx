@@ -81,7 +81,10 @@ export default function ClientsPage() {
       
       // Transform data to flatten the structure
       const formattedClients = data.map((client) => {
-        const location = client.locations?.[0] || {};
+        // Make sure locations is an array and has at least one element
+        const locations = client.locations || [];
+        const location = locations.length > 0 ? locations[0] : {};
+        // Make sure properties exists
         const property = location.properties || {};
         
         return {
@@ -91,14 +94,14 @@ export default function ClientsPage() {
           email: client.email,
           phone_number: client.phone_number,
           cin: client.cin,
-          property_id: location.property_id,
-          property_title: property.title,
-          rental_start_date: location.rental_start_date,
-          rental_end_date: location.rental_end_date,
-          statut: location.statut,
-          property_type: property.property_type,
-          property_price: property.price,
-          property_address: property.address
+          property_id: location.property_id || null,
+          property_title: property.title || null,
+          rental_start_date: location.rental_start_date || null,
+          rental_end_date: location.rental_end_date || null,
+          statut: location.statut || 'N/A',
+          property_type: property.property_type || null,
+          property_price: property.price || null,
+          property_address: property.address || null
         };
       });
       
