@@ -15,7 +15,8 @@ import {
   Home, 
   CalendarDays, 
   Tag,
-  Clock
+  Clock,
+  MapPin
 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
