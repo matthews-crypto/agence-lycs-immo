@@ -6,7 +6,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Clock, Home, User, Phone, CheckCircle, Search, MapPin, Tag, Mail, List, PieChart } from "lucide-react";
+import { Clock, Home, User, Phone, CheckCircle, Search, MapPin, Tag, Mail, List, PieChart, Upload, FileCheck } from "lucide-react";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale/fr";
@@ -20,6 +20,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { ClientDetailsDialog } from "@/components/agency/clients/ClientDetailsDialog";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 
 interface Reservation {
   id: string;
@@ -47,7 +52,20 @@ interface Client {
   last_name: string;
   phone_number: string;
   email: string;
+  cin?: string;
+  id_document_url?: string;
 }
+
+const finalizeContractSchema = z.object({
+  cin: z.string().min(1, "Le numéro CIN est obligatoire"),
+  idDocument: z
+    .instanceof(File)
+    .refine((file) => file.size > 0, "Le document d'identité est obligatoire")
+    .refine(
+      (file) => file.type === "application/pdf",
+      "Le document doit être au format PDF"
+    )
+});
 
 const ProspectionPage = () => {
   const { agency } = useAgencyContext();
@@ -65,12 +83,22 @@ const ProspectionPage = () => {
   const [clientReservations, setClientReservations] = useState<Reservation[]>([]);
   const [appointmentDate, setAppointmentDate] = useState<Date | null>(null);
   const [pendingOpportunitiesCount, setPendingOpportunitiesCount] = useState(0);
+  const [showContractForm, setShowContractForm] = useState(false);
+  const [isSubmittingContract, setIsSubmittingContract] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   
   const location = useLocation();
   const navigate = useNavigate();
   const { agencySlug } = useParams();
   const queryParams = new URLSearchParams(location.search);
   const reservationParam = queryParams.get('reservation');
+
+  const finalizeContractForm = useForm<z.infer<typeof finalizeContractSchema>>({
+    resolver: zodResolver(finalizeContractSchema),
+    defaultValues: {
+      cin: "",
+    }
+  });
 
   useEffect(() => {
     const fetchReservations = async () => {
@@ -315,6 +343,7 @@ const ProspectionPage = () => {
     }
     
     setIsDialogOpen(true);
+    setShowContractForm(false);
   };
 
   const handleClientReservationsClick = () => {
@@ -391,6 +420,11 @@ const ProspectionPage = () => {
   const handleStatusChange = async (newStatus: string) => {
     if (!selectedReservation) return;
     
+    if (newStatus === 'Fermée Gagnée') {
+      setShowContractForm(true);
+      return;
+    }
+    
     try {
       const { error } = await supabase
         .from('reservations')
@@ -401,20 +435,6 @@ const ProspectionPage = () => {
         console.error('Error updating reservation status:', error);
         toast.error('Erreur lors de la mise à jour du statut');
         return;
-      }
-
-      if (newStatus === 'Fermée Gagnée' && clientDetails) {
-        const { error: propertyError } = await supabase
-          .from('properties')
-          .update({ client_id: clientDetails.id })
-          .eq('id', selectedReservation.property.id);
-
-        if (propertyError) {
-          console.error('Error updating property with client_id:', propertyError);
-          toast.error('Erreur lors de l\'association du client au bien');
-        } else {
-          toast.success('Client associé au bien avec succès');
-        }
       }
 
       toast.success('Statut mis à jour avec succès');
@@ -465,6 +485,58 @@ const ProspectionPage = () => {
 
   const isReservationClosed = (status: string) => {
     return status === 'Fermée Gagnée' || status === 'Fermée Perdu';
+  };
+
+  const onHandleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      setSelectedFile(file);
+      finalizeContractForm.setValue("idDocument", file);
+    }
+  };
+
+  const generateAndDownloadContract = (reservation: Reservation, client: Client, cin: string) => {
+    const contractText = `
+    CONTRAT DE VENTE IMMOBILIÈRE
+    ===========================
+    
+    Date: ${new Date().toLocaleDateString('fr-FR')}
+    
+    ENTRE LES SOUSSIGNÉS:
+    
+    L'AGENCE:
+    ${agency?.agency_name || ''}
+    Adresse: ${agency?.address || ''}
+    
+    ET
+    
+    L'ACHETEUR:
+    ${client.first_name} ${client.last_name}
+    Téléphone: ${client.phone_number}
+    Email: ${client.email || 'Non spécifié'}
+    Numéro CIN: ${cin}
+    
+    CONCERNANT LE BIEN:
+    Référence: ${reservation.property.reference_number}
+    Titre: ${reservation.property.title}
+    Adresse: ${reservation.property.address || 'Non spécifiée'}
+    Prix: ${reservation.property.price.toLocaleString()} FCFA
+    
+    RÉSERVATION:
+    Numéro de réservation: ${reservation.reservation_number}
+    `;
+    
+    const blob = new Blob([contractText], { type: 'text/plain' });
+    
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Contrat_${reservation.reservation_number}_${Date.now()}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    
+    URL.revokeObjectURL(url);
+    document.body.removeChild(a);
   };
 
   if (isLoading) {
@@ -792,6 +864,87 @@ const ProspectionPage = () => {
                         <p className="text-gray-800 font-medium">Opportunité conclue</p>
                         <p className="text-sm text-gray-500">Cette opportunité a été traitée et est désormais fermée.</p>
                       </div>
+                    ) : showContractForm ? (
+                      <div className="bg-white border rounded-md p-4">
+                        <h3 className="font-semibold text-lg mb-4">Finalisation du contrat</h3>
+                        
+                        <Form {...finalizeContractForm}>
+                          <form onSubmit={finalizeContractForm.handleSubmit(handleFinalizeContract)} className="space-y-4">
+                            <FormField
+                              control={finalizeContractForm.control}
+                              name="cin"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Numéro CIN *</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="Entrez le numéro CIN" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={finalizeContractForm.control}
+                              name="idDocument"
+                              render={() => (
+                                <FormItem>
+                                  <FormLabel>Document d'identité (PDF) *</FormLabel>
+                                  <FormControl>
+                                    <div className="grid w-full items-center gap-1.5">
+                                      <label 
+                                        htmlFor="picture" 
+                                        className="cursor-pointer flex items-center justify-center gap-2 w-full h-32 border-2 border-dashed rounded-md p-4 hover:bg-gray-50">
+                                        {selectedFile ? (
+                                          <div className="flex flex-col items-center text-center">
+                                            <FileCheck className="h-8 w-8 text-green-500" />
+                                            <p className="text-sm text-gray-500 mt-2">{selectedFile.name}</p>
+                                            <p className="text-xs text-gray-400">
+                                              {(selectedFile.size / 1024 / 1024).toFixed(2)} Mo
+                                            </p>
+                                          </div>
+                                        ) : (
+                                          <div className="flex flex-col items-center text-center">
+                                            <Upload className="h-8 w-8 text-gray-400" />
+                                            <p className="text-sm text-gray-500 mt-2">Cliquez pour télécharger le document d'identité</p>
+                                            <p className="text-xs text-gray-400">Format accepté: PDF</p>
+                                          </div>
+                                        )}
+                                      </label>
+                                      <input
+                                        id="picture"
+                                        type="file"
+                                        accept="application/pdf"
+                                        className="sr-only"
+                                        onChange={onHandleFileChange}
+                                      />
+                                    </div>
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <div className="flex gap-2 pt-2">
+                              <Button 
+                                type="button" 
+                                variant="outline"
+                                onClick={() => setShowContractForm(false)}
+                                className="flex-1"
+                              >
+                                Annuler
+                              </Button>
+                              <Button 
+                                type="submit" 
+                                className="flex-1"
+                                disabled={isSubmittingContract}
+                              >
+                                {isSubmittingContract ? 'Traitement...' : 'Finaliser contrat'}
+                              </Button>
+                            </div>
+                          </form>
+                        </Form>
+                      </div>
                     ) : (
                       <>
                         <Button 
@@ -863,6 +1016,22 @@ const ProspectionPage = () => {
           </Sheet>
         </div>
       </div>
+      
+      {selectedReservation && clientDetails && (
+        <ClientDetailsDialog
+          client={clientDetails}
+          property={selectedReservation.property}
+          reservation={selectedReservation}
+          isOpen={false}
+          onClose={() => {}}
+          onReservationClick={(id) => {
+            const reservation = reservations.find(r => r.id === id);
+            if (reservation) {
+              handleReservationClick(reservation);
+            }
+          }}
+        />
+      )}
     </SidebarProvider>
   );
 };
