@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,7 +7,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Clock, Home, User, Phone, CheckCircle, Search, MapPin, Tag, Mail, List, PieChart, FileText, Upload } from "lucide-react";
+import { Clock, Home, User, Phone, CheckCircle, Search, MapPin, Tag, Mail, List, PieChart, FileText, Upload, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale/fr";
 import { toast } from "sonner";
