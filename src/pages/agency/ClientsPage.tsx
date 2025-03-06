@@ -19,12 +19,23 @@ export default function ClientsPage() {
 
   // Get the selected client, property and reservation
   const selectedClient = clients.find(client => client.id === selectedClientId) || null;
-  const selectedProperty = selectedClient 
-    ? properties.find(property => property.client_id === selectedClientId) || null
+  
+  // Use locations table to find properties associated with the selected client
+  const selectedProperty = selectedClient && properties.length > 0 
+    ? properties.find(property => {
+        // Look for a connection in the locations table instead of using client_id
+        const location = locations.find(loc => 
+          loc.client_id === selectedClient.id && loc.property_id === property.id
+        );
+        return location !== undefined;
+      }) || null
     : null;
+    
   const selectedReservation = selectedProperty
     ? reservations.find(reservation => reservation.property_id === selectedProperty.id) || null
     : null;
+
+  const [locations, setLocations] = useState<Tables<"locations">[]>([]);
 
   useEffect(() => {
     const fetchClients = async () => {
@@ -32,18 +43,32 @@ export default function ClientsPage() {
       
       setLoading(true);
       try {
-        // Fetch properties with client_id to identify clients that have properties
-        const { data: propertiesData, error: propertiesError } = await supabase
-          .from("properties")
+        // First fetch locations to identify clients with properties
+        const { data: locationsData, error: locationsError } = await supabase
+          .from("locations")
           .select("*")
-          .eq("agency_id", agency.id)
-          .not("client_id", "is", null);
+          .eq("agency_id", agency.id);
+          
+        if (locationsError) throw locationsError;
+        setLocations(locationsData || []);
         
-        if (propertiesError) throw propertiesError;
-        setProperties(propertiesData || []);
+        // Get all property IDs from locations
+        const propertyIds = [...new Set(locationsData.map(loc => loc.property_id))];
         
-        // Get unique client IDs
-        const clientIds = [...new Set(propertiesData.map(prop => prop.client_id).filter(Boolean))];
+        // Get all client IDs from locations
+        const clientIds = [...new Set(locationsData.map(loc => loc.client_id))];
+        
+        if (propertyIds.length > 0) {
+          // Fetch properties with those IDs
+          const { data: propertiesData, error: propertiesError } = await supabase
+            .from("properties")
+            .select("*")
+            .eq("agency_id", agency.id)
+            .in("id", propertyIds);
+          
+          if (propertiesError) throw propertiesError;
+          setProperties(propertiesData || []);
+        }
         
         if (clientIds.length > 0) {
           // Fetch clients with those IDs
@@ -56,7 +81,6 @@ export default function ClientsPage() {
           setClients(clientsData || []);
           
           // Fetch reservations for these properties
-          const propertyIds = propertiesData.map(prop => prop.id);
           if (propertyIds.length > 0) {
             const { data: reservationsData, error: reservationsError } = await supabase
               .from("reservations")

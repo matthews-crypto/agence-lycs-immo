@@ -447,18 +447,6 @@ const ProspectionPage = () => {
         }
       }
       
-      const { error: propertyError } = await supabase
-        .from('properties')
-        .update({ client_id: clientDetails.id })
-        .eq('id', selectedReservation.property.id);
-      
-      if (propertyError) {
-        console.error('Error updating property with client_id:', propertyError);
-        toast.error('Erreur lors de l\'association du client au bien');
-        setIsUploading(false);
-        return;
-      }
-      
       const { error: statusError } = await supabase
         .from('reservations')
         .update({ status: 'Fermée Gagnée' })
