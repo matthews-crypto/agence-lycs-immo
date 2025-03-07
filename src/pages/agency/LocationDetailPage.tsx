@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import PropertyHeader from "@/components/property/PropertyHeader";
 import { useAgencyContext } from "@/contexts/AgencyContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type LocationDetails = {
   id: string;
@@ -41,6 +42,7 @@ export default function LocationDetailPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const navigate = useNavigate();
   const { agency } = useAgencyContext();
+  const isMobile = useIsMobile();
 
   const goBack = () => {
     navigate(`/${agency?.slug}/agency/planning`);
@@ -122,7 +124,7 @@ export default function LocationDetailPage() {
 
   const modifiersStyles = {
     rentalPeriod: {
-      backgroundColor: 'rgba(59, 130, 246, 0.2)',
+      backgroundColor: 'rgba(155, 135, 245, 0.2)',
       borderRadius: '0',
     }
   };
@@ -130,7 +132,11 @@ export default function LocationDetailPage() {
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <p>Chargement...</p>
+        <div className="animate-pulse flex space-x-2">
+          <div className="h-3 w-3 bg-purple-500 rounded-full"></div>
+          <div className="h-3 w-3 bg-purple-500 rounded-full"></div>
+          <div className="h-3 w-3 bg-purple-500 rounded-full"></div>
+        </div>
       </div>
     );
   }
@@ -138,53 +144,53 @@ export default function LocationDetailPage() {
   if (!location) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <p>Location non trouvée</p>
+        <p className="text-lg text-red-500">Location non trouvée</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-gray-50">
       <PropertyHeader 
         onBack={goBack} 
         agencyLogo={agency?.logo_url || undefined}
         agencyName={agency?.agency_name}
-        primaryColor={agency?.primary_color || '#0066FF'}
+        primaryColor={agency?.primary_color || '#9b87f5'}
       />
       
-      <div className="flex-1 p-6 max-w-6xl mx-auto w-full">
-        <h1 className="text-2xl font-bold mb-6">
+      <div className="flex-1 p-4 md:p-6 max-w-6xl mx-auto w-full">
+        <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-gray-800">
           Détails de la location: {location.property.title}
         </h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Détails du bien</CardTitle>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
+          <Card className="shadow-md border-purple-100 hover:border-purple-200 transition-all duration-300">
+            <CardHeader className="bg-gradient-to-r from-purple-50 to-white pb-2">
+              <CardTitle className="text-purple-800">Détails du bien</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
               <div className="space-y-2">
-                <p><span className="font-medium">Référence:</span> {location.property.reference_number}</p>
-                <p><span className="font-medium">Titre:</span> {location.property.title}</p>
-                <p><span className="font-medium">Adresse:</span> {location.property.address || 'Non spécifiée'}</p>
-                <p><span className="font-medium">Prix:</span> {location.property.price.toLocaleString()} TND</p>
+                <p><span className="font-medium text-gray-700">Référence:</span> <span className="text-gray-600">{location.property.reference_number}</span></p>
+                <p><span className="font-medium text-gray-700">Titre:</span> <span className="text-gray-600">{location.property.title}</span></p>
+                <p><span className="font-medium text-gray-700">Adresse:</span> <span className="text-gray-600">{location.property.address || 'Non spécifiée'}</span></p>
+                <p><span className="font-medium text-gray-700">Prix:</span> <span className="text-gray-600">{location.property.price.toLocaleString()} FCFA</span></p>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Détails du client</CardTitle>
+          <Card className="shadow-md border-purple-100 hover:border-purple-200 transition-all duration-300">
+            <CardHeader className="bg-gradient-to-r from-purple-50 to-white pb-2">
+              <CardTitle className="text-purple-800">Détails du client</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
               <div className="space-y-2">
-                <p><span className="font-medium">Nom:</span> {location.client.first_name} {location.client.last_name}</p>
-                <p><span className="font-medium">Email:</span> {location.client.email || 'Non spécifié'}</p>
-                <p><span className="font-medium">Téléphone:</span> {location.client.phone_number || 'Non spécifié'}</p>
-                <p><span className="font-medium">CIN:</span> {location.client_cin || 'Non spécifié'}</p>
+                <p><span className="font-medium text-gray-700">Nom:</span> <span className="text-gray-600">{location.client.first_name} {location.client.last_name}</span></p>
+                <p><span className="font-medium text-gray-700">Email:</span> <span className="text-gray-600">{location.client.email || 'Non spécifié'}</span></p>
+                <p><span className="font-medium text-gray-700">Téléphone:</span> <span className="text-gray-600">{location.client.phone_number || 'Non spécifié'}</span></p>
+                <p><span className="font-medium text-gray-700">CIN:</span> <span className="text-gray-600">{location.client_cin || 'Non spécifié'}</span></p>
                 {location.document_url && (
                   <p>
-                    <span className="font-medium">Document:</span>{' '}
+                    <span className="font-medium text-gray-700">Document:</span>{' '}
                     <a 
                       href={location.document_url} 
                       target="_blank" 
@@ -200,43 +206,47 @@ export default function LocationDetailPage() {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Période de location</CardTitle>
-              <CardDescription>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+          <Card className="shadow-md border-purple-100 hover:border-purple-200 transition-all duration-300">
+            <CardHeader className="bg-gradient-to-r from-purple-50 to-white pb-2">
+              <CardTitle className="text-purple-800">Période de location</CardTitle>
+              <CardDescription className="text-gray-600">
                 Du {format(new Date(location.rental_start_date), 'dd/MM/yyyy')} au {format(new Date(location.rental_end_date), 'dd/MM/yyyy')}
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Calendar 
-                mode="default"
-                modifiers={modifiers}
-                modifiersStyles={modifiersStyles}
-                defaultMonth={new Date(location.rental_start_date)}
-                selected={[
-                  new Date(location.rental_start_date),
-                  new Date(location.rental_end_date)
-                ]}
-                className="p-3 border rounded-lg"
-              />
+            <CardContent className="pt-4">
+              <div className={`overflow-hidden ${isMobile ? 'scale-75 -ml-8' : ''}`}>
+                <Calendar 
+                  mode="default"
+                  modifiers={modifiers}
+                  modifiersStyles={modifiersStyles}
+                  defaultMonth={new Date(location.rental_start_date)}
+                  selected={[
+                    new Date(location.rental_start_date),
+                    new Date(location.rental_end_date)
+                  ]}
+                  className="p-3 border rounded-lg mx-auto max-w-full"
+                />
+              </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Actions</CardTitle>
+          <Card className="shadow-md border-purple-100 hover:border-purple-200 transition-all duration-300">
+            <CardHeader className="bg-gradient-to-r from-purple-50 to-white pb-2">
+              <CardTitle className="text-purple-800">Actions</CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col space-y-4">
-              <div>
-                <p><span className="font-medium">Statut:</span> {location.statut}</p>
-                <p><span className="font-medium">Date de début:</span> {format(new Date(location.rental_start_date), 'dd/MM/yyyy')}</p>
-                <p><span className="font-medium">Date de fin prévue:</span> {format(new Date(location.rental_end_date), 'dd/MM/yyyy')}</p>
+            <CardContent className="pt-4 flex flex-col h-full">
+              <div className="space-y-2 mb-auto">
+                <p><span className="font-medium text-gray-700 inline-block w-36">Statut:</span> 
+                  <span className="text-white bg-green-600 px-2 py-1 rounded-full text-xs ml-2">{location.statut}</span>
+                </p>
+                <p><span className="font-medium text-gray-700">Date de début:</span> <span className="text-gray-600">{format(new Date(location.rental_start_date), 'dd/MM/yyyy')}</span></p>
+                <p><span className="font-medium text-gray-700">Date de fin prévue:</span> <span className="text-gray-600">{format(new Date(location.rental_end_date), 'dd/MM/yyyy')}</span></p>
               </div>
               
               <Button 
                 variant="destructive" 
-                className="mt-4"
+                className="mt-6 bg-red-500 hover:bg-red-600 transition-colors shadow-md"
                 onClick={() => setIsDialogOpen(true)}
               >
                 Résilier le contrat
@@ -247,9 +257,9 @@ export default function LocationDetailPage() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Confirmation de résiliation</DialogTitle>
+            <DialogTitle className="text-red-600">Confirmation de résiliation</DialogTitle>
             <DialogDescription>
               Êtes-vous sûr de vouloir résilier ce contrat de location ? Cette action est irréversible.
             </DialogDescription>
