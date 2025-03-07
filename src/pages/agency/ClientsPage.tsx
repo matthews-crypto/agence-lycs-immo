@@ -19,6 +19,7 @@ import { useQuery } from '@tanstack/react-query';
 import { User, Phone, Calendar, Home, MapPin, CreditCard, Clock, Tag, FileText } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useNavigate } from 'react-router-dom';
 
 type Client = {
   id: string;
@@ -36,7 +37,6 @@ type Client = {
   property_address: string | null;
 };
 
-// Define the structure of property data to ensure type safety
 type PropertyData = {
   title?: string | null;
   property_type?: string | null;
@@ -49,6 +49,7 @@ export default function ClientsPage() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
   const { data: clients, isLoading, error } = useQuery({
     queryKey: ['activeClients', agency?.id],
@@ -57,7 +58,6 @@ export default function ClientsPage() {
       
       console.log("Fetching clients for agency:", agency.id);
       
-      // Get all active locations first with full property details
       const { data: locationsData, error: locationsError } = await supabase
         .from('locations')
         .select(`
@@ -88,10 +88,8 @@ export default function ClientsPage() {
         return [];
       }
       
-      // Get the client IDs from active locations
       const clientIds = locationsData.map(location => location.client_id);
       
-      // Get client details
       const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
         .select(`
@@ -110,16 +108,13 @@ export default function ClientsPage() {
       
       console.log("Clients data:", clientsData);
       
-      // Map clients with their location info
       const formattedClients = clientsData.map(client => {
-        // Find the corresponding location for this client
         const clientLocation = locationsData.find(loc => loc.client_id === client.id);
         
         if (!clientLocation) {
-          return null; // Skip clients without locations
+          return null;
         }
         
-        // Get property data safely - explicitly cast to PropertyData type
         const propertyData = clientLocation.properties as PropertyData || {};
         
         return {
@@ -127,7 +122,6 @@ export default function ClientsPage() {
           first_name: client.first_name,
           last_name: client.last_name,
           phone_number: client.phone_number,
-          // Use CIN from locations table as specified
           cin: clientLocation.client_cin,
           property_id: clientLocation.property_id,
           property_title: propertyData?.title || null,
@@ -138,7 +132,7 @@ export default function ClientsPage() {
           property_price: propertyData?.price || null,
           property_address: propertyData?.address || null
         };
-      }).filter(Boolean) as Client[]; // Filter out null values and cast to Client[]
+      }).filter(Boolean) as Client[];
       
       console.log("Formatted client data:", formattedClients);
       return formattedClients;
@@ -150,6 +144,12 @@ export default function ClientsPage() {
     console.log("Selected client:", client);
     setSelectedClient(client);
     setDialogOpen(true);
+  };
+
+  const handlePropertyClick = (propertyId: string | null) => {
+    if (propertyId && agency?.slug) {
+      navigate(`/${agency.slug}/properties/${propertyId}`);
+    }
   };
 
   const formatDate = (dateString: string | null) => {
@@ -322,7 +322,16 @@ export default function ClientsPage() {
                         <Home className="h-4 w-4 text-muted-foreground" />
                         <div>
                           <p className="text-xs text-muted-foreground">Titre</p>
-                          <p className="font-medium">{selectedClient.property_title || "Non renseigné"}</p>
+                          {selectedClient.property_id ? (
+                            <button 
+                              onClick={() => handlePropertyClick(selectedClient.property_id)}
+                              className="font-medium text-primary hover:underline text-left"
+                            >
+                              {selectedClient.property_title || "Non renseigné"}
+                            </button>
+                          ) : (
+                            <p className="font-medium">{selectedClient.property_title || "Non renseigné"}</p>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2 bg-background p-3 rounded-md border">
@@ -336,7 +345,7 @@ export default function ClientsPage() {
                         <CreditCard className="h-4 w-4 text-muted-foreground" />
                         <div>
                           <p className="text-xs text-muted-foreground">Prix</p>
-                          <p className="font-medium">{selectedClient.property_price ? `${selectedClient.property_price} DH` : "Non renseigné"}</p>
+                          <p className="font-medium">{selectedClient.property_price ? `${selectedClient.property_price} FCFA` : "Non renseigné"}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 bg-background p-3 rounded-md border">
