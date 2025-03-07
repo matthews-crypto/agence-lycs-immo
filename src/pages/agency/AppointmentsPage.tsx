@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom"
 import { useEffect, useState } from "react"
 import { AgencySidebar } from "@/components/agency/AgencySidebar"
@@ -28,7 +27,6 @@ export default function AppointmentsPage() {
   const [clientInfo, setClientInfo] = useState<any>(null)
   const [activeTab, setActiveTab] = useState<string>("upcoming")
 
-  // Fetch all appointment dates for the agency
   useEffect(() => {
     async function fetchAppointmentDates() {
       if (!agency?.id) return
@@ -47,19 +45,16 @@ export default function AppointmentsPage() {
           return
         }
 
-        // Extract dates from the response
         const dates = data
           .filter(item => item.appointment_date && item.status === 'CONFIRMED')
           .map(item => new Date(item.appointment_date))
         
         setAppointmentDates(dates)
         
-        // If we have a selected date, load appointments for that date
         if (selectedDate) {
           loadAppointmentsForDate(selectedDate, data)
         }
 
-        // Fetch past appointments for history tab
         const today = startOfDay(new Date())
         const past = data.filter(app => {
           if (!app.appointment_date) return false
@@ -78,20 +73,17 @@ export default function AppointmentsPage() {
     fetchAppointmentDates()
   }, [agency?.id, selectedDate])
 
-  // Load appointments for a specific date
   const loadAppointmentsForDate = (date: Date, allAppointments?: any[]) => {
     if (!date) return
     
     const selectedDateStr = format(date, 'yyyy-MM-dd')
     console.log('Loading appointments for date:', selectedDateStr)
     
-    // Use the fetched data if available, otherwise use the state
     const appointments = allAppointments || []
     
     const filteredAppointments = appointments.filter(app => {
       if (!app.appointment_date) return false
       const appDate = format(new Date(app.appointment_date), 'yyyy-MM-dd')
-      // Only show confirmed appointments in the main calendar view
       return appDate === selectedDateStr && app.status === 'CONFIRMED'
     })
     
@@ -99,7 +91,6 @@ export default function AppointmentsPage() {
     setDateAppointments(filteredAppointments)
   }
 
-  // Handle date selection
   const handleDateSelect = (date: Date | undefined) => {
     if (!date) return
     
@@ -108,11 +99,9 @@ export default function AppointmentsPage() {
     loadAppointmentsForDate(date)
   }
 
-  // Open appointment details dialog and fetch client info
   const openAppointmentDetails = async (appointment: any) => {
     setSelectedAppointment(appointment)
     
-    // Fetch client information based on the phone number
     if (appointment.client_phone) {
       try {
         const { data, error } = await supabase
@@ -201,13 +190,9 @@ export default function AppointmentsPage() {
                             onClick={() => openAppointmentDetails(appointment)}
                           >
                             <div>
-                              <a 
-                                href={`/${agencySlug}/agency/property/${appointment.property_id}`}
-                                className="font-medium text-primary hover:underline"
-                                onClick={(e) => e.stopPropagation()}
-                              >
+                              <p className="font-medium text-primary">
                                 {appointment.properties?.title || "Propriété non spécifiée"}
-                              </a>
+                              </p>
                               <p className="text-sm text-gray-500">
                                 <span className="flex items-center gap-1">
                                   <Phone className="h-3 w-3" />
@@ -259,13 +244,9 @@ export default function AppointmentsPage() {
                           onClick={() => openAppointmentDetails(appointment)}
                         >
                           <div>
-                            <a 
-                              href={`/${agencySlug}/agency/property/${appointment.property_id}`}
-                              className="font-medium text-primary hover:underline"
-                              onClick={(e) => e.stopPropagation()}
-                            >
+                            <p className="font-medium text-primary">
                               {appointment.properties?.title || "Propriété non spécifiée"}
-                            </a>
+                            </p>
                             <p className="text-sm text-gray-500 flex flex-col mt-1">
                               <span className="flex items-center gap-1">
                                 <Phone className="h-3 w-3" />
@@ -306,7 +287,6 @@ export default function AppointmentsPage() {
         </div>
       </div>
 
-      {/* Appointment Details Dialog */}
       <Dialog open={!!selectedAppointment} onOpenChange={(open) => !open && setSelectedAppointment(null)}>
         <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -316,12 +296,7 @@ export default function AppointmentsPage() {
             <div className="space-y-4">
               <div>
                 <h3 className="font-semibold text-lg">
-                  <a 
-                    href={`/${agencySlug}/agency/property/${selectedAppointment.property_id}`}
-                    className="text-primary hover:underline"
-                  >
-                    {selectedAppointment.properties?.title || "Propriété non spécifiée"}
-                  </a>
+                  {selectedAppointment.properties?.title || "Propriété non spécifiée"}
                 </h3>
               </div>
               
