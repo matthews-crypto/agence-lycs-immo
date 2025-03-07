@@ -1,3 +1,4 @@
+
 import { useParams } from "react-router-dom"
 import { useEffect, useState } from "react"
 import { AgencySidebar } from "@/components/agency/AgencySidebar"
@@ -45,8 +46,10 @@ export default function AppointmentsPage() {
           return
         }
 
+        // Fix: Consider reservations with status 'Visite programmée' as valid appointments
         const dates = data
-          .filter(item => item.appointment_date && item.status === 'CONFIRMED')
+          .filter(item => item.appointment_date && 
+                 (item.status === 'CONFIRMED' || item.status === 'Visite programmée'))
           .map(item => new Date(item.appointment_date))
         
         setAppointmentDates(dates)
@@ -81,10 +84,12 @@ export default function AppointmentsPage() {
     
     const appointments = allAppointments || []
     
+    // Fix: Include appointments with status 'Visite programmée'
     const filteredAppointments = appointments.filter(app => {
       if (!app.appointment_date) return false
       const appDate = format(new Date(app.appointment_date), 'yyyy-MM-dd')
-      return appDate === selectedDateStr && app.status === 'CONFIRMED'
+      return appDate === selectedDateStr && 
+             (app.status === 'CONFIRMED' || app.status === 'Visite programmée')
     })
     
     console.log('Filtered appointments:', filteredAppointments)
@@ -202,11 +207,12 @@ export default function AppointmentsPage() {
                             </div>
                             <div className={`px-2 py-1 rounded text-xs font-medium ${
                               appointment.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
-                              appointment.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
+                              appointment.status === 'CONFIRMED' || appointment.status === 'Visite programmée' ? 'bg-green-100 text-green-800' :
                               'bg-gray-100 text-gray-800'
                             }`}>
                               {appointment.status === 'PENDING' ? 'En attente' :
                               appointment.status === 'CONFIRMED' ? 'Confirmé' :
+                              appointment.status === 'Visite programmée' ? 'Visite programmée' :
                               appointment.status}
                             </div>
                           </div>
