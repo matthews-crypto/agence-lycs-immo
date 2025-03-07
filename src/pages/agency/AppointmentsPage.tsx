@@ -9,8 +9,9 @@ import { useAgencyContext } from "@/contexts/AgencyContext"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { CalendarIcon, ArrowRight, Loader2 } from "lucide-react"
+import { CalendarIcon, ArrowRight, Loader2, Clock, Phone, MapPin } from "lucide-react"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 export default function AppointmentsPage() {
   const { agencySlug } = useParams()
@@ -20,6 +21,7 @@ export default function AppointmentsPage() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
   const [dateAppointments, setDateAppointments] = useState<any[]>([])
   const isMobile = useIsMobile()
+  const [selectedAppointment, setSelectedAppointment] = useState<any>(null)
 
   // Fetch all appointment dates for the agency
   useEffect(() => {
@@ -90,6 +92,11 @@ export default function AppointmentsPage() {
     loadAppointmentsForDate(date)
   }
 
+  // Open appointment details dialog
+  const openAppointmentDetails = (appointment: any) => {
+    setSelectedAppointment(appointment)
+  }
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen">
@@ -143,11 +150,16 @@ export default function AppointmentsPage() {
                 ) : dateAppointments.length > 0 ? (
                   <div className="space-y-3">
                     {dateAppointments.map((appointment, index) => (
-                      <div key={index} className="p-3 border rounded-md flex items-center justify-between">
+                      <div 
+                        key={index} 
+                        className="p-3 border rounded-md flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
+                        onClick={() => openAppointmentDetails(appointment)}
+                      >
                         <div>
                           <a 
                             href={`/${agencySlug}/agency/property/${appointment.property_id}`}
                             className="font-medium text-primary hover:underline"
+                            onClick={(e) => e.stopPropagation()}
                           >
                             {appointment.properties?.title || "Propriété non spécifiée"}
                           </a>
@@ -177,6 +189,56 @@ export default function AppointmentsPage() {
           </div>
         </div>
       </div>
+
+      {/* Appointment Details Dialog */}
+      <Dialog open={!!selectedAppointment} onOpenChange={(open) => !open && setSelectedAppointment(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Détails de la visite</DialogTitle>
+          </DialogHeader>
+          {selectedAppointment && (
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-semibold text-lg">
+                  <a 
+                    href={`/${agencySlug}/agency/property/${selectedAppointment.property_id}`}
+                    className="text-primary hover:underline"
+                  >
+                    {selectedAppointment.properties?.title || "Propriété non spécifiée"}
+                  </a>
+                </h3>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <span>
+                    {selectedAppointment.appointment_date && 
+                      format(new Date(selectedAppointment.appointment_date), 'dd MMMM yyyy', { locale: fr })}
+                  </span>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <span>Client: {selectedAppointment.client_phone}</span>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <div className={`px-2 py-1 rounded text-xs font-medium ${
+                    selectedAppointment.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                    selectedAppointment.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {selectedAppointment.status === 'PENDING' ? 'En attente' :
+                    selectedAppointment.status === 'CONFIRMED' ? 'Confirmé' :
+                    selectedAppointment.status}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </SidebarProvider>
   )
 }
