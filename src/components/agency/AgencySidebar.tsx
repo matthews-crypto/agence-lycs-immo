@@ -1,3 +1,4 @@
+
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import {
   LayoutDashboard,
@@ -196,7 +197,7 @@ export function AgencySidebar() {
                         <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
-                    {item.badgeCount && item.badgeCount > 0 && (
+                    {item.badgeCount > 0 && (
                       <SidebarMenuBadge className="absolute -top-2 right-0 bg-red-500 text-white">
                         {item.badgeCount}
                       </SidebarMenuBadge>
