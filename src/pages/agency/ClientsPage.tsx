@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { AgencySidebar } from "@/components/agency/AgencySidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -17,6 +16,10 @@ import { Button } from "@/components/ui/button";
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useQuery } from '@tanstack/react-query';
+import { User, Phone, Calendar, Home, MapPin, CreditCard, Clock, Tag, FileText } from 'lucide-react';
+import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useNavigate } from 'react-router-dom';
 
 type Client = {
   id: string;
@@ -34,7 +37,6 @@ type Client = {
   property_address: string | null;
 };
 
-// Define the structure of property data to ensure type safety
 type PropertyData = {
   title?: string | null;
   property_type?: string | null;
@@ -46,6 +48,8 @@ export default function ClientsPage() {
   const { agency } = useAgencyContext();
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
   const { data: clients, isLoading, error } = useQuery({
     queryKey: ['activeClients', agency?.id],
@@ -54,7 +58,6 @@ export default function ClientsPage() {
       
       console.log("Fetching clients for agency:", agency.id);
       
-      // Get all active locations first with full property details
       const { data: locationsData, error: locationsError } = await supabase
         .from('locations')
         .select(`
@@ -85,10 +88,8 @@ export default function ClientsPage() {
         return [];
       }
       
-      // Get the client IDs from active locations
       const clientIds = locationsData.map(location => location.client_id);
       
-      // Get client details
       const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
         .select(`
@@ -107,16 +108,13 @@ export default function ClientsPage() {
       
       console.log("Clients data:", clientsData);
       
-      // Map clients with their location info
       const formattedClients = clientsData.map(client => {
-        // Find the corresponding location for this client
         const clientLocation = locationsData.find(loc => loc.client_id === client.id);
         
         if (!clientLocation) {
-          return null; // Skip clients without locations
+          return null;
         }
         
-        // Get property data safely - explicitly cast to PropertyData type
         const propertyData = clientLocation.properties as PropertyData || {};
         
         return {
@@ -124,7 +122,6 @@ export default function ClientsPage() {
           first_name: client.first_name,
           last_name: client.last_name,
           phone_number: client.phone_number,
-          // Use CIN from locations table as specified
           cin: clientLocation.client_cin,
           property_id: clientLocation.property_id,
           property_title: propertyData?.title || null,
@@ -135,7 +132,7 @@ export default function ClientsPage() {
           property_price: propertyData?.price || null,
           property_address: propertyData?.address || null
         };
-      }).filter(Boolean) as Client[]; // Filter out null values and cast to Client[]
+      }).filter(Boolean) as Client[];
       
       console.log("Formatted client data:", formattedClients);
       return formattedClients;
@@ -149,6 +146,12 @@ export default function ClientsPage() {
     setDialogOpen(true);
   };
 
+  const handlePropertyClick = (propertyId: string | null) => {
+    if (propertyId && agency?.slug) {
+      navigate(`/${agency.slug}/properties/${propertyId}`);
+    }
+  };
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "Non spécifiée";
     try {
@@ -159,11 +162,20 @@ export default function ClientsPage() {
     }
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status.toUpperCase()) {
+      case 'EN COURS':
+        return 'bg-green-100 text-green-800 border-green-300';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-300';
+    }
+  };
+
   return (
     <SidebarProvider>
       <div className="flex h-screen">
         <AgencySidebar />
-        <div className="flex-1 overflow-auto p-8">
+        <div className="flex-1 overflow-auto p-4 md:p-8">
           <div className="mb-6">
             <h1 className="text-2xl font-bold">Clients de l'Agence</h1>
             <p className="text-muted-foreground">Gérer et consulter les informations sur vos clients</p>
@@ -181,30 +193,64 @@ export default function ClientsPage() {
               </p>
             </div>
           ) : clients && clients.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {clients.map((client) => (
                 <Card 
                   key={client.id} 
-                  className="cursor-pointer hover:shadow-md transition-shadow"
+                  className="cursor-pointer hover:shadow-md transition-all duration-300 border-l-4 border-l-primary"
                   onClick={() => handleClientClick(client)}
                 >
-                  <CardHeader>
-                    <CardTitle>{client.first_name} {client.last_name}</CardTitle>
-                    <CardDescription>
-                      {client.property_title ? `Loue: ${client.property_title}` : "Aucun bien associé"}
+                  <CardHeader className="pb-2 bg-muted/30">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <User className="h-5 w-5 text-primary" />
+                      <span className="truncate">
+                        {client.first_name} {client.last_name}
+                      </span>
+                    </CardTitle>
+                    <CardDescription className="flex items-center gap-1 mt-1">
+                      <Home className="h-4 w-4 text-muted-foreground" />
+                      {client.property_title ? (
+                        <span className="truncate">
+                          {client.property_title}
+                        </span>
+                      ) : (
+                        "Aucun bien associé"
+                      )}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <p><strong>Téléphone:</strong> {client.phone_number || "Non renseigné"}</p>
-                      <p><strong>CIN:</strong> {client.cin || "Non renseigné"}</p>
+                  <CardContent className="pt-4">
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        <span>{client.phone_number || "Non renseigné"}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <span>{client.cin || "Non renseigné"}</span>
+                      </div>
                       {client.rental_start_date && (
-                        <p><strong>Début de location:</strong> {formatDate(client.rental_start_date)}</p>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <span className="truncate">Début: {formatDate(client.rental_start_date)}</span>
+                        </div>
                       )}
+                      <div className="flex items-start gap-2 mt-2">
+                        <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                        <span className={cn("text-xs px-2 py-1 rounded-full border", getStatusColor(client.statut))}>
+                          {client.statut}
+                        </span>
+                      </div>
                     </div>
                   </CardContent>
                   <CardFooter>
-                    <Button variant="outline" className="w-full" onClick={() => handleClientClick(client)}>
+                    <Button 
+                      variant="outline" 
+                      className="w-full hover:bg-primary hover:text-white transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleClientClick(client);
+                      }}
+                    >
                       Voir détails
                     </Button>
                   </CardFooter>
@@ -221,39 +267,136 @@ export default function ClientsPage() {
           )}
           
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className={cn(
+              "sm:max-w-lg md:max-w-2xl max-h-[90vh] overflow-y-auto",
+              isMobile && "w-[95vw] p-4"
+            )}>
               <DialogHeader>
-                <DialogTitle>Informations détaillées du client</DialogTitle>
+                <DialogTitle className="flex items-center gap-2 text-xl">
+                  <User className="h-5 w-5 text-primary" /> 
+                  Informations détaillées du client
+                </DialogTitle>
                 <DialogDescription>
                   Toutes les informations concernant le client et sa location.
                 </DialogDescription>
               </DialogHeader>
               {selectedClient && (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <h3 className="text-lg font-semibold">Information personnelle</h3>
-                    <p><strong>Nom complet:</strong> {selectedClient.first_name} {selectedClient.last_name}</p>
-                    <p><strong>Téléphone:</strong> {selectedClient.phone_number || "Non renseigné"}</p>
-                    <p><strong>CIN:</strong> {selectedClient.cin || "Non renseigné"}</p>
+                <div className="space-y-6 mt-2">
+                  <div className="space-y-4 bg-muted/20 rounded-lg p-4">
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <User className="h-5 w-5 text-primary" />
+                      Information personnelle
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="flex items-center gap-2 bg-background p-3 rounded-md border">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Nom complet</p>
+                          <p className="font-medium">{selectedClient.first_name} {selectedClient.last_name}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 bg-background p-3 rounded-md border">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Téléphone</p>
+                          <p className="font-medium">{selectedClient.phone_number || "Non renseigné"}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 bg-background p-3 rounded-md border">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">CIN</p>
+                          <p className="font-medium">{selectedClient.cin || "Non renseigné"}</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   
-                  <div className="space-y-2">
-                    <h3 className="text-lg font-semibold">Information sur le bien</h3>
-                    <p><strong>Titre:</strong> {selectedClient.property_title || "Non renseigné"}</p>
-                    <p><strong>Type:</strong> {selectedClient.property_type || "Non renseigné"}</p>
-                    <p><strong>Prix:</strong> {selectedClient.property_price ? `${selectedClient.property_price} DH` : "Non renseigné"}</p>
-                    <p><strong>Adresse:</strong> {selectedClient.property_address || "Non renseignée"}</p>
+                  <div className="space-y-4 bg-muted/20 rounded-lg p-4">
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <Home className="h-5 w-5 text-primary" />
+                      Information sur le bien
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="flex items-center gap-2 bg-background p-3 rounded-md border">
+                        <Home className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Titre</p>
+                          {selectedClient.property_id ? (
+                            <button 
+                              onClick={() => handlePropertyClick(selectedClient.property_id)}
+                              className="font-medium text-primary hover:underline text-left"
+                            >
+                              {selectedClient.property_title || "Non renseigné"}
+                            </button>
+                          ) : (
+                            <p className="font-medium">{selectedClient.property_title || "Non renseigné"}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 bg-background p-3 rounded-md border">
+                        <Tag className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Type</p>
+                          <p className="font-medium">{selectedClient.property_type || "Non renseigné"}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 bg-background p-3 rounded-md border">
+                        <CreditCard className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Prix</p>
+                          <p className="font-medium">{selectedClient.property_price ? `${selectedClient.property_price} FCFA` : "Non renseigné"}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 bg-background p-3 rounded-md border">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Adresse</p>
+                          <p className="font-medium">{selectedClient.property_address || "Non renseignée"}</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   
-                  <div className="space-y-2">
-                    <h3 className="text-lg font-semibold">Information sur la location</h3>
-                    <p><strong>Statut:</strong> {selectedClient.statut || "Non renseigné"}</p>
-                    <p><strong>Date de début:</strong> {formatDate(selectedClient.rental_start_date)}</p>
-                    <p><strong>Date de fin:</strong> {formatDate(selectedClient.rental_end_date)}</p>
+                  <div className="space-y-4 bg-muted/20 rounded-lg p-4">
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <Calendar className="h-5 w-5 text-primary" />
+                      Information sur la location
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="flex items-center gap-2 bg-background p-3 rounded-md border">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Statut</p>
+                          <p className={cn("inline-flex px-2 py-1 text-sm rounded-full border mt-1", getStatusColor(selectedClient.statut))}>
+                            {selectedClient.statut || "Non renseigné"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 bg-background p-3 rounded-md border">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Date de début</p>
+                          <p className="font-medium">{formatDate(selectedClient.rental_start_date)}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 bg-background p-3 rounded-md border">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Date de fin</p>
+                          <p className="font-medium">{formatDate(selectedClient.rental_end_date)}</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   
-                  <div className="flex justify-end">
-                    <Button onClick={() => setDialogOpen(false)}>Fermer</Button>
+                  <div className="flex justify-end pt-2">
+                    <Button 
+                      onClick={() => setDialogOpen(false)}
+                      className="bg-primary hover:bg-primary/90"
+                    >
+                      Fermer
+                    </Button>
                   </div>
                 </div>
               )}

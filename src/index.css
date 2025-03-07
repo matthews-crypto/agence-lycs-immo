@@ -101,7 +101,9 @@
   }
 }
 
-/* Fix for calendar display issues */
+/* Remove this rule that's preventing calendar from showing */
+/* 
 .rdp:not(.popover-content .rdp) {
   display: none !important;
 }
+*/
