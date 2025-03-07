@@ -396,6 +396,7 @@ export type Database = {
           client_id: string
           created_at: string
           document_url: string | null
+          effective_end_date: string | null
           id: string
           property_id: string
           rental_end_date: string | null
@@ -408,6 +409,7 @@ export type Database = {
           client_id: string
           created_at?: string
           document_url?: string | null
+          effective_end_date?: string | null
           id?: string
           property_id: string
           rental_end_date?: string | null
@@ -420,6 +422,7 @@ export type Database = {
           client_id?: string
           created_at?: string
           document_url?: string | null
+          effective_end_date?: string | null
           id?: string
           property_id?: string
           rental_end_date?: string | null
