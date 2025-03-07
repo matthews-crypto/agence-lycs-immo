@@ -41,6 +41,7 @@ import ClientAppointmentsPage from "@/pages/agency/client/AppointmentsPage"
 import NotFoundPage from "@/pages/NotFoundPage"
 import UsersPage from "@/pages/admin/UsersPage"
 import ClientsPage from "@/pages/agency/ClientsPage"
+import PlanningPage from "@/pages/agency/PlanningPage"
 
 const queryClient = new QueryClient()
 
@@ -108,6 +109,7 @@ const App = () => (
                   <Route path="agents" element={<AgencyAgentsPage />} />
                   <Route path="prospection" element={<AgencyProspectionPage />} />
                   <Route path="appointments" element={<AppointmentsPage />} />
+                  <Route path="planning" element={<PlanningPage />} />
                   <Route path="settings" element={<AgencySettingsPage />} />
                   <Route
                     path="properties"
