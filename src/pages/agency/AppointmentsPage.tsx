@@ -336,7 +336,16 @@ export default function AppointmentsPage() {
                 
                 <div className="flex items-center gap-2">
                   <FileText className="h-4 w-4 text-muted-foreground" />
-                  <span>Référence: {selectedAppointment.reservation_number || "N/A"}</span>
+                  <span>
+                    Référence: 
+                    <a 
+                      href={`/${agencySlug}/agency/prospection?reservation=${selectedAppointment.reservation_number}`}
+                      className="ml-1 text-primary hover:underline"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {selectedAppointment.reservation_number || "N/A"}
+                    </a>
+                  </span>
                 </div>
                 
                 <div className="flex items-center gap-2">
