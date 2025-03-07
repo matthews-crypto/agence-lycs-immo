@@ -9,7 +9,7 @@ import { useAgencyContext } from "@/contexts/AgencyContext"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { CalendarIcon, ArrowRight, Loader2, Clock, Phone, MapPin } from "lucide-react"
+import { CalendarIcon, Loader2, Clock, Phone, MapPin, FileText, User } from "lucide-react"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
@@ -22,6 +22,7 @@ export default function AppointmentsPage() {
   const [dateAppointments, setDateAppointments] = useState<any[]>([])
   const isMobile = useIsMobile()
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null)
+  const [clientInfo, setClientInfo] = useState<any>(null)
 
   // Fetch all appointment dates for the agency
   useEffect(() => {
@@ -33,7 +34,7 @@ export default function AppointmentsPage() {
       try {
         const { data, error } = await supabase
           .from('reservations')
-          .select('appointment_date, property_id, client_phone, status, properties(title, id)')
+          .select('appointment_date, property_id, client_phone, status, reservation_number, properties(title, id)')
           .eq('agency_id', agency.id)
           .not('appointment_date', 'is', null)
 
@@ -92,9 +93,31 @@ export default function AppointmentsPage() {
     loadAppointmentsForDate(date)
   }
 
-  // Open appointment details dialog
-  const openAppointmentDetails = (appointment: any) => {
+  // Open appointment details dialog and fetch client info
+  const openAppointmentDetails = async (appointment: any) => {
     setSelectedAppointment(appointment)
+    
+    // Fetch client information based on the phone number
+    if (appointment.client_phone) {
+      try {
+        const { data, error } = await supabase
+          .from('clients')
+          .select('first_name, last_name, phone_number')
+          .eq('phone_number', appointment.client_phone)
+          .single()
+        
+        if (error) {
+          console.error('Error fetching client info:', error)
+          return
+        }
+        
+        if (data) {
+          setClientInfo(data)
+        }
+      } catch (error) {
+        console.error('Error:', error)
+      }
+    }
   }
 
   return (
@@ -164,7 +187,10 @@ export default function AppointmentsPage() {
                             {appointment.properties?.title || "Propriété non spécifiée"}
                           </a>
                           <p className="text-sm text-gray-500">
-                            Client: {appointment.client_phone}
+                            <span className="flex items-center gap-1">
+                              <Phone className="h-3 w-3" />
+                              {appointment.client_phone}
+                            </span>
                           </p>
                         </div>
                         <div className={`px-2 py-1 rounded text-xs font-medium ${
@@ -192,7 +218,7 @@ export default function AppointmentsPage() {
 
       {/* Appointment Details Dialog */}
       <Dialog open={!!selectedAppointment} onOpenChange={(open) => !open && setSelectedAppointment(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Détails de la visite</DialogTitle>
           </DialogHeader>
@@ -209,7 +235,7 @@ export default function AppointmentsPage() {
                 </h3>
               </div>
               
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   <span>
@@ -219,8 +245,22 @@ export default function AppointmentsPage() {
                 </div>
                 
                 <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                  <span>Référence: {selectedAppointment.reservation_number || "N/A"}</span>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <span>
+                    Réserviste: {clientInfo ? 
+                      `${clientInfo.first_name || ''} ${clientInfo.last_name || ''}`.trim() || 'Non spécifié' 
+                      : 'Chargement...'}
+                  </span>
+                </div>
+                
+                <div className="flex items-center gap-2">
                   <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span>Client: {selectedAppointment.client_phone}</span>
+                  <span>Téléphone: {selectedAppointment.client_phone}</span>
                 </div>
                 
                 <div className="flex items-center gap-2">
