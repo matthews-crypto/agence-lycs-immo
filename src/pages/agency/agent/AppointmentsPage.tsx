@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react"
 import { useParams } from "react-router-dom"
 import { supabase } from "@/integrations/supabase/client"
@@ -83,8 +82,8 @@ export default function AgentAppointmentsPage() {
     loadAppointmentsForDate(date)
   }
 
-  const renderStatusBadge = (status) => {
-    let variant = "default";
+  const renderStatusBadge = (status: string) => {
+    let variant: "default" | "secondary" | "success" | "destructive" | "outline" = "default";
     let label = status;
 
     if (status === 'PENDING') {

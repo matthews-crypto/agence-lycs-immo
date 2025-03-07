@@ -127,8 +127,8 @@ export default function AppointmentsPage() {
     }
   }
 
-  const renderStatusBadge = (status) => {
-    let variant = "default";
+  const renderStatusBadge = (status: string) => {
+    let variant: "default" | "secondary" | "success" | "destructive" | "outline" = "default";
     let label = status;
 
     if (status === 'PENDING') {
