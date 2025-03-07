@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom"
 import { useEffect, useState } from "react"
 import { AgencySidebar } from "@/components/agency/AgencySidebar"
@@ -14,6 +13,7 @@ import { useIsMobile } from "@/hooks/use-mobile"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 
 export default function AppointmentsPage() {
   const { agencySlug } = useParams()
@@ -46,7 +46,6 @@ export default function AppointmentsPage() {
           return
         }
 
-        // Fix: Consider reservations with status 'Visite programmée' as valid appointments
         const dates = data
           .filter(item => item.appointment_date && 
                  (item.status === 'CONFIRMED' || item.status === 'Visite programmée'))
@@ -84,7 +83,6 @@ export default function AppointmentsPage() {
     
     const appointments = allAppointments || []
     
-    // Fix: Include appointments with status 'Visite programmée'
     const filteredAppointments = appointments.filter(app => {
       if (!app.appointment_date) return false
       const appDate = format(new Date(app.appointment_date), 'yyyy-MM-dd')
@@ -127,6 +125,30 @@ export default function AppointmentsPage() {
         console.error('Error:', error)
       }
     }
+  }
+
+  const renderStatusBadge = (status) => {
+    let variant = "default";
+    let label = status;
+
+    if (status === 'PENDING') {
+      variant = "secondary";
+      label = 'En attente';
+    } else if (status === 'CONFIRMED') {
+      variant = "success";
+      label = 'Confirmé';
+    } else if (status === 'Visite programmée') {
+      variant = "success";
+      label = 'Visite programmée';
+    } else if (status === 'COMPLETED') {
+      variant = "default";
+      label = 'Terminé';
+    } else if (status === 'CANCELLED') {
+      variant = "destructive";
+      label = 'Annulé';
+    }
+
+    return <Badge variant={variant}>{label}</Badge>;
   }
 
   return (
@@ -205,16 +227,7 @@ export default function AppointmentsPage() {
                                 </span>
                               </p>
                             </div>
-                            <div className={`px-2 py-1 rounded text-xs font-medium ${
-                              appointment.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
-                              appointment.status === 'CONFIRMED' || appointment.status === 'Visite programmée' ? 'bg-green-100 text-green-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {appointment.status === 'PENDING' ? 'En attente' :
-                              appointment.status === 'CONFIRMED' ? 'Confirmé' :
-                              appointment.status === 'Visite programmée' ? 'Visite programmée' :
-                              appointment.status}
-                            </div>
+                            {renderStatusBadge(appointment.status)}
                           </div>
                         ))}
                       </div>
@@ -265,19 +278,7 @@ export default function AppointmentsPage() {
                               </span>
                             </p>
                           </div>
-                          <div className={`px-2 py-1 rounded text-xs font-medium ${
-                            appointment.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
-                            appointment.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
-                            appointment.status === 'COMPLETED' ? 'bg-blue-100 text-blue-800' :
-                            appointment.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {appointment.status === 'PENDING' ? 'En attente' :
-                            appointment.status === 'CONFIRMED' ? 'Confirmé' :
-                            appointment.status === 'COMPLETED' ? 'Terminé' :
-                            appointment.status === 'CANCELLED' ? 'Annulé' :
-                            appointment.status}
-                          </div>
+                          {renderStatusBadge(appointment.status)}
                         </div>
                       ))}
                     </div>
@@ -344,15 +345,7 @@ export default function AppointmentsPage() {
                 </div>
                 
                 <div className="flex items-center gap-2">
-                  <div className={`px-2 py-1 rounded text-xs font-medium ${
-                    selectedAppointment.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
-                    selectedAppointment.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {selectedAppointment.status === 'PENDING' ? 'En attente' :
-                    selectedAppointment.status === 'CONFIRMED' ? 'Confirmé' :
-                    selectedAppointment.status}
-                  </div>
+                  <div>Statut: {renderStatusBadge(selectedAppointment.status)}</div>
                 </div>
               </div>
             </div>
