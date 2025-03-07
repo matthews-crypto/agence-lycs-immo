@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { AgencySidebar } from "@/components/agency/AgencySidebar";
@@ -11,7 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Filter, History, Calendar, SliderHorizontal } from "lucide-react";
+import { Search, Filter, History, Calendar, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type LocationData = {
@@ -181,7 +180,7 @@ export default function PlanningPage() {
               </div>
               
               <div className="flex items-center gap-2 w-full md:w-auto">
-                <SliderHorizontal className="h-4 w-4 text-gray-500" />
+                <SlidersHorizontal className="h-4 w-4 text-gray-500" />
                 <Select 
                   defaultValue="start" 
                   onValueChange={(value) => setFilterDate(value as "start" | "end")}
