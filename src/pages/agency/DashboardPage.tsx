@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAgencyContext } from "@/contexts/AgencyContext";
@@ -51,7 +50,7 @@ export default function AgencyDashboardPage() {
       if (propertiesError) throw propertiesError;
 
       // Calculate total revenue (for sold properties)
-      const soldProperties = properties.filter(p => p.property_status === 'VENDU');
+      const soldProperties = properties.filter(p => p.property_status === 'VENDUE');
       const totalRevenue = soldProperties.reduce((sum, prop) => sum + (Number(prop.price) || 0), 0);
 
       // Count properties by status
@@ -114,7 +113,7 @@ export default function AgencyDashboardPage() {
   const formatStatus = (status) => {
     const statusMap = {
       'DISPONIBLE': 'Disponible',
-      'VENDU': 'Vendu',
+      'VENDUE': 'Vendu',
       'RESERVE': 'Réservé',
       'EN_LOCATION': 'En location',
       'UNKNOWN': 'Inconnu'

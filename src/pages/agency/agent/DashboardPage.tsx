@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -111,7 +110,7 @@ export default function AgentDashboardPage() {
   const formatStatus = (status) => {
     const statusMap = {
       'DISPONIBLE': 'Disponible',
-      'VENDU': 'Vendu',
+      'VENDUE': 'Vendu',
       'RESERVE': 'Réservé',
       'EN_LOCATION': 'En location',
       'UNKNOWN': 'Inconnu'
