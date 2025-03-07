@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { AgencySidebar } from "@/components/agency/AgencySidebar";
@@ -9,8 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Filter, History, Calendar, SlidersHorizontal } from "lucide-react";
+import { Search, History, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type LocationData = {
@@ -36,9 +36,8 @@ export default function PlanningPage() {
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Search and filter states
+  // Search state
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterDate, setFilterDate] = useState<"start" | "end">("start");
   const [filteredActiveLocations, setFilteredActiveLocations] = useState<LocationData[]>([]);
   const [filteredHistoricalLocations, setFilteredHistoricalLocations] = useState<LocationData[]>([]);
 
@@ -151,14 +150,6 @@ export default function PlanningPage() {
     navigate(`/${agency?.slug}/agency/planning/${locationId}`);
   };
 
-  const handleDateSort = (locations: LocationData[]): LocationData[] => {
-    return [...locations].sort((a, b) => {
-      const dateA = new Date(filterDate === "start" ? a.rental_start_date : a.rental_end_date);
-      const dateB = new Date(filterDate === "start" ? b.rental_start_date : b.rental_end_date);
-      return dateB.getTime() - dateA.getTime(); // Most recent first
-    });
-  };
-
   return (
     <SidebarProvider>
       <div className="flex h-screen w-full bg-background">
@@ -177,22 +168,6 @@ export default function PlanningPage() {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
-              </div>
-              
-              <div className="flex items-center gap-2 w-full md:w-auto">
-                <SlidersHorizontal className="h-4 w-4 text-gray-500" />
-                <Select 
-                  defaultValue="start" 
-                  onValueChange={(value) => setFilterDate(value as "start" | "end")}
-                >
-                  <SelectTrigger className="w-full md:w-48">
-                    <SelectValue placeholder="Filtrer par date" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="start">Date de début</SelectItem>
-                    <SelectItem value="end">Date de fin</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
             </div>
           </div>
@@ -221,7 +196,7 @@ export default function PlanningPage() {
                     <p>Aucune location en cours</p>
                   ) : (
                     <div className="space-y-4">
-                      {handleDateSort(filteredActiveLocations).map(location => (
+                      {filteredActiveLocations.map(location => (
                         <div 
                           key={location.id} 
                           className="border p-4 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
@@ -260,7 +235,7 @@ export default function PlanningPage() {
                     <p>Aucune location terminée</p>
                   ) : (
                     <div className="space-y-4">
-                      {handleDateSort(filteredHistoricalLocations).map(location => (
+                      {filteredHistoricalLocations.map(location => (
                         <div 
                           key={location.id} 
                           className="border p-4 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"

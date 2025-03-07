@@ -236,21 +236,21 @@ export default function LocationDetailPage() {
               <CardTitle className="text-purple-800">Actions</CardTitle>
             </CardHeader>
             <CardContent className="pt-4 flex flex-col h-full">
-              <div className="space-y-2 mb-auto">
+              <div className="space-y-2">
                 <p><span className="font-medium text-gray-700 inline-block w-36">Statut:</span> 
                   <span className="text-white bg-green-600 px-2 py-1 rounded-full text-xs ml-2">{location.statut}</span>
                 </p>
                 <p><span className="font-medium text-gray-700">Date de début:</span> <span className="text-gray-600">{format(new Date(location.rental_start_date), 'dd/MM/yyyy')}</span></p>
                 <p><span className="font-medium text-gray-700">Date de fin prévue:</span> <span className="text-gray-600">{format(new Date(location.rental_end_date), 'dd/MM/yyyy')}</span></p>
-              </div>
               
-              <Button 
-                variant="destructive" 
-                className="mt-6 bg-red-500 hover:bg-red-600 transition-colors shadow-md"
-                onClick={() => setIsDialogOpen(true)}
-              >
-                Résilier le contrat
-              </Button>
+                <Button 
+                  variant="destructive" 
+                  className="mt-4 bg-red-500 hover:bg-red-600 transition-colors shadow-md w-full"
+                  onClick={() => setIsDialogOpen(true)}
+                >
+                  Résilier le contrat
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
