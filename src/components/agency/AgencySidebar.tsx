@@ -1,4 +1,3 @@
-
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import {
   LayoutDashboard,
@@ -11,6 +10,7 @@ import {
   LogOut,
   Image,
   FileSearch,
+  MapPin,
 } from "lucide-react"
 import {
   Sidebar,
@@ -45,7 +45,6 @@ export function AgencySidebar() {
     }
   }, [agency?.secondary_color, agency?.primary_color]);
 
-  // Reset notification count when visiting the prospection page
   useEffect(() => {
     if (location.pathname.includes('/agency/prospection')) {
       console.log('Resetting opportunity count - visiting prospection page');
@@ -53,7 +52,6 @@ export function AgencySidebar() {
     }
   }, [location.pathname]);
 
-  // Subscribe to new reservations
   useEffect(() => {
     if (!agency?.id) return;
 
@@ -126,6 +124,11 @@ export function AgencySidebar() {
           title: "Rendez-vous",
           icon: Calendar,
           url: `/${agency?.slug}/agency/appointments`,
+        },
+        {
+          title: "Planning location",
+          icon: MapPin,
+          url: `/${agency?.slug}/agency/planning`,
         },
         {
           title: "Clients",
