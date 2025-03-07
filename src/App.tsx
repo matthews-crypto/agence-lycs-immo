@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster"
 import { Toaster as Sonner } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -42,6 +43,7 @@ import NotFoundPage from "@/pages/NotFoundPage"
 import UsersPage from "@/pages/admin/UsersPage"
 import ClientsPage from "@/pages/agency/ClientsPage"
 import PlanningPage from "@/pages/agency/PlanningPage"
+import LocationDetailPage from "@/pages/agency/LocationDetailPage"
 
 const queryClient = new QueryClient()
 
@@ -110,6 +112,7 @@ const App = () => (
                   <Route path="prospection" element={<AgencyProspectionPage />} />
                   <Route path="appointments" element={<AppointmentsPage />} />
                   <Route path="planning" element={<PlanningPage />} />
+                  <Route path="planning/:locationId" element={<LocationDetailPage />} />
                   <Route path="settings" element={<AgencySettingsPage />} />
                   <Route
                     path="properties"
