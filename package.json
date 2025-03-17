@@ -70,6 +70,7 @@
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^1.1.2",
+    "vite_react_shadcn_ts": "file:",
     "zod": "^3.23.8",
     "zustand": "^5.0.3"
   },
