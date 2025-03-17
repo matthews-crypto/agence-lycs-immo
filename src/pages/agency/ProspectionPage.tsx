@@ -70,6 +70,7 @@ const ProspectionPage = () => {
   const [propertyRefFilter, setPropertyRefFilter] = useState("");
   const [reservationRefFilter, setReservationRefFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [opportunityTypeFilter, setOpportunityTypeFilter] = useState("");
   const [clientDetails, setClientDetails] = useState<Client | null>(null);
   const [isClientReservationsOpen, setIsClientReservationsOpen] = useState(false);
   const [clientReservations, setClientReservations] = useState<Reservation[]>([]);
@@ -92,6 +93,35 @@ const ProspectionPage = () => {
   const { agencySlug } = useParams();
   const queryParams = new URLSearchParams(location.search);
   const reservationParam = queryParams.get('reservation');
+
+  const [clientsMap, setClientsMap] = useState<Record<string, Client>>({});
+
+  useEffect(() => {
+    const loadClientDetails = async () => {
+      for (const reservation of reservations) {
+        if (reservation.client_phone && !clientsMap[reservation.client_phone]) {
+          try {
+            const { data, error } = await supabase
+              .from('clients')
+              .select('*')
+              .eq('phone_number', reservation.client_phone)
+              .single();
+
+            if (!error && data) {
+              setClientsMap(prev => ({
+                ...prev,
+                [reservation.client_phone]: data
+              }));
+            }
+          } catch (error) {
+            console.error('Error fetching client details:', error);
+          }
+        }
+      }
+    };
+
+    loadClientDetails();
+  }, [reservations]);
 
   useEffect(() => {
     const fetchReservations = async () => {
@@ -128,10 +158,6 @@ const ProspectionPage = () => {
           if (reservationParam) {
             setReservationRefFilter(reservationParam);
           }
-          
-          data?.forEach(reservation => {
-            loadClientName(reservation.client_phone, reservation.id);
-          });
         } catch (error) {
           console.error('Error in fetch operation:', error);
           toast.error('Une erreur est survenue');
@@ -208,7 +234,7 @@ const ProspectionPage = () => {
 
   useEffect(() => {
     applyFilters();
-  }, [searchQuery, propertyRefFilter, reservationRefFilter, statusFilter, reservations]);
+  }, [searchQuery, propertyRefFilter, reservationRefFilter, statusFilter, opportunityTypeFilter, reservations]);
 
   const fetchClientDetails = async (phoneNumber: string) => {
     try {
@@ -320,6 +346,10 @@ const ProspectionPage = () => {
 
     if (statusFilter && statusFilter !== "all") {
       filtered = filtered.filter(res => res.status.toUpperCase() === statusFilter.toUpperCase());
+    }
+
+    if (opportunityTypeFilter && opportunityTypeFilter !== "all") {
+      filtered = filtered.filter(res => res.type.toUpperCase() === opportunityTypeFilter.toUpperCase());
     }
 
     if (searchQuery) {
@@ -700,6 +730,7 @@ const ProspectionPage = () => {
     setPropertyRefFilter("");
     setReservationRefFilter("");
     setStatusFilter("");
+    setOpportunityTypeFilter("");
   };
 
   const handleAppointmentDateChange = async (date: Date | undefined) => {
@@ -895,6 +926,19 @@ const ProspectionPage = () => {
                   </SelectContent>
                 </Select>
               </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Type d'opportunité</label>
+                <Select value={opportunityTypeFilter} onValueChange={setOpportunityTypeFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Tous les types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous les types</SelectItem>
+                    <SelectItem value="Location">Location</SelectItem>
+                    <SelectItem value="Vente">Vente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             
             <div className="flex justify-end mt-4">
@@ -927,7 +971,7 @@ const ProspectionPage = () => {
                         <span className="text-sm truncate">{reservation.property?.title || 'Bien non spécifié'}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Tag className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                        <Tag className="h-4 w-4 text-gray-500" />
                         <span className="text-sm font-medium">
                           {reservation.property?.price 
                             ? formatPrice(reservation.property.price)
@@ -936,8 +980,10 @@ const ProspectionPage = () => {
                       </div>
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                        <span className="text-sm text-gray-600" id={`client-name-${reservation.id}`}>
-                          Chargement...
+                        <span className="text-sm truncate">
+                          {clientsMap[reservation.client_phone] 
+                            ? `${clientsMap[reservation.client_phone].first_name} ${clientsMap[reservation.client_phone].last_name}`
+                            : 'Client non spécifié'}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">

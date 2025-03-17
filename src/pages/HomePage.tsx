@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { MapPin, User, BedDouble, Search, Filter } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { AgencyRegistrationDialog } from "@/components/agency-registration/AgencyRegistrationDialog";
+import { HomeFloatingButtons } from "@/components/ui/home-floating-buttons";
 import {
   Carousel,
   CarouselContent,
@@ -32,12 +33,18 @@ const propertyTypeLabels: { [key: string]: string } = {
   "OTHER": "Autre"
 };
 
+interface CarouselApi {
+  scrollNext: () => void;
+  scrollTo: (index: number) => void;
+  canScrollNext: () => boolean;
+}
+
 export default function HomePage() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
-  const [heroApi, setHeroApi] = useState<any>();
-  const [propertiesApi, setPropertiesApi] = useState<any>();
+  const [heroApi, setHeroApi] = useState<CarouselApi | null>(null);
+  const [propertiesApi, setPropertiesApi] = useState<CarouselApi | null>(null);
 
   const { data: regions } = useQuery({
     queryKey: ["regions"],
@@ -379,6 +386,8 @@ export default function HomePage() {
         open={isRegistrationOpen} 
         onOpenChange={setIsRegistrationOpen}
       />
+
+      <HomeFloatingButtons />
     </div>
   );
 }
