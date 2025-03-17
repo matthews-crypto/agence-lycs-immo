@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { AgencySidebar } from "@/components/agency/AgencySidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,10 +16,12 @@ import { Button } from "@/components/ui/button";
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useQuery } from '@tanstack/react-query';
-import { User, Phone, Calendar, Home, MapPin, CreditCard, Clock, Tag, FileText } from 'lucide-react';
+import { User, Phone, Calendar, Home, MapPin, CreditCard, Clock, Tag, FileText, Search } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNavigate } from 'react-router-dom';
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type Client = {
   id: string;
@@ -50,6 +52,12 @@ export default function ClientsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+
+  // Nouveaux états pour les filtres
+  const [searchTerm, setSearchTerm] = useState("");
+  const [propertyTypeFilter, setPropertyTypeFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [dateFilter, setDateFilter] = useState<string>("all");
 
   const { data: clients, isLoading, error } = useQuery({
     queryKey: ['activeClients', agency?.id],
@@ -140,6 +148,34 @@ export default function ClientsPage() {
     enabled: !!agency?.id,
   });
 
+  // Fonction pour filtrer les clients
+  const filteredClients = useMemo(() => {
+    if (!clients) return [];
+    
+    return clients.filter(client => {
+      const fullName = `${client.first_name} ${client.last_name}`.toLowerCase();
+      const matchesSearch = searchTerm === "" || fullName.includes(searchTerm.toLowerCase());
+      const matchesPropertyType = propertyTypeFilter === "all" || client.property_type === propertyTypeFilter;
+      const matchesStatus = statusFilter === "all" || client.statut === statusFilter;
+      
+      let matchesDate = true;
+      if (dateFilter === "recent") {
+        const oneMonthAgo = new Date();
+        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+        matchesDate = new Date(client.rental_start_date || "").getTime() >= oneMonthAgo.getTime();
+      }
+      
+      return matchesSearch && matchesPropertyType && matchesStatus && matchesDate;
+    });
+  }, [clients, searchTerm, propertyTypeFilter, statusFilter, dateFilter]);
+
+  // Liste unique des types de propriétés
+  const propertyTypes = useMemo(() => {
+    if (!clients) return [];
+    const types = [...new Set(clients.map(client => client.property_type).filter(Boolean))];
+    return types;
+  }, [clients]);
+
   const handleClientClick = (client: Client) => {
     console.log("Selected client:", client);
     setSelectedClient(client);
@@ -180,6 +216,51 @@ export default function ClientsPage() {
             <h1 className="text-2xl font-bold">Clients de l'Agence</h1>
             <p className="text-muted-foreground">Gérer et consulter les informations sur vos clients</p>
           </div>
+
+          {/* Filtres */}
+          <div className="mb-6 space-y-4 md:space-y-0 md:flex md:space-x-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Rechercher un client..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
+            <Select value={propertyTypeFilter} onValueChange={setPropertyTypeFilter}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Type de propriété" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les types</SelectItem>
+                {propertyTypes.map((type) => (
+                  <SelectItem key={type} value={type || "non-specifie"}>{type || "Non spécifié"}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Statut" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les statuts</SelectItem>
+                <SelectItem value="EN COURS">En cours</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={dateFilter} onValueChange={setDateFilter}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Date de location" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toutes les dates</SelectItem>
+                <SelectItem value="recent">Dernier mois</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           
           {isLoading ? (
             <div className="flex justify-center items-center h-64">
@@ -192,9 +273,9 @@ export default function ClientsPage() {
                 Impossible de charger les clients. Veuillez réessayer.
               </p>
             </div>
-          ) : clients && clients.length > 0 ? (
+          ) : filteredClients.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {clients.map((client) => (
+              {filteredClients.map((client) => (
                 <Card 
                   key={client.id} 
                   className="cursor-pointer hover:shadow-md transition-all duration-300 border-l-4 border-l-primary"
