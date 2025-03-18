@@ -5,17 +5,18 @@ import { AgencySidebar } from "@/components/agency/AgencySidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Clock, Home, User, Phone, CheckCircle, Search, MapPin, Tag, Mail, List, PieChart, FileText, Upload, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale/fr";
 import { toast } from "sonner";
 import { LoadingLayout } from "@/components/LoadingLayout";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { jsPDF } from 'jspdf';
 
 interface Reservation {
@@ -84,6 +85,7 @@ const ProspectionPage = () => {
   const [locationData, setLocationData] = useState<Location | null>(null);
   const [rentalStartDate, setRentalStartDate] = useState<string>("");
   const [rentalEndDate, setRentalEndDate] = useState<string>("");
+  const [visitNote, setVisitNote] = useState<string>('');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -692,7 +694,7 @@ const ProspectionPage = () => {
       doc.text("DÉTAILS DE LA TRANSACTION", 20, 210);
       doc.setFontSize(12);
       doc.text(`Numéro de ${reservation.type.toLowerCase()}: ${reservation.reservation_number}`, 20, 220);
-      doc.text(`Date de création: ${format(new Date(reservation.created_at), 'dd/MM/yyyy', { locale: fr })}`, 20, 230);
+      doc.text(`Date de création: ${format(new Date(reservation.created_at), 'PP', { locale: fr })}`, 20, 230);
       
       if (reservation.type === 'Location' && startDate && endDate) {
         doc.text(`Date de début: ${format(new Date(startDate), 'dd/MM/yyyy', { locale: fr })}`, 20, 240);
@@ -864,6 +866,28 @@ const ProspectionPage = () => {
       }
     } catch (error) {
       console.error('Error in status update operation:', error);
+      toast.error('Une erreur est survenue');
+    }
+  };
+
+  const handleVisitNoteChange = async () => {
+    if (!selectedReservation) return;
+    
+    try {
+      const { error } = await supabase
+        .from('reservations')
+        .update({ note_rv: visitNote })
+        .eq('id', selectedReservation.id);
+      
+      if (error) {
+        console.error('Error updating visit note:', error);
+        toast.error('Erreur lors de l\'enregistrement de la note');
+        return;
+      }
+      
+      toast.success('Note de visite enregistrée');
+    } catch (error) {
+      console.error('Error in visit note update:', error);
       toast.error('Une erreur est survenue');
     }
   };
@@ -1222,6 +1246,29 @@ const ProspectionPage = () => {
                           />
                         </div>
                       </div>
+                      
+                      {selectedReservation.status === 'Visite programmée' && (
+                        <div className="mb-4">
+                          <label className="text-sm font-medium mb-1 block">
+                            Note de visite
+                          </label>
+                          <div className="flex space-x-2">
+                            <Textarea
+                              value={visitNote}
+                              onChange={(e) => setVisitNote(e.target.value)}
+                              placeholder="Ajouter une note de visite (optionnel)"
+                              className="flex-1"
+                            />
+                            <Button
+                              size="sm"
+                              onClick={handleVisitNoteChange}
+                              className="self-end"
+                            >
+                              Enregistrer
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                       
                       <div>
                         <div className="flex flex-wrap gap-2">
