@@ -131,7 +131,16 @@ const ProspectionPage = () => {
           const { data, error } = await supabase
             .from('reservations')
             .select(`
-              *,
+              id,
+              reservation_number,
+              client_phone,
+              status,
+              type,
+              created_at,
+              updated_at,
+              rental_start_date,
+              rental_end_date,
+              appointment_date,
               property:property_id (
                 id,
                 title,
@@ -262,11 +271,28 @@ const ProspectionPage = () => {
     }
   };
 
+  useEffect(() => {
+    if (selectedReservation?.type?.toLowerCase() === 'location') {
+      // Format the dates as YYYY-MM-DD for the input fields
+      const startDate = selectedReservation.rental_start_date 
+        ? new Date(selectedReservation.rental_start_date).toISOString().split('T')[0]
+        : '';
+      const endDate = selectedReservation.rental_end_date
+        ? new Date(selectedReservation.rental_end_date).toISOString().split('T')[0]
+        : '';
+      
+      setRentalStartDate(startDate);
+      setRentalEndDate(endDate);
+
+      console.log('Dates from reservation:', { startDate, endDate });
+    }
+  }, [selectedReservation]);
+
   const fetchLocationData = async (clientId: string, propertyId: string) => {
     try {
       const { data, error } = await supabase
         .from('locations')
-        .select('*')
+        .select('id, client_cin, document_url, rental_start_date, rental_end_date')
         .eq('client_id', clientId)
         .eq('property_id', propertyId)
         .single();
@@ -305,7 +331,16 @@ const ProspectionPage = () => {
       const { data, error } = await supabase
         .from('reservations')
         .select(`
-          *,
+          id,
+          reservation_number,
+          client_phone,
+          status,
+          type,
+          created_at,
+          updated_at,
+          rental_start_date,
+          rental_end_date,
+          appointment_date,
           property:property_id (
             id,
             title,
@@ -510,24 +545,30 @@ const ProspectionPage = () => {
       
       const documentUrl = publicUrlData.publicUrl;
       
-      const locationUpsertData: any = {
+      console.log('Debug - Contract Finalization:', {
+        type: selectedReservation.type,
+        isLocation: selectedReservation.type === 'LOCATION',
+        rentalStartDate,
+        rentalEndDate
+      });
+
+      const locationUpsertData = {
         property_id: selectedReservation.property.id,
         client_id: clientDetails.id,
         client_cin: clientCIN,
-        document_url: documentUrl
+        document_url: documentUrl,
+        rental_start_date: selectedReservation.type === 'LOCATION' ? rentalStartDate : null,
+        rental_end_date: selectedReservation.type === 'LOCATION' ? rentalEndDate : null
       };
-      
-      if (selectedReservation.type === 'Location') {
-        locationUpsertData.rental_start_date = new Date(rentalStartDate).toISOString();
-        locationUpsertData.rental_end_date = new Date(rentalEndDate).toISOString();
-      }
+
+      console.log('Debug - Location Data:', locationUpsertData);
       
       if (locationData) {
         const { error: locationUpdateError } = await supabase
           .from('locations')
           .update(locationUpsertData)
           .eq('id', locationData.id);
-          
+
         if (locationUpdateError) {
           console.error('Error updating location:', locationUpdateError);
           toast.error('Erreur lors de la mise à jour de la location');
@@ -537,8 +578,8 @@ const ProspectionPage = () => {
       } else {
         const { error: locationInsertError } = await supabase
           .from('locations')
-          .insert(locationUpsertData);
-          
+          .insert([locationUpsertData]);
+
         if (locationInsertError) {
           console.error('Error creating location:', locationInsertError);
           toast.error('Erreur lors de la création de la location');
@@ -756,11 +797,7 @@ const ProspectionPage = () => {
       toast.success('Rendez-vous programmé avec succès');
       
       if (selectedReservation) {
-        const updatedReservation = { 
-          ...selectedReservation, 
-          appointment_date: date.toISOString(),
-          status: 'Visite programmée'
-        };
+        const updatedReservation = { ...selectedReservation, appointment_date: date.toISOString(), status: 'Visite programmée' };
         setSelectedReservation(updatedReservation);
         
         const updatedReservations = reservations.map(res => 
@@ -987,7 +1024,7 @@ const ProspectionPage = () => {
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                        <Calendar className="h-4 w-4 text-gray-500" />
                         <span className="text-sm">
                           {format(new Date(reservation.created_at), 'PP', { locale: fr })}
                         </span>
@@ -1054,6 +1091,32 @@ const ProspectionPage = () => {
                     </div>
                   </div>
                   
+                  {selectedReservation.type?.toLowerCase() === 'location' && (
+                    <div className="bg-gray-50 rounded-md p-4">
+                      <h3 className="text-sm font-medium mb-2">Dates de location</h3>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-sm font-medium mb-1 block">Date de début</label>
+                          <Input
+                            type="date"
+                            value={rentalStartDate}
+                            onChange={(e) => setRentalStartDate(e.target.value)}
+                            disabled={showContractFields}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium mb-1 block">Date de fin</label>
+                          <Input
+                            type="date"
+                            value={rentalEndDate}
+                            onChange={(e) => setRentalEndDate(e.target.value)}
+                            disabled={showContractFields}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="bg-gray-50 rounded-md p-4">
                     <h3 className="text-sm font-medium mb-2">Détails client</h3>
                     <div className="space-y-2">
@@ -1199,32 +1262,6 @@ const ProspectionPage = () => {
                             placeholder="Entrez le numéro CIN"
                           />
                         </div>
-                        
-                        {selectedReservation.type === 'Location' && (
-                          <>
-                            <div>
-                              <label className="text-sm font-medium mb-1 block">
-                                Date de début de location
-                              </label>
-                              <Input
-                                type="date"
-                                value={rentalStartDate}
-                                onChange={(e) => setRentalStartDate(e.target.value)}
-                              />
-                            </div>
-                            
-                            <div>
-                              <label className="text-sm font-medium mb-1 block">
-                                Date de fin de location
-                              </label>
-                              <Input
-                                type="date"
-                                value={rentalEndDate}
-                                onChange={(e) => setRentalEndDate(e.target.value)}
-                              />
-                            </div>
-                          </>
-                        )}
                         
                         <div>
                           <label className="text-sm font-medium mb-1 block">
