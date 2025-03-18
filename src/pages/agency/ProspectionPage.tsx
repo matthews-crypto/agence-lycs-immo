@@ -5,17 +5,18 @@ import { AgencySidebar } from "@/components/agency/AgencySidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Clock, Home, User, Phone, CheckCircle, Search, MapPin, Tag, Mail, List, PieChart, FileText, Upload, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale/fr";
 import { toast } from "sonner";
 import { LoadingLayout } from "@/components/LoadingLayout";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { jsPDF } from 'jspdf';
 
 interface Reservation {
@@ -70,6 +71,7 @@ const ProspectionPage = () => {
   const [propertyRefFilter, setPropertyRefFilter] = useState("");
   const [reservationRefFilter, setReservationRefFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [opportunityTypeFilter, setOpportunityTypeFilter] = useState("");
   const [clientDetails, setClientDetails] = useState<Client | null>(null);
   const [isClientReservationsOpen, setIsClientReservationsOpen] = useState(false);
   const [clientReservations, setClientReservations] = useState<Reservation[]>([]);
@@ -83,6 +85,7 @@ const ProspectionPage = () => {
   const [locationData, setLocationData] = useState<Location | null>(null);
   const [rentalStartDate, setRentalStartDate] = useState<string>("");
   const [rentalEndDate, setRentalEndDate] = useState<string>("");
+  const [visitNote, setVisitNote] = useState<string>('');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -93,6 +96,35 @@ const ProspectionPage = () => {
   const queryParams = new URLSearchParams(location.search);
   const reservationParam = queryParams.get('reservation');
 
+  const [clientsMap, setClientsMap] = useState<Record<string, Client>>({});
+
+  useEffect(() => {
+    const loadClientDetails = async () => {
+      for (const reservation of reservations) {
+        if (reservation.client_phone && !clientsMap[reservation.client_phone]) {
+          try {
+            const { data, error } = await supabase
+              .from('clients')
+              .select('*')
+              .eq('phone_number', reservation.client_phone)
+              .single();
+
+            if (!error && data) {
+              setClientsMap(prev => ({
+                ...prev,
+                [reservation.client_phone]: data
+              }));
+            }
+          } catch (error) {
+            console.error('Error fetching client details:', error);
+          }
+        }
+      }
+    };
+
+    loadClientDetails();
+  }, [reservations]);
+
   useEffect(() => {
     const fetchReservations = async () => {
       if (agency?.id) {
@@ -101,7 +133,16 @@ const ProspectionPage = () => {
           const { data, error } = await supabase
             .from('reservations')
             .select(`
-              *,
+              id,
+              reservation_number,
+              client_phone,
+              status,
+              type,
+              created_at,
+              updated_at,
+              rental_start_date,
+              rental_end_date,
+              appointment_date,
               property:property_id (
                 id,
                 title,
@@ -128,10 +169,6 @@ const ProspectionPage = () => {
           if (reservationParam) {
             setReservationRefFilter(reservationParam);
           }
-          
-          data?.forEach(reservation => {
-            loadClientName(reservation.client_phone, reservation.id);
-          });
         } catch (error) {
           console.error('Error in fetch operation:', error);
           toast.error('Une erreur est survenue');
@@ -208,7 +245,7 @@ const ProspectionPage = () => {
 
   useEffect(() => {
     applyFilters();
-  }, [searchQuery, propertyRefFilter, reservationRefFilter, statusFilter, reservations]);
+  }, [searchQuery, propertyRefFilter, reservationRefFilter, statusFilter, opportunityTypeFilter, reservations]);
 
   const fetchClientDetails = async (phoneNumber: string) => {
     try {
@@ -236,11 +273,28 @@ const ProspectionPage = () => {
     }
   };
 
+  useEffect(() => {
+    if (selectedReservation?.type?.toLowerCase() === 'location') {
+      // Format the dates as YYYY-MM-DD for the input fields
+      const startDate = selectedReservation.rental_start_date 
+        ? new Date(selectedReservation.rental_start_date).toISOString().split('T')[0]
+        : '';
+      const endDate = selectedReservation.rental_end_date
+        ? new Date(selectedReservation.rental_end_date).toISOString().split('T')[0]
+        : '';
+      
+      setRentalStartDate(startDate);
+      setRentalEndDate(endDate);
+
+      console.log('Dates from reservation:', { startDate, endDate });
+    }
+  }, [selectedReservation]);
+
   const fetchLocationData = async (clientId: string, propertyId: string) => {
     try {
       const { data, error } = await supabase
         .from('locations')
-        .select('*')
+        .select('id, client_cin, document_url, rental_start_date, rental_end_date')
         .eq('client_id', clientId)
         .eq('property_id', propertyId)
         .single();
@@ -279,7 +333,16 @@ const ProspectionPage = () => {
       const { data, error } = await supabase
         .from('reservations')
         .select(`
-          *,
+          id,
+          reservation_number,
+          client_phone,
+          status,
+          type,
+          created_at,
+          updated_at,
+          rental_start_date,
+          rental_end_date,
+          appointment_date,
           property:property_id (
             id,
             title,
@@ -320,6 +383,10 @@ const ProspectionPage = () => {
 
     if (statusFilter && statusFilter !== "all") {
       filtered = filtered.filter(res => res.status.toUpperCase() === statusFilter.toUpperCase());
+    }
+
+    if (opportunityTypeFilter && opportunityTypeFilter !== "all") {
+      filtered = filtered.filter(res => res.type.toUpperCase() === opportunityTypeFilter.toUpperCase());
     }
 
     if (searchQuery) {
@@ -480,24 +547,30 @@ const ProspectionPage = () => {
       
       const documentUrl = publicUrlData.publicUrl;
       
-      const locationUpsertData: any = {
+      console.log('Debug - Contract Finalization:', {
+        type: selectedReservation.type,
+        isLocation: selectedReservation.type === 'LOCATION',
+        rentalStartDate,
+        rentalEndDate
+      });
+
+      const locationUpsertData = {
         property_id: selectedReservation.property.id,
         client_id: clientDetails.id,
         client_cin: clientCIN,
-        document_url: documentUrl
+        document_url: documentUrl,
+        rental_start_date: selectedReservation.type === 'LOCATION' ? rentalStartDate : null,
+        rental_end_date: selectedReservation.type === 'LOCATION' ? rentalEndDate : null
       };
-      
-      if (selectedReservation.type === 'Location') {
-        locationUpsertData.rental_start_date = new Date(rentalStartDate).toISOString();
-        locationUpsertData.rental_end_date = new Date(rentalEndDate).toISOString();
-      }
+
+      console.log('Debug - Location Data:', locationUpsertData);
       
       if (locationData) {
         const { error: locationUpdateError } = await supabase
           .from('locations')
           .update(locationUpsertData)
           .eq('id', locationData.id);
-          
+
         if (locationUpdateError) {
           console.error('Error updating location:', locationUpdateError);
           toast.error('Erreur lors de la mise à jour de la location');
@@ -507,8 +580,8 @@ const ProspectionPage = () => {
       } else {
         const { error: locationInsertError } = await supabase
           .from('locations')
-          .insert(locationUpsertData);
-          
+          .insert([locationUpsertData]);
+
         if (locationInsertError) {
           console.error('Error creating location:', locationInsertError);
           toast.error('Erreur lors de la création de la location');
@@ -621,7 +694,7 @@ const ProspectionPage = () => {
       doc.text("DÉTAILS DE LA TRANSACTION", 20, 210);
       doc.setFontSize(12);
       doc.text(`Numéro de ${reservation.type.toLowerCase()}: ${reservation.reservation_number}`, 20, 220);
-      doc.text(`Date de création: ${format(new Date(reservation.created_at), 'dd/MM/yyyy', { locale: fr })}`, 20, 230);
+      doc.text(`Date de création: ${format(new Date(reservation.created_at), 'PP', { locale: fr })}`, 20, 230);
       
       if (reservation.type === 'Location' && startDate && endDate) {
         doc.text(`Date de début: ${format(new Date(startDate), 'dd/MM/yyyy', { locale: fr })}`, 20, 240);
@@ -700,6 +773,7 @@ const ProspectionPage = () => {
     setPropertyRefFilter("");
     setReservationRefFilter("");
     setStatusFilter("");
+    setOpportunityTypeFilter("");
   };
 
   const handleAppointmentDateChange = async (date: Date | undefined) => {
@@ -725,11 +799,7 @@ const ProspectionPage = () => {
       toast.success('Rendez-vous programmé avec succès');
       
       if (selectedReservation) {
-        const updatedReservation = { 
-          ...selectedReservation, 
-          appointment_date: date.toISOString(),
-          status: 'Visite programmée'
-        };
+        const updatedReservation = { ...selectedReservation, appointment_date: date.toISOString(), status: 'Visite programmée' };
         setSelectedReservation(updatedReservation);
         
         const updatedReservations = reservations.map(res => 
@@ -796,6 +866,28 @@ const ProspectionPage = () => {
       }
     } catch (error) {
       console.error('Error in status update operation:', error);
+      toast.error('Une erreur est survenue');
+    }
+  };
+
+  const handleVisitNoteChange = async () => {
+    if (!selectedReservation) return;
+    
+    try {
+      const { error } = await supabase
+        .from('reservations')
+        .update({ note_rv: visitNote })
+        .eq('id', selectedReservation.id);
+      
+      if (error) {
+        console.error('Error updating visit note:', error);
+        toast.error('Erreur lors de l\'enregistrement de la note');
+        return;
+      }
+      
+      toast.success('Note de visite enregistrée');
+    } catch (error) {
+      console.error('Error in visit note update:', error);
       toast.error('Une erreur est survenue');
     }
   };
@@ -895,6 +987,19 @@ const ProspectionPage = () => {
                   </SelectContent>
                 </Select>
               </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Type d'opportunité</label>
+                <Select value={opportunityTypeFilter} onValueChange={setOpportunityTypeFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Tous les types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous les types</SelectItem>
+                    <SelectItem value="Location">Location</SelectItem>
+                    <SelectItem value="Vente">Vente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             
             <div className="flex justify-end mt-4">
@@ -927,7 +1032,7 @@ const ProspectionPage = () => {
                         <span className="text-sm truncate">{reservation.property?.title || 'Bien non spécifié'}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Tag className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                        <Tag className="h-4 w-4 text-gray-500" />
                         <span className="text-sm font-medium">
                           {reservation.property?.price 
                             ? formatPrice(reservation.property.price)
@@ -936,12 +1041,14 @@ const ProspectionPage = () => {
                       </div>
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                        <span className="text-sm text-gray-600" id={`client-name-${reservation.id}`}>
-                          Chargement...
+                        <span className="text-sm truncate">
+                          {clientsMap[reservation.client_phone] 
+                            ? `${clientsMap[reservation.client_phone].first_name} ${clientsMap[reservation.client_phone].last_name}`
+                            : 'Client non spécifié'}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                        <Calendar className="h-4 w-4 text-gray-500" />
                         <span className="text-sm">
                           {format(new Date(reservation.created_at), 'PP', { locale: fr })}
                         </span>
@@ -1008,6 +1115,32 @@ const ProspectionPage = () => {
                     </div>
                   </div>
                   
+                  {selectedReservation.type?.toLowerCase() === 'location' && (
+                    <div className="bg-gray-50 rounded-md p-4">
+                      <h3 className="text-sm font-medium mb-2">Dates de location</h3>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-sm font-medium mb-1 block">Date de début</label>
+                          <Input
+                            type="date"
+                            value={rentalStartDate}
+                            onChange={(e) => setRentalStartDate(e.target.value)}
+                            disabled={showContractFields}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium mb-1 block">Date de fin</label>
+                          <Input
+                            type="date"
+                            value={rentalEndDate}
+                            onChange={(e) => setRentalEndDate(e.target.value)}
+                            disabled={showContractFields}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="bg-gray-50 rounded-md p-4">
                     <h3 className="text-sm font-medium mb-2">Détails client</h3>
                     <div className="space-y-2">
@@ -1114,6 +1247,29 @@ const ProspectionPage = () => {
                         </div>
                       </div>
                       
+                      {selectedReservation.status === 'Visite programmée' && (
+                        <div className="mb-4">
+                          <label className="text-sm font-medium mb-1 block">
+                            Note de visite
+                          </label>
+                          <div className="flex space-x-2">
+                            <Textarea
+                              value={visitNote}
+                              onChange={(e) => setVisitNote(e.target.value)}
+                              placeholder="Ajouter une note de visite (optionnel)"
+                              className="flex-1"
+                            />
+                            <Button
+                              size="sm"
+                              onClick={handleVisitNoteChange}
+                              className="self-end"
+                            >
+                              Enregistrer
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                      
                       <div>
                         <div className="flex flex-wrap gap-2">
                           <Button 
@@ -1153,32 +1309,6 @@ const ProspectionPage = () => {
                             placeholder="Entrez le numéro CIN"
                           />
                         </div>
-                        
-                        {selectedReservation.type === 'Location' && (
-                          <>
-                            <div>
-                              <label className="text-sm font-medium mb-1 block">
-                                Date de début de location
-                              </label>
-                              <Input
-                                type="date"
-                                value={rentalStartDate}
-                                onChange={(e) => setRentalStartDate(e.target.value)}
-                              />
-                            </div>
-                            
-                            <div>
-                              <label className="text-sm font-medium mb-1 block">
-                                Date de fin de location
-                              </label>
-                              <Input
-                                type="date"
-                                value={rentalEndDate}
-                                onChange={(e) => setRentalEndDate(e.target.value)}
-                              />
-                            </div>
-                          </>
-                        )}
                         
                         <div>
                           <label className="text-sm font-medium mb-1 block">

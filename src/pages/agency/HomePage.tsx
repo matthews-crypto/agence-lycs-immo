@@ -1,30 +1,23 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/components/ui/use-toast";
 import { MapPin, User, BedDouble, ChevronUp, Phone, Mail, ChevronDown, Briefcase, Search, Filter, Home, Tags, Info } from "lucide-react";
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { useNavigate } from "react-router-dom";
 import { AuthDrawer } from "@/components/agency/AuthDrawer";
 import { FilterSidebar, FilterType } from "@/components/property/FilterSidebar";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { toast } from "sonner";
-import {
+import { FloatingButtons } from "@/components/ui/floating-buttons";
+import { 
   Carousel,
   CarouselContent,
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 const propertyTypeLabels: { [key: string]: string } = {
@@ -174,18 +167,24 @@ function PropertyCategorySection({ type, properties, propertyTypeLabels, agency,
   );
 }
 
+interface CarouselApi {
+  scrollNext: () => void;
+  scrollTo: (index: number) => void;
+  canScrollNext: () => boolean;
+}
+
 export default function AgencyHomePage() {
   const { agency } = useAgencyContext();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [heroApi, setHeroApi] = useState<any>();
-  const [propertiesApi, setPropertiesApi] = useState<any>();
-  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [heroApi, setHeroApi] = useState<CarouselApi | null>(null);
+  const [propertiesApi, setPropertiesApi] = useState<CarouselApi | null>(null);
   const [showCategoryMenu, setShowCategoryMenu] = useState(false);
+  const [isServicesVisible, setIsServicesVisible] = useState(false);
   const categoryMenuRef = useRef<HTMLDivElement>(null);
   const servicesRef = useRef<HTMLDivElement>(null);
-  const [isServicesVisible, setIsServicesVisible] = useState(false);
   const [isFilterSidebarOpen, setIsFilterSidebarOpen] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState<number | null>(null);
   const [selectedZone, setSelectedZone] = useState<number | null>(null);
@@ -193,6 +192,10 @@ export default function AgencyHomePage() {
   const [minSurfaceArea, setMinSurfaceArea] = useState<number | null>(null);
   const [selectedBedrooms, setSelectedBedrooms] = useState<number | null>(null);
   const [maxPrice, setMaxPrice] = useState<number | null>(null);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [message, setMessage] = useState('');
 
   const { data: regions } = useQuery({
     queryKey: ["regions"],
@@ -275,30 +278,11 @@ export default function AgencyHomePage() {
   );
 
   useEffect(() => {
-    if (!heroApi || !propertiesApi) return;
-
-    const heroAutoplay = setInterval(() => {
-      if (heroApi.canScrollNext()) heroApi.scrollNext();
-      else heroApi.scrollTo(0);
-    }, 5000);
-
-    const propertiesAutoplay = setInterval(() => {
-      if (propertiesApi.canScrollNext()) propertiesApi.scrollNext();
-      else propertiesApi.scrollTo(0);
-    }, 3000);
-
-    return () => {
-      clearInterval(heroAutoplay);
-      clearInterval(propertiesAutoplay);
-    };
-  }, [heroApi, propertiesApi]);
-
-  useEffect(() => {
     const handleScroll = () => {
-      const nav = document.querySelector('nav');
-      if (nav) {
-        const navBottom = nav.getBoundingClientRect().bottom;
-        setShowScrollTop(navBottom < 0);
+      if (window.scrollY > 300) {
+        setShowScrollTop(true);
+      } else {
+        setShowScrollTop(false);
       }
     };
 
@@ -319,11 +303,50 @@ export default function AgencyHomePage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!heroApi || !propertiesApi) return;
+
+    const heroAutoplay = setInterval(() => {
+      if (heroApi.canScrollNext()) heroApi.scrollNext();
+      else heroApi.scrollTo(0);
+    }, 5000);
+
+    const propertiesAutoplay = setInterval(() => {
+      if (propertiesApi.canScrollNext()) propertiesApi.scrollNext();
+      else propertiesApi.scrollTo(0);
+    }, 3000);
+
+    return () => {
+      clearInterval(heroAutoplay);
+      clearInterval(propertiesAutoplay);
+    };
+  }, [heroApi, propertiesApi]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsServicesVisible(entry.isIntersecting);
+      },
+      { threshold: 0.1 }
+    );
+
+    if (servicesRef.current) {
+      observer.observe(servicesRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
       behavior: 'smooth'
     });
+  };
+
+  const handlePropertyClick = (propertyId: string) => {
+    if (!agency?.slug) return;
+    navigate(`/${agency.slug}/properties/${propertyId}/public`);
   };
 
   const filteredProperties = properties?.filter(property => {
@@ -339,7 +362,7 @@ export default function AgencyHomePage() {
     
     if (searchWords.length === 0) return true;
     
-    const valueContainsSearchWord = (value, words) => {
+    const valueContainsSearchWord = (value: any, words: string[]) => {
       if (!value) return false;
       const normalizedValue = value.toString().toLowerCase();
       return words.some(word => normalizedValue.includes(word));
@@ -399,52 +422,58 @@ export default function AgencyHomePage() {
     }
   };
 
-  const handlePropertyClick = (propertyId: string) => {
-    if (!agency?.slug) return;
-    navigate(`/${agency.slug}/properties/${propertyId}/public`);
-  };
-
   const loopedProperties = [...(properties || []), ...(properties || [])];
 
   const typewriterText = `Chez ${agency?.agency_name}, nous vous accompagnons dans toutes les étapes de votre projet immobilier, que ce soit pour acheter ou louer un bien.`;
   const displayText = useTypewriter(typewriterText, isServicesVisible, 30);
-
-  useEffect(() => {
-    const servicesSection = servicesRef.current;
-    if (!servicesSection) return;
-    
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsServicesVisible(true);
-          observer.unobserve(entry.target);
-        }
-      },
-      { threshold: 0.2 }
-    );
-    
-    observer.observe(servicesSection);
-    
-    return () => {
-      if (servicesSection) {
-        observer.unobserve(servicesSection);
-      }
-    };
-  }, [servicesRef]);
 
   const handleApplyFilters = (filters: FilterType) => {
     setSelectedRegion(filters.regionId);
     setSelectedZone(filters.zoneId);
     setSelectedPropertyType(filters.propertyType);
     setMinSurfaceArea(filters.minSurfaceArea);
-    setSelectedBedrooms(filters.bedroomsCount);
+    setSelectedBedrooms(filters.bedrooms);
     setMaxPrice(filters.maxPrice);
-    
-    if (filters.regionId || filters.zoneId || filters.propertyType || 
-        filters.minSurfaceArea || filters.bedroomsCount || filters.maxPrice) {
-      toast.success("Filtres appliqués");
-    } else {
-      toast.info("Filtres réinitialisés");
+    setIsFilterSidebarOpen(false);
+  };
+
+  const handleContactSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!agency?.id) return;
+
+    try {
+      const { error } = await supabase.from('contact_messages').insert({
+        agency_id: agency.id,
+        name: name,
+        email: email,
+        message: message,
+        firstname: '', // On laisse vide car on utilise juste le champ name
+        phone: phone,
+      });
+
+      if (error) throw error;
+
+      setName('');
+      setEmail('');
+      setPhone('');
+      setMessage('');
+      setSelectedPropertyType(null);
+      setMaxPrice(null);
+      setMinSurfaceArea(null);
+      setSelectedBedrooms(null);
+      setSelectedZone(null);
+
+      toast({
+        title: "Demande envoyée",
+        description: "Nous vous contacterons dans les plus brefs délais.",
+      });
+    } catch (error) {
+      console.error('Error submitting contact form:', error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de l'envoi du formulaire.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -774,47 +803,7 @@ export default function AgencyHomePage() {
               >
                 CONTACTEZ-NOUS
               </h3>
-              <form className="space-y-4" onSubmit={async (e) => {
-                e.preventDefault();
-                const form = e.currentTarget;
-                const formData = new FormData(form);
-                const data = {
-                  name: formData.get('name') as string,
-                  firstname: formData.get('firstname') as string,
-                  email: formData.get('email') as string,
-                  phone: formData.get('phone') as string,
-                  message: formData.get('message') as string,
-                };
-
-                if (!agency?.id) {
-                  toast.error("Une erreur s'est produite");
-                  return;
-                }
-
-                const { error } = await supabase
-                  .from('contact_messages')
-                  .insert([
-                    {
-                      agency_id: agency.id,
-                      ...data
-                    }
-                  ]);
-
-                if (error) {
-                  console.error('Error sending message:', error);
-                  toast.error("Une erreur s'est produite lors de l'envoi du message");
-                  return;
-                }
-
-                toast.success("Cher(e) client votre demande est prise en compte nos agents vous contacterons dans les plus brief délais.");
-                
-                form.reset();
-                
-                const inputs = form.querySelectorAll('input, textarea');
-                inputs.forEach((input: HTMLInputElement | HTMLTextAreaElement) => {
-                  input.value = '';
-                });
-              }}>
+              <form className="space-y-4" onSubmit={handleContactSubmit}>
                 <div className="space-y-2">
                   <Label htmlFor="name" className="text-gray-700">Nom</Label>
                   <Input 
@@ -822,15 +811,8 @@ export default function AgencyHomePage() {
                     name="name" 
                     placeholder="Votre nom"
                     required 
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="firstname" className="text-gray-700">Prénom</Label>
-                  <Input 
-                    id="firstname" 
-                    name="firstname" 
-                    placeholder="Votre prénom"
-                    required 
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -841,6 +823,8 @@ export default function AgencyHomePage() {
                     type="email" 
                     placeholder="Votre email"
                     required 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -851,6 +835,8 @@ export default function AgencyHomePage() {
                     type="tel" 
                     placeholder="Votre numéro de téléphone"
                     required 
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -861,6 +847,8 @@ export default function AgencyHomePage() {
                     placeholder="Votre message"
                     className="min-h-[100px]"
                     required
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
                   />
                 </div>
                 <Button 
@@ -894,34 +882,27 @@ export default function AgencyHomePage() {
         </div>
       </div>
 
-      {showScrollTop && (
-        <button
-          onClick={scrollToTop}
-          className="fixed bottom-8 right-8 p-3 rounded-full transition-all hover:scale-110 z-50"
-          style={{
-            backgroundColor: agency?.primary_color || '#000000'
-          }}
-        >
-          <ChevronUp className="w-6 h-6 text-white" />
-        </button>
-      )}
+      <FilterSidebar
+        open={isFilterSidebarOpen}
+        onOpenChange={setIsFilterSidebarOpen}
+        onFilterApply={handleApplyFilters}
+        agencyId={agency?.id}
+      />
 
       <AuthDrawer 
         open={isAuthOpen} 
         onOpenChange={setIsAuthOpen}
       />
-      
-      <FilterSidebar
-        agencyId={agency?.id}
-        onFilterApply={handleApplyFilters}
-        open={isFilterSidebarOpen}
-        onOpenChange={setIsFilterSidebarOpen}
-      />
-      
+
+      <FloatingButtons />
+
       <footer 
         id="about"
         className="py-12"
-        style={{ backgroundColor: agency?.primary_color || '#000000' }}
+        style={{
+          backgroundColor: agency?.primary_color || '#000000',
+          color: 'white'
+        }}
       >
         <div className="container mx-auto px-4">
           <div className="flex flex-col space-y-8">

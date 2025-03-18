@@ -37,7 +37,7 @@ export default function AppointmentsPage() {
       try {
         const { data, error } = await supabase
           .from('reservations')
-          .select('appointment_date, property_id, client_phone, status, reservation_number, properties(title, id)')
+          .select('appointment_date, property_id, client_phone, status, reservation_number, note_rv, properties(title, id)')
           .eq('agency_id', agency.id)
           .not('appointment_date', 'is', null)
 
@@ -330,6 +330,16 @@ export default function AppointmentsPage() {
                   </span>
                 </div>
                 
+                {selectedAppointment.note_rv && (
+                  <div className="flex gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
+                    <div className="bg-gray-50 p-3 rounded-md w-full">
+                      <p className="text-sm font-medium mb-1">Note de visite</p>
+                      <p className="text-sm text-gray-600 whitespace-pre-wrap">{selectedAppointment.note_rv}</p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-muted-foreground" />
                   <span>
