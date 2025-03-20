@@ -61,9 +61,9 @@ export default function ClientsPage() {
 
   // Nouveaux états pour les filtres
   const [searchTerm, setSearchTerm] = useState("");
-  const [propertyTypeFilter, setPropertyTypeFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [dateFilter, setDateFilter] = useState<string>("all");
+  const [clientTypeFilter, setClientTypeFilter] = useState<string>("all");
+  // État pour stocker toutes les locations de tous les clients
+  const [allLocations, setAllLocations] = useState<Location[]>([]);
 
   const { data: clients, isLoading, error } = useQuery({
     queryKey: ['clients', agency?.id],
@@ -121,6 +121,42 @@ export default function ClientsPage() {
     enabled: !!agency?.id,
   });
 
+  // Récupérer toutes les locations pour tous les clients
+  useQuery({
+    queryKey: ['all-locations', agency?.id],
+    queryFn: async () => {
+      if (!agency?.id || !clients || clients.length === 0) return [];
+      
+      const { data, error } = await supabase
+        .from('locations')
+        .select(`
+          id,
+          property_id,
+          client_id,
+          rental_start_date,
+          rental_end_date,
+          statut,
+          properties:property_id (
+            title,
+            property_type,
+            price,
+            address
+          )
+        `)
+        .in('client_id', clients.map(c => c.id))
+        .order('created_at', { ascending: false });
+        
+      if (error) {
+        console.error("Error fetching all locations:", error);
+        return [];
+      }
+
+      setAllLocations(data || []);
+      return data || [];
+    },
+    enabled: !!agency?.id && !!clients && clients.length > 0,
+  });
+
   // Fonction pour filtrer les clients
   const filteredClients = useMemo(() => {
     if (!clients) return [];
@@ -128,19 +164,27 @@ export default function ClientsPage() {
     return clients.filter(client => {
       const fullName = `${client.first_name} ${client.last_name}`.toLowerCase();
       const matchesSearch = searchTerm === "" || fullName.includes(searchTerm.toLowerCase());
-      const matchesPropertyType = propertyTypeFilter === "all";
-      const matchesStatus = statusFilter === "all";
       
-      let matchesDate = true;
-      if (dateFilter === "recent") {
-        const oneMonthAgo = new Date();
-        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-        matchesDate = true; // Pas de date de début pour les clients
+      // Filtre sur le type de client (acheteur ou locataire)
+      let matchesClientType = true;
+      if (clientTypeFilter !== "all" && client.id) {
+        // Récupérer toutes les locations du client
+        const clientTransactions = allLocations.filter(loc => loc.client_id === client.id);
+        
+        // Vérifier si le client a au moins une location (avec dates de début et fin)
+        const hasRentals = clientTransactions.some(loc => loc.rental_start_date && loc.rental_end_date);
+        
+        // Vérifier si le client a au moins un achat (sans dates de début et fin)
+        const hasPurchases = clientTransactions.some(loc => !loc.rental_start_date || !loc.rental_end_date);
+        
+        // Filtrer selon le type sélectionné
+        if (clientTypeFilter === "rental" && !hasRentals) matchesClientType = false;
+        if (clientTypeFilter === "buyer" && !hasPurchases) matchesClientType = false;
       }
       
-      return matchesSearch && matchesPropertyType && matchesStatus && matchesDate;
+      return matchesSearch && matchesClientType;
     });
-  }, [clients, searchTerm, propertyTypeFilter, statusFilter, dateFilter]);
+  }, [clients, searchTerm, clientTypeFilter, allLocations]);
 
   const handleClientClick = async (client: Client) => {
     setSelectedClient(client);
@@ -227,32 +271,15 @@ export default function ClientsPage() {
                     />
                   </div>
                   
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    <Select value={propertyTypeFilter} onValueChange={setPropertyTypeFilter}>
+                  <div className="grid grid-cols-1 gap-4">
+                    <Select value={clientTypeFilter} onValueChange={setClientTypeFilter}>
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Type de propriété" />
+                        <SelectValue placeholder="Type de client" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">Tous les types</SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Statut" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Tous les statuts</SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                    <Select value={dateFilter} onValueChange={setDateFilter}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Date de location" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Toutes les dates</SelectItem>
-                        <SelectItem value="recent">Dernier mois</SelectItem>
+                        <SelectItem value="all">Tous les clients</SelectItem>
+                        <SelectItem value="rental">Locataires</SelectItem>
+                        <SelectItem value="buyer">Acheteurs</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
