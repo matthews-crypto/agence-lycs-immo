@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,6 +32,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
+import { Plus } from "lucide-react";
+import { AddProprietaireDialog } from "./AddProprietaireDialog";
 
 // Define the property condition type to match Supabase enum
 type PropertyCondition = "VEFA" | "NEUF" | "RENOVE" | "USAGE";
@@ -54,6 +55,8 @@ const propertySchema = z.object({
   property_offer_type: z.string(),
   property_condition: z.enum(["VEFA", "NEUF", "RENOVE", "USAGE"] as const).optional(),
   vefa_availability_date: z.string().optional(),
+  type_location: z.string().optional(),
+  proprio: z.number().optional(),
 });
 
 const propertyConditionTranslations = {
@@ -77,6 +80,8 @@ export default function ModifyPropertyDialog({ open, onOpenChange, propertyId }:
   const [availableCities, setAvailableCities] = useState<Zone[]>([]);
   const [isLocation, setIsLocation] = useState(false);
   const [isVente, setIsVente] = useState(true);
+  const [proprietaires, setProprietaires] = useState<{ id: number; prenom: string; nom: string }[]>([]);
+  const [addProprietaireDialogOpen, setAddProprietaireDialogOpen] = useState(false);
   const { toast } = useToast();
   const { agency } = useAgencyContext();
 
@@ -97,97 +102,100 @@ export default function ModifyPropertyDialog({ open, onOpenChange, propertyId }:
       property_offer_type: "VENTE",
       property_condition: undefined,
       vefa_availability_date: undefined,
+      type_location: undefined,
+      proprio: undefined,
     },
   });
 
   // Fetch property data and set form values
   useEffect(() => {
     const fetchProperty = async () => {
-      if (!propertyId) return;
+      if (propertyId && agency?.id) {
+        const { data, error } = await supabase
+          .from("properties")
+          .select("*")
+          .eq("id", propertyId)
+          .eq("agency_id", agency.id)
+          .single();
 
-      const { data: property, error } = await supabase
-        .from("properties")
-        .select(`
-          *,
-          zone (
-            id,
-            nom,
-            region (
-              id,
-              nom
-            )
-          )
-        `)
-        .eq("id", propertyId)
-        .single();
+        if (error) {
+          console.error("Error fetching property:", error);
+          toast({
+            variant: "destructive",
+            title: "Erreur",
+            description: "Impossible de récupérer les détails de la propriété",
+          });
+          return;
+        }
 
-      if (error) {
-        console.error("Error fetching property:", error);
-        return;
-      }
+        if (data) {
+          form.reset({
+            title: data.title || "",
+            description: data.description || "",
+            property_type: data.property_type || "",
+            bedrooms: data.bedrooms || undefined,
+            price: data.price || undefined,
+            surface_area: data.surface_area || undefined,
+            address: data.address || "",
+            zone_id: data.zone_id || undefined,
+            region: data.region || "",
+            postal_code: data.postal_code || "",
+            is_furnished: data.is_furnished || false,
+            property_offer_type: data.property_offer_type || "VENTE",
+            property_condition: data.property_condition as PropertyCondition | undefined,
+            vefa_availability_date: data.vefa_availability_date || undefined,
+            type_location: data.type_location || undefined,
+            proprio: data.proprio || undefined,
+          });
 
-      if (property) {
-        // Set form values
-        form.reset({
-          title: property.title || "",
-          description: property.description || "",
-          property_type: property.property_type || "",
-          bedrooms: property.bedrooms || undefined,
-          price: property.price || undefined,
-          surface_area: property.surface_area || undefined,
-          address: property.address || "",
-          zone_id: property.zone_id || undefined,
-          region: property.region || "", // We'll update this when regions are loaded
-          postal_code: property.postal_code || "",
-          is_furnished: property.is_furnished || false,
-          property_offer_type: property.property_offer_type || "VENTE",
-          property_condition: property.property_condition as PropertyCondition | undefined,
-          vefa_availability_date: property.vefa_availability_date 
-            ? format(new Date(property.vefa_availability_date), "yyyy-MM-dd")
-            : undefined,
-        });
-
-        // Set offer type state
-        setIsLocation(property.property_offer_type === "LOCATION");
-        setIsVente(property.property_offer_type === "VENTE");
-
-        // Set selected region if available
-        if (property.zone?.region?.id) {
-          setSelectedRegion(property.zone.region.id.toString());
+          setSelectedRegion(data.region || "");
+          setIsLocation(data.property_offer_type === "LOCATION");
+          setIsVente(data.property_offer_type === "VENTE");
         }
       }
     };
 
     fetchProperty();
-  }, [propertyId, form]);
+  }, [propertyId, agency?.id, form, toast]);
 
   // Fetch regions
   useEffect(() => {
     const fetchRegions = async () => {
-      const { data: regionsData, error } = await supabase
-        .from('region')
-        .select('*')
-        .order('nom');
-      
+      const { data, error } = await supabase
+        .from("region")
+        .select("*")
+        .order("nom");
+
       if (error) {
-        console.error('Error fetching regions:', error);
+        console.error("Error fetching regions:", error);
         return;
       }
-      
-      setRegions(regionsData);
 
-      // If form has a region value, find its corresponding ID and set selectedRegion
-      const regionValue = form.getValues("region");
-      if (regionValue && regionsData) {
-        const matchingRegion = regionsData.find(r => r.nom === regionValue);
-        if (matchingRegion) {
-          setSelectedRegion(matchingRegion.id.toString());
-        }
-      }
+      setRegions(data || []);
     };
 
     fetchRegions();
-  }, [form]);
+  }, []);
+
+  useEffect(() => {
+    const fetchProprietaires = async () => {
+      if (!agency?.id) return;
+      
+      const { data, error } = await supabase
+        .from('proprietaire')
+        .select('id, prenom, nom')
+        .order('nom');
+      
+      if (error) {
+        console.error('Error fetching proprietaires:', error);
+        return;
+      }
+      
+      setProprietaires(data || []);
+    };
+
+    fetchProprietaires();
+  }, [agency?.id]);
 
   // Fetch cities when region changes
   useEffect(() => {
@@ -199,7 +207,7 @@ export default function ModifyPropertyDialog({ open, onOpenChange, propertyId }:
         return;
       }
 
-      const { data: citiesData, error } = await supabase
+      const { data, error } = await supabase
         .from('zone')
         .select('*')
         .eq('region_id', numericRegionId)
@@ -210,7 +218,7 @@ export default function ModifyPropertyDialog({ open, onOpenChange, propertyId }:
         return;
       }
       
-      setAvailableCities(citiesData);
+      setAvailableCities(data || []);
     };
 
     if (selectedRegion) {
@@ -245,6 +253,11 @@ export default function ModifyPropertyDialog({ open, onOpenChange, propertyId }:
     }
   };
 
+  const handleProprietaireAdded = (newProprietaire: { id: number; prenom: string; nom: string }) => {
+    setProprietaires(prev => [...prev, newProprietaire]);
+    form.setValue("proprio", newProprietaire.id);
+  };
+
   const onSubmit = async (data: PropertyFormValues) => {
     if (!propertyId) {
       toast({
@@ -271,6 +284,8 @@ export default function ModifyPropertyDialog({ open, onOpenChange, propertyId }:
         property_offer_type: data.property_type === "TERRAIN" ? "VENTE" : data.property_offer_type,
         property_condition: data.property_condition as PropertyCondition | null,
         vefa_availability_date: data.property_condition === "VEFA" ? data.vefa_availability_date : null,
+        type_location: data.property_offer_type === "LOCATION" ? data.type_location : null,
+        proprio: data.proprio,
       };
 
       const { error } = await supabase
@@ -332,14 +347,15 @@ export default function ModifyPropertyDialog({ open, onOpenChange, propertyId }:
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Sélectionnez un type" />
+                          <SelectValue placeholder="Sélectionnez un type de bien" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="APPARTEMENT">Appartement</SelectItem>
                         <SelectItem value="MAISON">Maison</SelectItem>
-                        <SelectItem value="BUREAU">Bureau</SelectItem>
                         <SelectItem value="TERRAIN">Terrain</SelectItem>
+                        <SelectItem value="BUREAU">Bureau</SelectItem>
+                        <SelectItem value="COMMERCE">Commerce</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -460,6 +476,33 @@ export default function ModifyPropertyDialog({ open, onOpenChange, propertyId }:
                   </div>
                 </div>
               </div>
+            )}
+
+            {isLocation && (
+              <FormField
+                control={form.control}
+                name="type_location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Type de location</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionnez un type de location" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="courte_duree">Courte durée</SelectItem>
+                        <SelectItem value="longue_duree">Longue durée</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             )}
 
             {showFurnishedField && (
@@ -612,7 +655,47 @@ export default function ModifyPropertyDialog({ open, onOpenChange, propertyId }:
               />
             </div>
 
-            <div className="flex justify-end space-x-4">
+            <FormField
+              control={form.control}
+              name="proprio"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Propriétaire</FormLabel>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <Select
+                        onValueChange={(value) => field.onChange(parseInt(value))}
+                        defaultValue={field.value?.toString()}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sélectionnez un propriétaire" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {proprietaires.map((proprio) => (
+                            <SelectItem key={proprio.id} value={proprio.id.toString()}>
+                              {proprio.prenom} {proprio.nom}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setAddProprietaireDialogOpen(true)}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Nouveau
+                    </Button>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="flex justify-end space-x-4 pt-4">
               <Button
                 type="button"
                 variant="outline"
@@ -620,12 +703,21 @@ export default function ModifyPropertyDialog({ open, onOpenChange, propertyId }:
               >
                 Annuler
               </Button>
-              <Button type="submit">Modifier</Button>
+              <Button 
+                type="submit" 
+                style={{ backgroundColor: agency?.secondary_color || '' }}
+              >
+                Enregistrer
+              </Button>
             </div>
           </form>
         </Form>
       </DialogContent>
+      <AddProprietaireDialog 
+        open={addProprietaireDialogOpen} 
+        onOpenChange={setAddProprietaireDialogOpen} 
+        onProprietaireAdded={handleProprietaireAdded}
+      />
     </Dialog>
   );
 }
-

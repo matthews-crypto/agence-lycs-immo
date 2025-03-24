@@ -29,11 +29,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { useNavigate } from "react-router-dom";
 import { Checkbox } from "@/components/ui/checkbox";
+import { AddProprietaireDialog } from "./AddProprietaireDialog";
 
 // Define the property condition type to match Supabase enum
 type PropertyCondition = "VEFA" | "NEUF" | "RENOVE" | "USAGE";
@@ -53,6 +54,8 @@ const propertySchema = z.object({
   property_offer_type: z.string(),
   property_condition: z.enum(["VEFA", "NEUF", "RENOVE", "USAGE"] as const).optional(),
   vefa_availability_date: z.string().optional(),
+  type_location: z.string().optional(),
+  proprio: z.number().optional(),
 });
 
 type PropertyFormValues = z.infer<typeof propertySchema>;
@@ -74,6 +77,8 @@ export function AddPropertyDialog() {
   const [isLocation, setIsLocation] = useState(false);
   const [isVente, setIsVente] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [proprietaires, setProprietaires] = useState<{ id: number; prenom: string; nom: string }[]>([]);
+  const [addProprietaireDialogOpen, setAddProprietaireDialogOpen] = useState(false);
   const { toast } = useToast();
   const { agency } = useAgencyContext();
   const navigate = useNavigate();
@@ -126,6 +131,26 @@ export function AddPropertyDialog() {
     }
   }, [selectedRegion]);
 
+  useEffect(() => {
+    const fetchProprietaires = async () => {
+      if (!agency?.id) return;
+      
+      const { data, error } = await supabase
+        .from('proprietaire')
+        .select('id, prenom, nom')
+        .order('nom');
+      
+      if (error) {
+        console.error('Error fetching proprietaires:', error);
+        return;
+      }
+      
+      setProprietaires(data || []);
+    };
+
+    fetchProprietaires();
+  }, [agency?.id]);
+
   const form = useForm<PropertyFormValues>({
     resolver: zodResolver(propertySchema),
     defaultValues: {
@@ -143,6 +168,8 @@ export function AddPropertyDialog() {
       property_offer_type: "VENTE",
       property_condition: undefined,
       vefa_availability_date: undefined,
+      type_location: undefined,
+      proprio: undefined,
     },
   });
 
@@ -169,6 +196,11 @@ export function AddPropertyDialog() {
       setIsLocation(false);
       form.setValue("property_offer_type", "VENTE");
     }
+  };
+
+  const handleProprietaireAdded = (newProprietaire: { id: number; prenom: string; nom: string }) => {
+    setProprietaires(prev => [...prev, newProprietaire]);
+    form.setValue("proprio", newProprietaire.id);
   };
 
   const onSubmit = async (data: PropertyFormValues) => {
@@ -204,7 +236,9 @@ export function AddPropertyDialog() {
         property_offer_type: data.property_type === "TERRAIN" ? "VENTE" : data.property_offer_type,
         property_condition: data.property_condition as PropertyCondition | null,
         vefa_availability_date: data.property_condition === "VEFA" ? data.vefa_availability_date : null,
+        type_location: data.property_offer_type === "LOCATION" ? data.type_location : null,
         amenities: [] as string[],
+        proprio: data.proprio,
       };
 
       let attempt = 0;
@@ -317,14 +351,15 @@ export function AddPropertyDialog() {
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Sélectionnez un type" />
+                          <SelectValue placeholder="Sélectionnez un type de bien" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="APPARTEMENT">Appartement</SelectItem>
                         <SelectItem value="MAISON">Maison</SelectItem>
-                        <SelectItem value="BUREAU">Bureau</SelectItem>
                         <SelectItem value="TERRAIN">Terrain</SelectItem>
+                        <SelectItem value="BUREAU">Bureau</SelectItem>
+                        <SelectItem value="COMMERCE">Commerce</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -445,6 +480,33 @@ export function AddPropertyDialog() {
                   </div>
                 </div>
               </div>
+            )}
+
+            {isLocation && (
+              <FormField
+                control={form.control}
+                name="type_location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Type de location</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionnez un type de location" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="courte_duree">Courte durée</SelectItem>
+                        <SelectItem value="longue_duree">Longue durée</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             )}
 
             {showFurnishedField && (
@@ -592,6 +654,46 @@ export function AddPropertyDialog() {
                       </FormItem>
                   )}
               />
+              <FormField
+                control={form.control}
+                name="proprio"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Propriétaire</FormLabel>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1">
+                        <Select
+                          onValueChange={(value) => field.onChange(parseInt(value))}
+                          defaultValue={field.value?.toString()}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sélectionnez un propriétaire" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {proprietaires.map((proprio) => (
+                              <SelectItem key={proprio.id} value={proprio.id.toString()}>
+                                {proprio.prenom} {proprio.nom}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setAddProprietaireDialogOpen(true)}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Nouveau
+                      </Button>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
             <div className="flex justify-end space-x-4">
@@ -604,12 +706,17 @@ export function AddPropertyDialog() {
                 Annuler
               </Button>
               <Button type="submit" disabled={loading}>
-                {loading ? 'Création en cours...' : 'Créer'}
+                {loading ? "Création..." : "Créer"}
               </Button>
             </div>
           </form>
         </Form>
       </DialogContent>
+      <AddProprietaireDialog 
+        open={addProprietaireDialogOpen} 
+        onOpenChange={setAddProprietaireDialogOpen} 
+        onProprietaireAdded={handleProprietaireAdded}
+      />
     </Dialog>
   );
 }

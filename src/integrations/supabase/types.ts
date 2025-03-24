@@ -447,6 +447,33 @@ export type Database = {
           },
         ]
       }
+      proprietaire: {
+        Row: {
+          id: number
+          prenom: string
+          nom: string
+          adresse: string | null
+          numero_telephone: string | null
+          adresse_email: string | null
+        }
+        Insert: {
+          id?: number
+          prenom: string
+          nom: string
+          adresse?: string | null
+          numero_telephone?: string | null
+          adresse_email?: string | null
+        }
+        Update: {
+          id?: number
+          prenom?: string
+          nom?: string
+          adresse?: string | null
+          numero_telephone?: string | null
+          adresse_email?: string | null
+        }
+        Relationships: []
+      }
       properties: {
         Row: {
           address: string | null
@@ -466,9 +493,7 @@ export type Database = {
           postal_code: string | null
           preview_description: string | null
           price: number
-          property_condition:
-            | Database["public"]["Enums"]["property_condition"]
-            | null
+          property_condition: Database["public"]["Enums"]["property_condition"] | null
           property_offer_type: string | null
           property_status: Database["public"]["Enums"]["property_status"] | null
           property_type: string
@@ -482,6 +507,8 @@ export type Database = {
           virtual_tour_url: string | null
           year_built: number | null
           zone_id: number | null
+          type_location: string | null
+          proprio: number | null
         }
         Insert: {
           address?: string | null
@@ -500,12 +527,12 @@ export type Database = {
           photos?: string[] | null
           postal_code?: string | null
           preview_description?: string | null
-          price: number
-          property_condition?:
+          price?: number
+          property_condition?: 
             | Database["public"]["Enums"]["property_condition"]
             | null
           property_offer_type?: string | null
-          property_status?:
+          property_status?: 
             | Database["public"]["Enums"]["property_status"]
             | null
           property_type: string
@@ -519,6 +546,8 @@ export type Database = {
           virtual_tour_url?: string | null
           year_built?: number | null
           zone_id?: number | null
+          type_location?: string | null
+          proprio?: number | null
         }
         Update: {
           address?: string | null
@@ -538,11 +567,11 @@ export type Database = {
           postal_code?: string | null
           preview_description?: string | null
           price?: number
-          property_condition?:
+          property_condition?: 
             | Database["public"]["Enums"]["property_condition"]
             | null
           property_offer_type?: string | null
-          property_status?:
+          property_status?: 
             | Database["public"]["Enums"]["property_status"]
             | null
           property_type?: string
@@ -556,6 +585,8 @@ export type Database = {
           virtual_tour_url?: string | null
           year_built?: number | null
           zone_id?: number | null
+          type_location?: string | null
+          proprio?: number | null
         }
         Relationships: [
           {
