@@ -14,7 +14,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useQuery } from '@tanstack/react-query';
-import { UserSquare, Phone, Mail, MapPin, Search, Plus } from 'lucide-react';
+import { UserSquare, Phone, Mail, MapPin, Search, Plus, Home } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Textarea } from "@/components/ui/textarea";
+import { ProprietairePropertiesDialog } from "@/components/agency/properties/ProprietairePropertiesDialog";
 
 type Proprietaire = {
   id: number;
@@ -57,6 +58,7 @@ export default function ProprietairesPage() {
   const [selectedProprietaire, setSelectedProprietaire] = useState<Proprietaire | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [propertiesDialogOpen, setPropertiesDialogOpen] = useState(false);
   const isMobile = useIsMobile();
 
   // État pour la recherche
@@ -313,10 +315,31 @@ export default function ProprietairesPage() {
                       )}
                     </div>
                   </div>
+                  
+                  <div className="flex justify-center">
+                    <Button 
+                      onClick={() => setPropertiesDialogOpen(true)}
+                      className="flex items-center gap-2"
+                      style={{ backgroundColor: agency?.secondary_color || '' }}
+                    >
+                      <Home className="h-4 w-4" />
+                      Voir les biens de ce propriétaire
+                    </Button>
+                  </div>
                 </div>
               )}
             </DialogContent>
           </Dialog>
+
+          {/* Dialog pour afficher les biens d'un propriétaire */}
+          {selectedProprietaire && (
+            <ProprietairePropertiesDialog
+              open={propertiesDialogOpen}
+              onOpenChange={setPropertiesDialogOpen}
+              proprietaireId={selectedProprietaire.id}
+              proprietaireName={`${selectedProprietaire.prenom} ${selectedProprietaire.nom}`}
+            />
+          )}
 
           {/* Dialog pour ajouter un propriétaire */}
           <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
