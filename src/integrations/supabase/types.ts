@@ -447,6 +447,33 @@ export type Database = {
           },
         ]
       }
+      proprietaire: {
+        Row: {
+          id: number
+          prenom: string
+          nom: string
+          adresse: string | null
+          numero_telephone: string | null
+          adresse_email: string | null
+        }
+        Insert: {
+          id?: number
+          prenom: string
+          nom: string
+          adresse?: string | null
+          numero_telephone?: string | null
+          adresse_email?: string | null
+        }
+        Update: {
+          id?: number
+          prenom?: string
+          nom?: string
+          adresse?: string | null
+          numero_telephone?: string | null
+          adresse_email?: string | null
+        }
+        Relationships: []
+      }
       properties: {
         Row: {
           address: string | null

@@ -1,4 +1,3 @@
-
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import {
   LayoutDashboard,
@@ -12,6 +11,7 @@ import {
   Image,
   FileSearch,
   MapPin,
+  UserSquare,
 } from "lucide-react"
 import {
   Sidebar,
@@ -135,6 +135,11 @@ export function AgencySidebar() {
           title: "Clients",
           icon: Users,
           url: `/${agency?.slug}/agency/clients`,
+        },
+        {
+          title: "Propriétaires",
+          icon: UserSquare,
+          url: `/${agency?.slug}/agency/proprietaires`,
         },
       ],
     },

@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster"
 import { Toaster as Sonner } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -9,7 +8,6 @@ import RootLayout from "@/layouts/RootLayout"
 import AdminLayout from "@/layouts/AdminLayout"
 import AgencyLayout from "@/layouts/AgencyLayout"
 import { AgencyProvider } from "@/contexts/AgencyContext"
-import { LoadingLayout } from "@/components/LoadingLayout"
 
 // Pages
 import HomePage from "@/pages/HomePage"
@@ -44,6 +42,7 @@ import UsersPage from "@/pages/admin/UsersPage"
 import ClientsPage from "@/pages/agency/ClientsPage"
 import PlanningPage from "@/pages/agency/PlanningPage"
 import LocationDetailPage from "@/pages/agency/LocationDetailPage"
+import ProprietairesPage from "@/pages/agency/ProprietairesPage"
 
 const queryClient = new QueryClient()
 
@@ -119,6 +118,7 @@ const App = () => (
                     element={<AgencyPropertiesPage />}
                   />
                   <Route path="clients" element={<ClientsPage />} />
+                  <Route path="proprietaires" element={<ProprietairesPage />} />
                 </Route>
 
                 {/* Agent routes */}
