@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -54,6 +53,7 @@ const propertySchema = z.object({
   property_offer_type: z.string(),
   property_condition: z.enum(["VEFA", "NEUF", "RENOVE", "USAGE"] as const).optional(),
   vefa_availability_date: z.string().optional(),
+  type_location: z.string().optional(),
 });
 
 const propertyConditionTranslations = {
@@ -97,6 +97,7 @@ export default function ModifyPropertyDialog({ open, onOpenChange, propertyId }:
       property_offer_type: "VENTE",
       property_condition: undefined,
       vefa_availability_date: undefined,
+      type_location: undefined,
     },
   });
 
@@ -145,6 +146,7 @@ export default function ModifyPropertyDialog({ open, onOpenChange, propertyId }:
           vefa_availability_date: property.vefa_availability_date 
             ? format(new Date(property.vefa_availability_date), "yyyy-MM-dd")
             : undefined,
+          type_location: property.type_location || undefined,
         });
 
         // Set offer type state
@@ -271,6 +273,7 @@ export default function ModifyPropertyDialog({ open, onOpenChange, propertyId }:
         property_offer_type: data.property_type === "TERRAIN" ? "VENTE" : data.property_offer_type,
         property_condition: data.property_condition as PropertyCondition | null,
         vefa_availability_date: data.property_condition === "VEFA" ? data.vefa_availability_date : null,
+        type_location: data.property_offer_type === "LOCATION" ? data.type_location : null,
       };
 
       const { error } = await supabase
@@ -462,6 +465,33 @@ export default function ModifyPropertyDialog({ open, onOpenChange, propertyId }:
               </div>
             )}
 
+            {isLocation && (
+              <FormField
+                control={form.control}
+                name="type_location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Type de location</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionnez un type de location" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="courte_duree">Courte durée</SelectItem>
+                        <SelectItem value="longue_duree">Longue durée</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
             {showFurnishedField && (
               <FormField
                 control={form.control}
@@ -628,4 +658,3 @@ export default function ModifyPropertyDialog({ open, onOpenChange, propertyId }:
     </Dialog>
   );
 }
-

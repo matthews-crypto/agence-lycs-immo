@@ -53,6 +53,7 @@ const propertySchema = z.object({
   property_offer_type: z.string(),
   property_condition: z.enum(["VEFA", "NEUF", "RENOVE", "USAGE"] as const).optional(),
   vefa_availability_date: z.string().optional(),
+  type_location: z.string().optional(),
 });
 
 type PropertyFormValues = z.infer<typeof propertySchema>;
@@ -143,6 +144,7 @@ export function AddPropertyDialog() {
       property_offer_type: "VENTE",
       property_condition: undefined,
       vefa_availability_date: undefined,
+      type_location: undefined,
     },
   });
 
@@ -204,6 +206,7 @@ export function AddPropertyDialog() {
         property_offer_type: data.property_type === "TERRAIN" ? "VENTE" : data.property_offer_type,
         property_condition: data.property_condition as PropertyCondition | null,
         vefa_availability_date: data.property_condition === "VEFA" ? data.vefa_availability_date : null,
+        type_location: data.property_offer_type === "LOCATION" ? data.type_location : null,
         amenities: [] as string[],
       };
 
@@ -445,6 +448,33 @@ export function AddPropertyDialog() {
                   </div>
                 </div>
               </div>
+            )}
+
+            {isLocation && (
+              <FormField
+                control={form.control}
+                name="type_location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Type de location</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionnez un type de location" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="courte_duree">Courte durée</SelectItem>
+                        <SelectItem value="longue_duree">Longue durée</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             )}
 
             {showFurnishedField && (
