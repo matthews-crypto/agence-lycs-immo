@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { AgencySidebar } from "@/components/agency/AgencySidebar";
@@ -20,6 +19,7 @@ type LocationData = {
   property: {
     title: string;
     reference_number: string;
+    type_location: string | null;
   };
   client: {
     first_name: string;
@@ -38,6 +38,7 @@ export default function PlanningPage() {
 
   // Search state
   const [searchTerm, setSearchTerm] = useState("");
+  const [typeLocationFilter, setTypeLocationFilter] = useState<string | null>(null);
   const [filteredActiveLocations, setFilteredActiveLocations] = useState<LocationData[]>([]);
   const [filteredHistoricalLocations, setFilteredHistoricalLocations] = useState<LocationData[]>([]);
 
@@ -55,7 +56,7 @@ export default function PlanningPage() {
             rental_end_date,
             property_id,
             client_id,
-            property:properties(title, reference_number),
+            property:properties(title, reference_number, type_location),
             client:clients(first_name, last_name, phone_number)
           `)
           .not("rental_start_date", "is", null)
@@ -88,7 +89,7 @@ export default function PlanningPage() {
             rental_end_date,
             property_id,
             client_id,
-            property:properties(title, reference_number),
+            property:properties(title, reference_number, type_location),
             client:clients(first_name, last_name, phone_number)
           `)
           .eq("statut", "TERMINÉ")
@@ -112,7 +113,7 @@ export default function PlanningPage() {
     fetchHistoricalLocations();
   }, [agency?.id]);
 
-  // Handle filtering based on search term
+  // Handle filtering based on search term and type_location
   useEffect(() => {
     const filterLocations = () => {
       const lowerSearchTerm = searchTerm.toLowerCase();
@@ -123,9 +124,16 @@ export default function PlanningPage() {
         const propertyTitle = location.property?.title.toLowerCase() || "";
         const phoneNumber = location.client?.phone_number?.toLowerCase() || "";
         
-        return clientName.includes(lowerSearchTerm) || 
-               propertyTitle.includes(lowerSearchTerm) || 
-               phoneNumber.includes(lowerSearchTerm);
+        // Check if matches search term
+        const matchesSearch = clientName.includes(lowerSearchTerm) || 
+                              propertyTitle.includes(lowerSearchTerm) || 
+                              phoneNumber.includes(lowerSearchTerm);
+        
+        // Check if matches type_location filter
+        const matchesTypeLocation = !typeLocationFilter || 
+                                   location.property?.type_location === typeLocationFilter;
+        
+        return matchesSearch && matchesTypeLocation;
       });
       
       // Filter historical locations
@@ -134,9 +142,16 @@ export default function PlanningPage() {
         const propertyTitle = location.property?.title.toLowerCase() || "";
         const phoneNumber = location.client?.phone_number?.toLowerCase() || "";
         
-        return clientName.includes(lowerSearchTerm) || 
-               propertyTitle.includes(lowerSearchTerm) || 
-               phoneNumber.includes(lowerSearchTerm);
+        // Check if matches search term
+        const matchesSearch = clientName.includes(lowerSearchTerm) || 
+                              propertyTitle.includes(lowerSearchTerm) || 
+                              phoneNumber.includes(lowerSearchTerm);
+        
+        // Check if matches type_location filter
+        const matchesTypeLocation = !typeLocationFilter || 
+                                   location.property?.type_location === typeLocationFilter;
+        
+        return matchesSearch && matchesTypeLocation;
       });
       
       setFilteredActiveLocations(activeFiltered);
@@ -144,7 +159,7 @@ export default function PlanningPage() {
     };
     
     filterLocations();
-  }, [searchTerm, locations, historicalLocations]);
+  }, [searchTerm, typeLocationFilter, locations, historicalLocations]);
 
   const handleLocationClick = (locationId: string) => {
     navigate(`/${agency?.slug}/agency/planning/${locationId}`);
@@ -168,6 +183,17 @@ export default function PlanningPage() {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
+              </div>
+              <div className="w-full md:w-auto">
+                <select
+                  className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+                  value={typeLocationFilter || ""}
+                  onChange={(e) => setTypeLocationFilter(e.target.value || null)}
+                >
+                  <option value="">Tous types de location</option>
+                  <option value="courte_duree">Courte durée</option>
+                  <option value="longue_duree">Longue durée</option>
+                </select>
               </div>
             </div>
           </div>
