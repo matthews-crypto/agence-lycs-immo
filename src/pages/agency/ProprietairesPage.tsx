@@ -165,6 +165,7 @@ export default function ProprietairesPage() {
                 <Button 
                   onClick={() => setAddDialogOpen(true)}
                   className="flex items-center gap-2"
+                  style={{ backgroundColor: agency?.secondary_color || '' }}
                 >
                   <Plus className="h-4 w-4" />
                   Ajouter un propriétaire

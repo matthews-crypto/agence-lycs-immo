@@ -54,6 +54,7 @@ const propertySchema = z.object({
   property_condition: z.enum(["VEFA", "NEUF", "RENOVE", "USAGE"] as const).optional(),
   vefa_availability_date: z.string().optional(),
   type_location: z.string().optional(),
+  proprio: z.number().optional(),
 });
 
 type PropertyFormValues = z.infer<typeof propertySchema>;
@@ -75,6 +76,7 @@ export function AddPropertyDialog() {
   const [isLocation, setIsLocation] = useState(false);
   const [isVente, setIsVente] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [proprietaires, setProprietaires] = useState<{ id: number; prenom: string; nom: string }[]>([]);
   const { toast } = useToast();
   const { agency } = useAgencyContext();
   const navigate = useNavigate();
@@ -127,6 +129,26 @@ export function AddPropertyDialog() {
     }
   }, [selectedRegion]);
 
+  useEffect(() => {
+    const fetchProprietaires = async () => {
+      if (!agency?.id) return;
+      
+      const { data, error } = await supabase
+        .from('proprietaire')
+        .select('id, prenom, nom')
+        .order('nom');
+      
+      if (error) {
+        console.error('Error fetching proprietaires:', error);
+        return;
+      }
+      
+      setProprietaires(data || []);
+    };
+
+    fetchProprietaires();
+  }, [agency?.id]);
+
   const form = useForm<PropertyFormValues>({
     resolver: zodResolver(propertySchema),
     defaultValues: {
@@ -145,6 +167,7 @@ export function AddPropertyDialog() {
       property_condition: undefined,
       vefa_availability_date: undefined,
       type_location: undefined,
+      proprio: undefined,
     },
   });
 
@@ -208,6 +231,7 @@ export function AddPropertyDialog() {
         vefa_availability_date: data.property_condition === "VEFA" ? data.vefa_availability_date : null,
         type_location: data.property_offer_type === "LOCATION" ? data.type_location : null,
         amenities: [] as string[],
+        proprio: data.proprio,
       };
 
       let attempt = 0;
@@ -320,14 +344,15 @@ export function AddPropertyDialog() {
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Sélectionnez un type" />
+                          <SelectValue placeholder="Sélectionnez un type de bien" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="APPARTEMENT">Appartement</SelectItem>
                         <SelectItem value="MAISON">Maison</SelectItem>
-                        <SelectItem value="BUREAU">Bureau</SelectItem>
                         <SelectItem value="TERRAIN">Terrain</SelectItem>
+                        <SelectItem value="BUREAU">Bureau</SelectItem>
+                        <SelectItem value="COMMERCE">Commerce</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -621,6 +646,33 @@ export function AddPropertyDialog() {
                           <FormMessage />
                       </FormItem>
                   )}
+              />
+              <FormField
+                control={form.control}
+                name="proprio"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Propriétaire</FormLabel>
+                    <Select
+                      onValueChange={(value) => field.onChange(parseInt(value))}
+                      defaultValue={field.value?.toString()}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionnez un propriétaire" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {proprietaires.map((proprio) => (
+                          <SelectItem key={proprio.id} value={proprio.id.toString()}>
+                            {proprio.prenom} {proprio.nom}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
 
