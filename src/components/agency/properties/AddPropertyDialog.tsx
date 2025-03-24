@@ -29,11 +29,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { useNavigate } from "react-router-dom";
 import { Checkbox } from "@/components/ui/checkbox";
+import { AddProprietaireDialog } from "./AddProprietaireDialog";
 
 // Define the property condition type to match Supabase enum
 type PropertyCondition = "VEFA" | "NEUF" | "RENOVE" | "USAGE";
@@ -77,6 +78,7 @@ export function AddPropertyDialog() {
   const [isVente, setIsVente] = useState(true);
   const [loading, setLoading] = useState(false);
   const [proprietaires, setProprietaires] = useState<{ id: number; prenom: string; nom: string }[]>([]);
+  const [addProprietaireDialogOpen, setAddProprietaireDialogOpen] = useState(false);
   const { toast } = useToast();
   const { agency } = useAgencyContext();
   const navigate = useNavigate();
@@ -194,6 +196,11 @@ export function AddPropertyDialog() {
       setIsLocation(false);
       form.setValue("property_offer_type", "VENTE");
     }
+  };
+
+  const handleProprietaireAdded = (newProprietaire: { id: number; prenom: string; nom: string }) => {
+    setProprietaires(prev => [...prev, newProprietaire]);
+    form.setValue("proprio", newProprietaire.id);
   };
 
   const onSubmit = async (data: PropertyFormValues) => {
@@ -653,23 +660,36 @@ export function AddPropertyDialog() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Propriétaire</FormLabel>
-                    <Select
-                      onValueChange={(value) => field.onChange(parseInt(value))}
-                      defaultValue={field.value?.toString()}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionnez un propriétaire" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {proprietaires.map((proprio) => (
-                          <SelectItem key={proprio.id} value={proprio.id.toString()}>
-                            {proprio.prenom} {proprio.nom}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1">
+                        <Select
+                          onValueChange={(value) => field.onChange(parseInt(value))}
+                          defaultValue={field.value?.toString()}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sélectionnez un propriétaire" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {proprietaires.map((proprio) => (
+                              <SelectItem key={proprio.id} value={proprio.id.toString()}>
+                                {proprio.prenom} {proprio.nom}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setAddProprietaireDialogOpen(true)}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Nouveau
+                      </Button>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -686,12 +706,17 @@ export function AddPropertyDialog() {
                 Annuler
               </Button>
               <Button type="submit" disabled={loading}>
-                {loading ? 'Création en cours...' : 'Créer'}
+                {loading ? "Création..." : "Créer"}
               </Button>
             </div>
           </form>
         </Form>
       </DialogContent>
+      <AddProprietaireDialog 
+        open={addProprietaireDialogOpen} 
+        onOpenChange={setAddProprietaireDialogOpen} 
+        onProprietaireAdded={handleProprietaireAdded}
+      />
     </Dialog>
   );
 }
