@@ -187,7 +187,10 @@ export default function PublicPropertyDetailPage() {
     if (!property?.agencies?.id) return;
 
     const isRental = property.property_offer_type === 'LOCATION';
-    if (isRental && (!formData.startDate || !formData.endDate)) {
+    const isLongTermRental = isRental && property.type_location === 'longue_duree';
+    const isShortTermRental = isRental && property.type_location === 'courte_duree';
+    
+    if (isShortTermRental && (!formData.startDate || !formData.endDate)) {
       toast({
         title: "Erreur",
         description: "Veuillez sélectionner les dates de location",
@@ -195,10 +198,35 @@ export default function PublicPropertyDetailPage() {
       });
       return;
     }
+    
+    if (isLongTermRental && !formData.startDate) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez sélectionner la date de début de location",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
+      // Pour les locations longue durée, calculer automatiquement la date de fin
+      let endDate = formData.endDate;
+      if (isLongTermRental && formData.startDate) {
+        const startDate = new Date(formData.startDate);
+        const endMonth = startDate.getMonth() + 2; // +1 pour le mois suivant, +1 car les mois sont indexés à partir de 0
+        const endYear = endMonth > 11 ? startDate.getFullYear() + 1 : startDate.getFullYear();
+        const adjustedEndMonth = endMonth > 11 ? endMonth - 12 : endMonth;
+        
+        // Obtenir le dernier jour du mois suivant
+        const lastDay = new Date(endYear, adjustedEndMonth, 0).getDate();
+        const calculatedEndDate = new Date(endYear, adjustedEndMonth - 1, lastDay);
+        
+        endDate = format(calculatedEndDate, 'yyyy-MM-dd');
+      }
+      
       createReservation.mutate({
         ...formData,
+        endDate: endDate,
         propertyId: property.id,
         agencyId: property.agencies.id,
       });
@@ -513,20 +541,27 @@ export default function PublicPropertyDetailPage() {
                     />
                   </div>
                 </div>
-                <div>
-                  <Label htmlFor="endDate">Date de fin</Label>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-gray-400" />
-                    <Input
-                      id="endDate"
-                      type="date"
-                      value={formData.endDate}
-                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                      required
-                      min={formData.startDate || format(new Date(), 'yyyy-MM-dd')}
-                    />
+                {property.type_location === 'courte_duree' && (
+                  <div>
+                    <Label htmlFor="endDate">Date de fin</Label>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-gray-400" />
+                      <Input
+                        id="endDate"
+                        type="date"
+                        value={formData.endDate}
+                        onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                        required
+                        min={formData.startDate || format(new Date(), 'yyyy-MM-dd')}
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
+                {property.type_location === 'longue_duree' && (
+                  <div className="text-sm text-muted-foreground">
+                    <p>Pour les locations longue durée, la date de fin sera automatiquement fixée au dernier jour du mois suivant.</p>
+                  </div>
+                )}
               </>
             )}
             <DialogFooter>
