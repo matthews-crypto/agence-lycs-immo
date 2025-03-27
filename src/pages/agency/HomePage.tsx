@@ -148,6 +148,8 @@ function PropertyCategorySection({ type, properties, propertyTypeLabels, agency,
               <div className="mt-2 flex justify-between items-center">
                 <p className="text-lg">
                   {property.price.toLocaleString('fr-FR')} FCFA
+                  {property.property_offer_type === 'LOCATION' && property.type_location === 'longue_duree' && ' /mois'}
+                  {property.property_offer_type === 'LOCATION' && property.type_location === 'courte_duree' && ' /jour'}
                 </p>
                 <div className="flex items-center gap-1 text-gray-600">
                   <span>{property.surface_area} m²</span>
@@ -228,7 +230,8 @@ export default function AgencyHomePage() {
           )
         `)
         .eq("agency_id", agency.id)
-        .eq("is_available", true);
+        .eq("is_available", true)
+        .eq("property_status", "DISPONIBLE");
       
       if (selectedZone) {
         query = query.eq("zone_id", selectedZone);
@@ -586,13 +589,18 @@ export default function AgencyHomePage() {
                         <BedDouble className="w-12 h-12 text-gray-400" />
                       </div>
                     )}
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-8">
-                      <h2 className="text-white text-2xl font-light">
-                        {property.title}
-                      </h2>
-                      <p className="text-white/80 mt-2">
-                        {property.zone?.nom}
-                      </p>
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                      <h3 className="text-white font-semibold truncate">{property.title}</h3>
+                      <div className="flex justify-between items-center mt-1">
+                        <span className="text-white/90 text-sm">
+                          {property.property_offer_type === 'VENTE' ? 'À vendre' : 'À louer'}
+                        </span>
+                        <span className="text-white font-bold">
+                          {property.price.toLocaleString('fr-FR')} FCFA
+                          {property.property_offer_type === 'LOCATION' && property.type_location === 'longue_duree' && ' /mois'}
+                          {property.property_offer_type === 'LOCATION' && property.type_location === 'courte_duree' && ' /jour'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </CarouselItem>
@@ -670,6 +678,8 @@ export default function AgencyHomePage() {
                       <div className="mt-2 flex justify-between items-center">
                         <p className="text-lg">
                           {property.price.toLocaleString('fr-FR')} FCFA
+                          {property.property_offer_type === 'LOCATION' && property.type_location === 'longue_duree' && ' /mois'}
+                          {property.property_offer_type === 'LOCATION' && property.type_location === 'courte_duree' && ' /jour'}
                         </p>
                         <div className="flex items-center gap-1 text-gray-600">
                           <span>{property.surface_area} m²</span>
@@ -747,6 +757,8 @@ export default function AgencyHomePage() {
                       <div className="mt-2 flex justify-between items-center">
                         <p className="text-lg">
                           {property.price.toLocaleString('fr-FR')} FCFA
+                          {property.property_offer_type === 'LOCATION' && property.type_location === 'longue_duree' && ' /mois'}
+                          {property.property_offer_type === 'LOCATION' && property.type_location === 'courte_duree' && ' /jour'}
                         </p>
                         <div className="flex items-center gap-1 text-gray-600">
                           <span>{property.surface_area} m²</span>

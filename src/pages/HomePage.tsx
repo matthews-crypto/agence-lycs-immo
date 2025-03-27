@@ -75,7 +75,8 @@ export default function HomePage() {
             circle_radius
           )
         `)
-        .eq("is_available", true);
+        .eq("is_available", true)
+        .eq("property_status", "DISPONIBLE");
 
       if (error) throw error;
       return data;
