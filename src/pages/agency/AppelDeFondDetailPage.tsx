@@ -21,7 +21,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
 
 // URL de l'API d'envoi d'emails déployée sur Render
-const API_URL = 'https://agence-lycs-mails.onrender.com'; // À remplacer par l'URL de votre API déployée
+const API_URL = 'https://agence-lycs-immo.onrender.com'; // À remplacer par l'URL de votre API déployée
 
 interface Lot {
   id: string;
@@ -46,6 +46,7 @@ interface Client {
   email: string;
   phone_number: string;
   has_paid?: boolean; // Champ local pour suivre les paiements
+  hasEmail: boolean; // Champ pour identifier les clients avec une adresse email
 }
 
 interface AppelDeFond {
@@ -178,7 +179,8 @@ const AppelDeFondDetailPage = () => {
           last_name: client.last_name,
           email: client.email,
           phone_number: client.phone_number,
-          has_paid: false
+          has_paid: false,
+          hasEmail: !!client.email
         }));
         
         setClients(clientsList);
@@ -245,23 +247,29 @@ const AppelDeFondDetailPage = () => {
 
   const handleOpenEmailDialog = (allClients: boolean = false) => {
     if (allClients) {
-      setSelectedClientIds(clients.map(client => client.id));
+      // Sélectionner uniquement les clients qui ont une adresse email
+      const clientsWithEmail = clients.filter(client => client.hasEmail).map(client => client.id);
+      setSelectedClientIds(clientsWithEmail);
     } else {
-      setSelectedClientIds([]);
+      // Pour l'envoi individuel, on garde la sélection actuelle
+      // (le bouton est déjà désactivé pour les clients sans email)
     }
     
     // Préremplir le sujet et le contenu de l'email
     if (lot) {
       setEmailSubject(`Appel de fond pour le lot ${lot.nom}`);
-      setEmailContent(`Cher(e) propriétaire,
+      
+      const dateEmission = appelDeFond ? format(new Date(appelDeFond.date_emission), 'dd/MM/yyyy', { locale: fr }) : '';
+      const dateEcheance = appelDeFond ? format(new Date(appelDeFond.date_echeance), 'dd/MM/yyyy', { locale: fr }) : '';
+      
+      setEmailContent(`Bonjour {NOM},
 
-Nous vous informons qu'un appel de fond a été émis pour le lot "${lot.nom}" dont vous êtes propriétaire.
 
-Montant total: ${appelDeFond?.montant} FCFA
-Montant par propriétaire: ${montantParClient.toFixed(2)} FCFA
-Date d'échéance: ${appelDeFond ? format(new Date(appelDeFond.date_echeance), 'dd/MM/yyyy') : ''}
+Nous vous informons qu'un appel de fonds est prévu pour la période du ${dateEmission} au ${dateEcheance} concernant ${lot ? `le lot "${lot.nom}"` : ''}.
 
-Merci de bien vouloir procéder au règlement avant la date d'échéance.
+Le montant à régler est de {MONTANT} et devra être versé au plus tard le ${dateEcheance}, par virement bancaire.
+
+${appelDeFond?.description ? `Informations supplémentaires : ${appelDeFond.description}` : 'Vous trouverez en pièce jointe le détail de cet appel de fonds ainsi que les modalités de règlement.'}
 
 Cordialement,
 L'équipe de gestion`);
@@ -271,8 +279,13 @@ L'équipe de gestion`);
   };
 
   const handleSendEmail = async () => {
-    if (selectedClientIds.length === 0 || !emailSubject || !emailContent) {
-      toast.error('Veuillez remplir tous les champs et sélectionner au moins un destinataire');
+    // Filtrer les clients qui ont une adresse email
+    const clientsWithEmail = selectedClientIds
+      .map(id => clients.find(client => client.id === id))
+      .filter(client => client && client.hasEmail);
+    
+    if (clientsWithEmail.length === 0 || !emailSubject || !emailContent) {
+      toast.error('Veuillez remplir tous les champs et sélectionner au moins un destinataire avec une adresse email');
       return;
     }
 
@@ -280,53 +293,56 @@ L'équipe de gestion`);
       // Afficher un toast de chargement
       const loadingToast = toast.loading('Envoi des emails en cours...');
       
-      // Récupérer les informations des clients sélectionnés
-      const selectedClients = clients.filter(client => selectedClientIds.includes(client.id));
+      // Envoyer les emails un par un directement depuis le frontend
+      const results = [];
+      const errors = [];
       
-      // Préparer les données pour l'API
-      const recipients = selectedClients.map(client => ({
-        email: client.email,
-        first_name: client.first_name,
-        last_name: client.last_name,
-        montant: formatMontant(montantParClient) + ' FCFA'
-      }));
-
-      // Personnaliser le contenu HTML avec des variables
-      const htmlContent = emailContent
-        .replace(/\n/g, '<br>')
-        .replace(/{{MONTANT}}/g, formatMontant(montantParClient) + ' FCFA')
-        .replace(/{{DATE_ECHEANCE}}/g, appelDeFond ? format(new Date(appelDeFond.date_echeance), 'dd/MM/yyyy') : '')
-        .replace(/{{LOT_NOM}}/g, lot?.nom || '');
-
-      // Envoyer les emails
-      const response = await fetch(`${API_URL}/api/send-bulk-email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          recipients,
-          subject: emailSubject,
-          html: htmlContent,
-          from: 'Agence LYCS Immo <noreply@lycsimmo.com>'
-        }),
-      });
-
+      for (const client of clientsWithEmail) {
+        try {
+          // Remplacer les variables dans le contenu
+          const personalizedContent = emailContent
+            .replace(/\{NOM\}/g, `${client.last_name} ${client.first_name}`)
+            .replace(/\{PRENOM\}/g, client.first_name)
+            .replace(/\{MONTANT\}/g, formatMontant(montantParClient) + ' FCFA');
+          
+          // Convertir le contenu en HTML
+          const htmlContent = personalizedContent.replace(/\n/g, '<br>');
+          
+          // Envoyer l'email via l'API
+          const response = await fetch(`${API_URL}/api/send-email`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              to: client.email,
+              subject: emailSubject,
+              html: htmlContent,
+              from: 'onboarding@resend.dev'
+            })
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Erreur HTTP: ${response.status}`);
+          }
+          
+          const result = await response.json();
+          results.push({ email: client.email, success: true, id: result.data?.id });
+        } catch (error) {
+          console.error(`Erreur lors de l'envoi à ${client.email}:`, error);
+          errors.push({ email: client.email, error: error.message });
+        }
+      }
+      
       // Fermer le toast de chargement
       toast.dismiss(loadingToast);
-
-      if (!response.ok) {
-        throw new Error(`Erreur HTTP: ${response.status}`);
-      }
-
-      const result = await response.json();
-
-      if (result.success) {
-        toast.success(`${result.results.length} email(s) envoyé(s) avec succès`);
+      
+      if (errors.length === 0) {
+        toast.success(`${results.length} email(s) envoyé(s) avec succès`);
         setIsEmailDialogOpen(false);
       } else {
-        toast.error(`Erreur lors de l'envoi des emails: ${result.summary}`);
-        console.error('Erreurs détaillées:', result.errors);
+        toast.error(`Erreur lors de l'envoi des emails: ${results.length} envoyé(s), ${errors.length} échec(s)`);
+        console.error('Erreurs détaillées:', errors);
       }
     } catch (error) {
       console.error('Erreur lors de l\'envoi des emails:', error);
@@ -610,76 +626,57 @@ L'équipe de gestion`);
             </div>
 
             {/* Liste des propriétaires */}
-            <Card className="overflow-hidden">
-              <CardHeader>
-                <CardTitle>Propriétaires concernés</CardTitle>
-                <CardDescription>
-                  Liste des propriétaires concernés par cet appel de fond
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-0 sm:p-6">
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nom</TableHead>
-                        <TableHead className="hidden md:table-cell">Email</TableHead>
-                        <TableHead className="hidden lg:table-cell">Téléphone</TableHead>
-                        <TableHead>Montant</TableHead>
-                        <TableHead>Statut</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {clients.length > 0 ? (
-                        clients.map((client) => (
-                          <TableRow key={client.id}>
-                            <TableCell className="font-medium">{client.first_name} {client.last_name}</TableCell>
-                            <TableCell className="hidden md:table-cell">{client.email}</TableCell>
-                            <TableCell className="hidden lg:table-cell">{client.phone_number}</TableCell>
-                            <TableCell>{formatMontant(montantParClient)} FCFA</TableCell>
-                            <TableCell>
-                              <Badge className={client.has_paid ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}>
-                                {client.has_paid ? 'Payé' : 'En attente'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex space-x-2">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => {
-                                    setSelectedClientIds([client.id]);
-                                    handleOpenEmailDialog();
-                                  }}
-                                >
-                                  <Mail className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  className={client.has_paid ? 'text-yellow-600' : 'text-green-600'}
-                                  onClick={() => handleClientPaymentToggle(client.id)}
-                                >
-                                  <span className="hidden sm:inline">{client.has_paid ? 'Annuler paiement' : 'Marquer comme payé'}</span>
-                                  {client.has_paid ? <XCircle className="h-4 w-4 sm:hidden" /> : <CheckCircle className="h-4 w-4 sm:hidden" />}
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={6} className="text-center py-4">
-                            Aucun propriétaire trouvé pour ce lot
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium">Propriétaires</h3>
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleOpenEmailDialog(true)}
+                  >
+                    Envoyer à tous
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+              
+              <div className="space-y-2">
+                {clients.map(client => (
+                  <div key={client.id} className="flex items-center justify-between p-2 border rounded-md">
+                    <div>
+                      <div className="font-medium">{client.first_name} {client.last_name}</div>
+                      <div className="text-sm text-gray-500 flex items-center">
+                        {client.email ? (
+                          <>
+                            <Mail className="w-3 h-3 mr-1 text-green-500" />
+                            {client.email}
+                          </>
+                        ) : (
+                          <span className="text-red-500 text-xs flex items-center">
+                            <AlertCircle className="w-3 h-3 mr-1" />
+                            Pas d'email
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setSelectedClientIds([client.id]);
+                          handleOpenEmailDialog(false);
+                        }}
+                        disabled={!client.hasEmail}
+                      >
+                        {client.hasEmail ? 'Envoyer email' : 'Email manquant'}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
@@ -717,56 +714,28 @@ L'équipe de gestion`);
                 rows={10}
               />
               <p className="text-xs text-gray-500">
-                Variables disponibles: {{NOM}}, {{PRENOM}}, {{MONTANT}}, {{DATE_ECHEANCE}}, {{LOT_NOM}}
+                Variables disponibles: {"{NOM}"}, {"{PRENOM}"}, {"{MONTANT}"}, {"{DATE_EMISSION}"}, {"{DATE_ECHEANCE}"}, {"{LOT_NOM}"}
               </p>
             </div>
             <div className="space-y-2">
               <Button 
                 variant="outline" 
-                size="sm" 
+                size="sm"
                 onClick={() => {
-                  setEmailContent(`<!DOCTYPE html>
-<html>
-<head>
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background-color: #0066FF; color: white; padding: 20px; text-align: center; }
-    .content { padding: 20px; background-color: #f9f9f9; }
-    .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
-    .button { display: inline-block; padding: 10px 20px; background-color: #0066FF; color: white; text-decoration: none; border-radius: 4px; }
-    .info-box { background-color: #e6f7ff; border-left: 4px solid #0066FF; padding: 15px; margin: 20px 0; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>Appel de Fond - Lot {{LOT_NOM}}</h1>
-    </div>
-    <div class="content">
-      <p>Cher(e) {{NOM}},</p>
-      
-      <p>Nous vous informons qu'un appel de fond a été émis pour le lot "{{LOT_NOM}}" dont vous êtes propriétaire.</p>
-      
-      <div class="info-box">
-        <p><strong>Montant total:</strong> ${appelDeFond?.montant} FCFA</p>
-        <p><strong>Montant à payer:</strong> {{MONTANT}}</p>
-        <p><strong>Date d'échéance:</strong> {{DATE_ECHEANCE}}</p>
-      </div>
-      
-      <p>Merci de bien vouloir procéder au règlement avant la date d'échéance.</p>
-      
-      <p>Cordialement,<br>L'équipe de gestion</p>
-    </div>
-    <div class="footer">
-      <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
-    </div>
-  </div>
-</body>
-</html>`);
+                  setEmailContent(`Bonjour {NOM},
+
+
+Nous vous informons qu'un appel de fonds est prévu pour la période du ${appelDeFond ? format(new Date(appelDeFond.date_emission), 'dd/MM/yyyy', { locale: fr }) : ''} au ${appelDeFond ? format(new Date(appelDeFond.date_echeance), 'dd/MM/yyyy', { locale: fr }) : ''} concernant ${lot ? `le lot "${lot.nom}"` : ''}.
+
+Le montant à régler est de {MONTANT} et devra être versé au plus tard le ${appelDeFond ? format(new Date(appelDeFond.date_echeance), 'dd/MM/yyyy', { locale: fr }) : ''}, par virement bancaire.
+
+${appelDeFond?.description ? `Informations supplémentaires : ${appelDeFond.description}` : 'Vous trouverez en pièce jointe le détail de cet appel de fonds ainsi que les modalités de règlement.'}
+
+Cordialement,
+L'équipe de gestion`);
                 }}
               >
-                Utiliser le modèle HTML
+                Utiliser le modèle simple
               </Button>
             </div>
           </div>
