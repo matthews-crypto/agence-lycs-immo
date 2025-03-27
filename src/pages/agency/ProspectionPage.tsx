@@ -80,7 +80,8 @@ const ProspectionPage = () => {
   const [pendingOpportunitiesCount, setPendingOpportunitiesCount] = useState(0);
   
   const [showContractFields, setShowContractFields] = useState(false);
-  const [clientCIN, setClientCIN] = useState("");
+  const [clientCIN, setClientCIN] = useState('');
+  const [clientEmail, setClientEmail] = useState('');
   const [clientDocument, setClientDocument] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [locationData, setLocationData] = useState<Location | null>(null);
@@ -485,6 +486,7 @@ const ProspectionPage = () => {
   const resetContractFields = () => {
     setShowContractFields(false);
     setClientCIN("");
+    setClientEmail("");
     setClientDocument(null);
     setRentalStartDate("");
     setRentalEndDate("");
@@ -494,10 +496,18 @@ const ProspectionPage = () => {
   };
 
   const handleContractFinalization = async () => {
-    if (!selectedReservation || !clientDetails) return;
+    if (!selectedReservation || !clientDetails) {
+      toast.error('Informations manquantes');
+      return;
+    }
     
     if (!clientCIN.trim()) {
       toast.error('Le numéro CIN est obligatoire');
+      return;
+    }
+    
+    if (!clientEmail.trim()) {
+      toast.error('L\'email du client est obligatoire');
       return;
     }
     
@@ -506,36 +516,34 @@ const ProspectionPage = () => {
       return;
     }
     
-    if (selectedReservation.type === 'Location') {
-      if (!rentalStartDate) {
-        toast.error('La date de début de location est obligatoire');
-        return;
-      }
-      
-      if (!rentalEndDate) {
-        toast.error('La date de fin de location est obligatoire');
-        return;
-      }
-      
-      if (new Date(rentalEndDate) <= new Date(rentalStartDate)) {
-        toast.error('La date de fin doit être postérieure à la date de début');
-        return;
-      }
+    if (selectedReservation.type === 'LOCATION' && !rentalStartDate) {
+      toast.error('La date de début est obligatoire pour une location');
+      return;
     }
     
+    if (selectedReservation.type === 'LOCATION' && selectedReservation.property.type_location === 'courte_duree' && !rentalEndDate) {
+      toast.error('La date de fin est obligatoire pour une location courte durée');
+      return;
+    }
+    
+    setIsUploading(true);
+    
     try {
-      setIsUploading(true);
+      // Mise à jour de l'email du client
+      const emailUpdateSuccess = await updateClientEmail(clientDetails.id, clientEmail);
       
-      const fileName = `${clientDetails.id}_${Date.now()}.pdf`;
-      const filePath = `${selectedReservation.id}/${fileName}`;
+      if (!emailUpdateSuccess) {
+        setIsUploading(false);
+        return;
+      }
+      
+      // Upload du document d'identité
+      const fileExt = clientDocument.name.split('.').pop();
+      const fileName = `${clientDetails.id}_${Date.now()}.${fileExt}`;
       
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('client_documents')
-        .upload(filePath, clientDocument, {
-          contentType: 'application/pdf',
-          cacheControl: '3600',
-          upsert: false
-        });
+        .from('documents')
+        .upload(`clients/${fileName}`, clientDocument);
       
       if (uploadError) {
         console.error('Error uploading document:', uploadError);
@@ -544,11 +552,28 @@ const ProspectionPage = () => {
         return;
       }
       
-      const { data: publicUrlData } = supabase.storage
-        .from('client_documents')
-        .getPublicUrl(filePath);
+      const { data: documentUrl } = supabase.storage
+        .from('documents')
+        .getPublicUrl(`clients/${fileName}`);
       
-      const documentUrl = publicUrlData.publicUrl;
+      // Vérifier si une location existe déjà pour ce client et cette propriété
+      const { data: existingLocation, error: locationCheckError } = await supabase
+        .from('locations')
+        .select('*')
+        .eq('client_id', clientDetails.id)
+        .eq('property_id', selectedReservation.property.id)
+        .eq('statut', 'EN COURS')
+        .maybeSingle();
+      
+      // Préparer les données pour l'insertion ou la mise à jour de la location
+      const locationUpsertData = {
+        property_id: selectedReservation.property.id,
+        client_id: clientDetails.id,
+        client_cin: clientCIN,
+        document_url: documentUrl.publicUrl,
+        rental_start_date: selectedReservation.type === 'LOCATION' && rentalStartDate ? new Date(rentalStartDate).toISOString() : null,
+        rental_end_date: selectedReservation.type === 'LOCATION' && rentalEndDate ? new Date(rentalEndDate).toISOString() : null
+      };
       
       console.log('Debug - Contract Finalization:', {
         type: selectedReservation.type,
@@ -557,17 +582,6 @@ const ProspectionPage = () => {
         rentalEndDate
       });
 
-      const locationUpsertData = {
-        property_id: selectedReservation.property.id,
-        client_id: clientDetails.id,
-        client_cin: clientCIN,
-        document_url: documentUrl,
-        rental_start_date: selectedReservation.type === 'LOCATION' ? rentalStartDate : null,
-        rental_end_date: selectedReservation.type === 'LOCATION' ? rentalEndDate : null
-      };
-
-      console.log('Debug - Location Data:', locationUpsertData);
-      
       if (locationData) {
         const { error: locationUpdateError } = await supabase
           .from('locations')
@@ -625,8 +639,8 @@ const ProspectionPage = () => {
         const propertyTypeLocation = (selectedReservation.property.type_location || '').toLowerCase();
         const isLongTermRental = propertyTypeLocation === 'longue_duree';
         
-        console.log('Debug - Property Type Location (lowercase):', propertyTypeLocation);
-        console.log('Debug - Is Long Term Rental:', isLongTermRental);
+        console.log('Debug - PDF - Type Location Check:', propertyTypeLocation);
+        console.log('Debug - PDF - Is Long Term Rental:', isLongTermRental);
         
         if (isLongTermRental) {
           newPropertyStatus = 'OCCUPEE';
@@ -662,16 +676,17 @@ const ProspectionPage = () => {
         }
       }
       
-      if (selectedReservation.type === 'Location') {
+      if (selectedReservation.type === 'LOCATION') {
         generateContractPDF(
           selectedReservation, 
           clientDetails, 
           clientCIN, 
+          clientEmail,
           rentalStartDate, 
           rentalEndDate
         );
       } else {
-        generateContractPDF(selectedReservation, clientDetails, clientCIN);
+        generateContractPDF(selectedReservation, clientDetails, clientCIN, clientEmail);
       }
       
       if (selectedReservation) {
@@ -709,6 +724,7 @@ const ProspectionPage = () => {
     reservation: Reservation, 
     client: Client, 
     cin: string, 
+    email: string,
     startDate?: string, 
     endDate?: string
   ) => {
@@ -757,19 +773,20 @@ const ProspectionPage = () => {
       doc.setFontSize(12);
       doc.text(`Nom complet: ${client.first_name || ''} ${client.last_name || ''}`, 20, 170);
       doc.text(`Téléphone: ${client.phone_number || ''}`, 20, 180);
-      doc.text(`CIN: ${cin}`, 20, 190);
+      doc.text(`Email: ${email}`, 20, 190);
+      doc.text(`CIN: ${cin}`, 20, 200);
       
       doc.setFontSize(14);
-      doc.text("DÉTAILS DE LA TRANSACTION", 20, 210);
+      doc.text("DÉTAILS DE LA TRANSACTION", 20, 220);
       doc.setFontSize(12);
-      doc.text(`Numéro de ${reservation.type.toLowerCase()}: ${reservation.reservation_number}`, 20, 220);
-      doc.text(`Date de création: ${format(new Date(reservation.created_at), 'PP', { locale: fr })}`, 20, 230);
+      doc.text(`Numéro de ${reservation.type.toLowerCase()}: ${reservation.reservation_number}`, 20, 230);
+      doc.text(`Date de création: ${format(new Date(reservation.created_at), 'PP', { locale: fr })}`, 20, 240);
       
       let signatureY = 260; // Position par défaut des signatures
       
       if (isLocationReservation && startDate && endDate) {
-        doc.text(`Date de début: ${format(new Date(startDate), 'dd/MM/yyyy', { locale: fr })}`, 20, 240);
-        doc.text(`Date de fin: ${format(new Date(endDate), 'dd/MM/yyyy', { locale: fr })}`, 20, 250);
+        doc.text(`Date de début: ${format(new Date(startDate), 'dd/MM/yyyy', { locale: fr })}`, 20, 250);
+        doc.text(`Date de fin: ${format(new Date(endDate), 'dd/MM/yyyy', { locale: fr })}`, 20, 260);
         
         // Vérification du type de location et ajout de la mention pour les locations longue durée
         console.log('Debug - PDF - Type Location Check:', reservation.property.type_location);
@@ -782,11 +799,11 @@ const ProspectionPage = () => {
         console.log('Debug - PDF - Is Long Term Rental:', isLongTermRental);
         
         if (isLongTermRental) {
-          doc.text("Ce contrat est renouvelable chaque mois dès que l'acompte est versé.", 20, 260);
+          doc.text("Ce contrat est renouvelable chaque mois dès que l'acompte est versé.", 20, 270);
           console.log('Debug - PDF - Added renewal clause for long term rental');
-          signatureY = 280; // Ajuster la position des signatures
+          signatureY = 290; // Ajuster la position des signatures
         } else {
-          signatureY = 280; // Pour les locations courte durée
+          signatureY = 290; // Pour les locations courte durée
         }
       }
       
@@ -1000,6 +1017,26 @@ const ProspectionPage = () => {
 
   const isReservationClosed = (status: string) => {
     return status === 'Fermée Gagnée' || status === 'Fermée Perdu';
+  };
+
+  const updateClientEmail = async (clientId: string, email: string) => {
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .update({ email })
+        .eq('id', clientId);
+
+      if (error) {
+        console.error('Error updating client email:', error);
+        toast.error('Erreur lors de la mise à jour de l\'email du client');
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Exception during client email update:', error);
+      return false;
+    }
   };
 
   if (isLoading) {
@@ -1396,7 +1433,16 @@ const ProspectionPage = () => {
                             placeholder="Entrez le numéro CIN"
                           />
                         </div>
-                        
+                        <div>
+                          <label className="text-sm font-medium mb-1 block">
+                            Email du client
+                          </label>
+                          <Input
+                            value={clientEmail}
+                            onChange={(e) => setClientEmail(e.target.value)}
+                            placeholder="Entrez l'email du client"
+                          />
+                        </div>
                         <div>
                           <label className="text-sm font-medium mb-1 block">
                             Document d'identité (PDF)

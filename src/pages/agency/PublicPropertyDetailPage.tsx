@@ -29,6 +29,7 @@ export default function PublicPropertyDetailPage() {
     firstName: "",
     lastName: "",
     phone: "",
+    email: "",
     startDate: "",
     endDate: "",
   });
@@ -129,6 +130,7 @@ export default function PublicPropertyDetailPage() {
       firstName,
       lastName,
       phone,
+      email,
       startDate,
       endDate,
       propertyId,
@@ -137,6 +139,7 @@ export default function PublicPropertyDetailPage() {
       firstName: string;
       lastName: string;
       phone: string;
+      email: string;
       startDate: string;
       endDate: string | null;
       propertyId: string;
@@ -180,6 +183,7 @@ export default function PublicPropertyDetailPage() {
             first_name: firstName,
             last_name: lastName,
             phone_number: phone,
+            email: email,
             agency_id: agencyId,
           })
           .select()
@@ -234,6 +238,7 @@ export default function PublicPropertyDetailPage() {
         firstName: "", 
         lastName: "", 
         phone: "", 
+        email: "",
         startDate: "", 
         endDate: "" 
       });
@@ -254,7 +259,7 @@ export default function PublicPropertyDetailPage() {
     const isRental = property.property_offer_type === 'LOCATION';
     const isLongTermRental = isRental && property.type_location === 'longue_duree';
     
-    if (!formData.firstName || !formData.lastName || !formData.phone) {
+    if (!formData.firstName || !formData.lastName || !formData.phone || !formData.email) {
       toast({
         title: "Erreur",
         description: "Veuillez remplir tous les champs obligatoires",
@@ -596,6 +601,16 @@ export default function PublicPropertyDetailPage() {
                 id="lastName"
                 value={formData.lastName}
                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
               />
             </div>

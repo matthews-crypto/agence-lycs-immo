@@ -243,19 +243,19 @@ export default function AgencyDashboardPage() {
   };
 
   const handleViewPropertyDetails = (propertyId) => {
-    navigate(`/properties/${propertyId}`);
+    navigate(`/${agency?.slug}/properties/${propertyId}`);
   };
 
   const handleViewClientDetails = (clientId) => {
-    navigate(`/clients/${clientId}`);
+    navigate(`/${agency?.slug}/agency/clients/${clientId}`);
   };
 
-  const handleViewReservationDetails = (reservationId) => {
-    navigate(`/reservations/${reservationId}`);
+  const handleViewReservationDetails = (reservationNumber) => {
+    navigate(`/${agency?.slug}/agency/prospection?reservation=${reservationNumber}`);
   };
 
   const handleViewLocationDetails = (locationId) => {
-    navigate(`/locations/${locationId}`);
+    navigate(`/${agency?.slug}/agency/planning/${locationId}`);
   };
 
   if (mustChangePassword) {
@@ -349,7 +349,7 @@ export default function AgencyDashboardPage() {
                                       <Button 
                                         variant="outline" 
                                         size="sm"
-                                        onClick={() => handleViewReservationDetails(opportunity.id)}
+                                        onClick={() => handleViewReservationDetails(opportunity.reservation_number)}
                                       >
                                         Détails
                                       </Button>
@@ -396,7 +396,7 @@ export default function AgencyDashboardPage() {
                                       <Button 
                                         variant="outline" 
                                         size="sm"
-                                        onClick={() => handleViewReservationDetails(opportunity.id)}
+                                        onClick={() => handleViewReservationDetails(opportunity.reservation_number)}
                                       >
                                         Détails
                                       </Button>
