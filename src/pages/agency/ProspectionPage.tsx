@@ -36,6 +36,7 @@ interface Reservation {
     address: string;
     reference_number: string;
     price: number;
+    type_location: string;
   };
 }
 
@@ -148,7 +149,8 @@ const ProspectionPage = () => {
                 title,
                 address,
                 reference_number,
-                price
+                price,
+                type_location
               )
             `)
             .eq('agency_id', agency.id)
@@ -348,7 +350,8 @@ const ProspectionPage = () => {
             title,
             address,
             reference_number,
-            price
+            price,
+            type_location
           )
         `)
         .eq('agency_id', agency.id)
@@ -602,6 +605,63 @@ const ProspectionPage = () => {
         return;
       }
       
+      // Mise à jour du statut du bien dans la table properties
+      let newPropertyStatus = '';
+      
+      console.log('Debug - Reservation Type:', selectedReservation.type);
+      console.log('Debug - Property:', selectedReservation.property);
+      console.log('Debug - Type Location:', selectedReservation.property.type_location);
+      
+      // Vérification du type de réservation (case-insensitive)
+      const isLocationReservation = selectedReservation.type.toLowerCase() === 'location';
+      const isVenteReservation = selectedReservation.type.toLowerCase() === 'vente';
+      
+      console.log('Debug - Is Location Reservation:', isLocationReservation);
+      console.log('Debug - Is Vente Reservation:', isVenteReservation);
+      
+      if (isLocationReservation) {
+        // Pour les locations longue durée, le statut devient "OCCUPEE"
+        // Vérification du type de location (case-insensitive)
+        const propertyTypeLocation = (selectedReservation.property.type_location || '').toLowerCase();
+        const isLongTermRental = propertyTypeLocation === 'longue_duree';
+        
+        console.log('Debug - Property Type Location (lowercase):', propertyTypeLocation);
+        console.log('Debug - Is Long Term Rental:', isLongTermRental);
+        
+        if (isLongTermRental) {
+          newPropertyStatus = 'OCCUPEE';
+        }
+      } else if (isVenteReservation) {
+        // Pour les ventes, le statut devient "VENDUE"
+        newPropertyStatus = 'VENDUE';
+      }
+      
+      console.log('Debug - New Property Status:', newPropertyStatus);
+      
+      // Mettre à jour le statut du bien si nécessaire
+      if (newPropertyStatus) {
+        console.log('Debug - Updating property status to:', newPropertyStatus);
+        console.log('Debug - Property ID:', selectedReservation.property.id);
+        
+        try {
+          const { error: propertyUpdateError } = await supabase
+            .from('properties')
+            .update({ property_status: newPropertyStatus })
+            .eq('id', selectedReservation.property.id);
+            
+          if (propertyUpdateError) {
+            console.error('Error updating property status:', propertyUpdateError);
+            toast.error('Erreur lors de la mise à jour du statut du bien');
+            // Ne pas interrompre le processus si cette mise à jour échoue
+          } else {
+            console.log(`Statut du bien mis à jour: ${newPropertyStatus}`);
+            toast.success(`Statut du bien mis à jour: ${newPropertyStatus}`);
+          }
+        } catch (updateError) {
+          console.error('Exception during property status update:', updateError);
+        }
+      }
+      
       if (selectedReservation.type === 'Location') {
         generateContractPDF(
           selectedReservation, 
@@ -655,6 +715,10 @@ const ProspectionPage = () => {
     try {
       const doc = new jsPDF();
       
+      // Logs de débogage pour vérifier les données
+      console.log('Debug - PDF Generation - Reservation:', reservation);
+      console.log('Debug - PDF Generation - Property Type Location:', reservation.property.type_location);
+      
       if (agency?.logo_url) {
         try {
           doc.addImage(agency.logo_url, 'JPEG', 20, 10, 40, 25);
@@ -663,7 +727,11 @@ const ProspectionPage = () => {
         }
       }
       
-      const transactionType = reservation.type === 'Vente' ? 'CONTRAT DE VENTE' : 'CONTRAT DE LOCATION';
+      // Vérification du type de réservation (case-insensitive)
+      const isLocationReservation = reservation.type.toLowerCase() === 'location';
+      const isVenteReservation = reservation.type.toLowerCase() === 'vente';
+      
+      const transactionType = isVenteReservation ? 'CONTRAT DE VENTE' : 'CONTRAT DE LOCATION';
       
       doc.setFontSize(18);
       doc.text(transactionType, 105, 40, { align: 'center' });
@@ -680,6 +748,7 @@ const ProspectionPage = () => {
       doc.text(`Titre: ${reservation.property.title}`, 20, 120);
       doc.text(`Adresse: ${reservation.property.address || 'Non spécifiée'}`, 20, 130);
       
+      // Suppression des barres obliques dans l'affichage des prix
       const formattedPrice = new Intl.NumberFormat('fr-FR').format(reservation.property.price).replace(/\//g, '');
       doc.text(`Prix: ${formattedPrice} FCFA`, 20, 140);
       
@@ -696,17 +765,35 @@ const ProspectionPage = () => {
       doc.text(`Numéro de ${reservation.type.toLowerCase()}: ${reservation.reservation_number}`, 20, 220);
       doc.text(`Date de création: ${format(new Date(reservation.created_at), 'PP', { locale: fr })}`, 20, 230);
       
-      if (reservation.type === 'Location' && startDate && endDate) {
+      let signatureY = 260; // Position par défaut des signatures
+      
+      if (isLocationReservation && startDate && endDate) {
         doc.text(`Date de début: ${format(new Date(startDate), 'dd/MM/yyyy', { locale: fr })}`, 20, 240);
         doc.text(`Date de fin: ${format(new Date(endDate), 'dd/MM/yyyy', { locale: fr })}`, 20, 250);
+        
+        // Vérification du type de location et ajout de la mention pour les locations longue durée
+        console.log('Debug - PDF - Type Location Check:', reservation.property.type_location);
+        
+        // Vérification case-insensitive du type de location
+        const propertyTypeLocation = (reservation.property.type_location || '').toLowerCase();
+        const isLongTermRental = propertyTypeLocation === 'longue_duree';
+        
+        console.log('Debug - PDF - Property Type Location (lowercase):', propertyTypeLocation);
+        console.log('Debug - PDF - Is Long Term Rental:', isLongTermRental);
+        
+        if (isLongTermRental) {
+          doc.text("Ce contrat est renouvelable chaque mois dès que l'acompte est versé.", 20, 260);
+          console.log('Debug - PDF - Added renewal clause for long term rental');
+          signatureY = 280; // Ajuster la position des signatures
+        } else {
+          signatureY = 280; // Pour les locations courte durée
+        }
       }
       
-      const signatureY = reservation.type === 'Location' ? 280 : 260;
-      
+      // Position des signatures
       doc.setFontSize(12);
       doc.text("Signature du Client", 40, signatureY);
       doc.text("Signature de l'Agent", 150, signatureY);
-      
       doc.line(20, signatureY + 10, 80, signatureY + 10);
       doc.line(130, signatureY + 10, 190, signatureY + 10);
       

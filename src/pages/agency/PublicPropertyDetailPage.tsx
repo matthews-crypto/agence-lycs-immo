@@ -58,23 +58,89 @@ export default function PublicPropertyDetailPage() {
     },
   });
 
+  const { data: existingRentals } = useQuery({
+    queryKey: ["existing-rentals", propertyId],
+    enabled: !!propertyId && property?.type_location === 'courte_duree',
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("locations")
+        .select("rental_start_date, rental_end_date")
+        .eq("property_id", propertyId)
+        .eq("statut", "EN COURS");
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const isDateRangeOverlapping = (startDate, endDate) => {
+    if (!existingRentals || existingRentals.length === 0) return false;
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    return existingRentals.some(rental => {
+      const rentalStart = new Date(rental.rental_start_date);
+      const rentalEnd = new Date(rental.rental_end_date);
+      
+      // Vérifie si les plages de dates se chevauchent
+      return (
+        (start >= rentalStart && start <= rentalEnd) || // La date de début est dans une location existante
+        (end >= rentalStart && end <= rentalEnd) || // La date de fin est dans une location existante
+        (start <= rentalStart && end >= rentalEnd) // La nouvelle location englobe une location existante
+      );
+    });
+  };
+
+  const handleStartDateChange = (e) => {
+    const newStartDate = e.target.value;
+    setFormData({ ...formData, startDate: newStartDate });
+    
+    // Si la date de fin est déjà définie, vérifier le chevauchement
+    if (formData.endDate && property?.type_location === 'courte_duree') {
+      if (isDateRangeOverlapping(newStartDate, formData.endDate)) {
+        toast({
+          title: "Dates non disponibles",
+          description: "Ces dates chevauchent une location existante. Veuillez choisir d'autres dates.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleEndDateChange = (e) => {
+    const newEndDate = e.target.value;
+    setFormData({ ...formData, endDate: newEndDate });
+    
+    // Vérifier le chevauchement si la date de début est déjà définie
+    if (formData.startDate && property?.type_location === 'courte_duree') {
+      if (isDateRangeOverlapping(formData.startDate, newEndDate)) {
+        toast({
+          title: "Dates non disponibles",
+          description: "Ces dates chevauchent une location existante. Veuillez choisir d'autres dates.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   const createReservation = useMutation({
     mutationFn: async ({
       firstName,
       lastName,
       phone,
-      propertyId,
-      agencyId,
       startDate,
       endDate,
+      propertyId,
+      agencyId,
     }: {
       firstName: string;
       lastName: string;
       phone: string;
+      startDate: string;
+      endDate: string | null;
       propertyId: string;
       agencyId: string;
-      startDate?: string;
-      endDate?: string;
     }) => {
       const isRental = property?.property_offer_type === 'LOCATION';
       
@@ -138,8 +204,8 @@ export default function PublicPropertyDetailPage() {
         reservation_number: reservationNumberData,
         type: isRental ? 'LOCATION' : 'VENTE',
         status: 'En attente',
-        rental_start_date: isRental ? startDate : null,
-        rental_end_date: isRental ? endDate : null
+        rental_start_date: isRental && startDate ? startDate : null,
+        rental_end_date: isRental && endDate ? endDate : null
       };
 
       const { data: reservation, error: reservationError } = await supabase
@@ -184,21 +250,68 @@ export default function PublicPropertyDetailPage() {
 
   const handleReservationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!property?.agencies?.id) return;
-
+    
     const isRental = property.property_offer_type === 'LOCATION';
-    if (isRental && (!formData.startDate || !formData.endDate)) {
+    const isLongTermRental = isRental && property.type_location === 'longue_duree';
+    
+    if (!formData.firstName || !formData.lastName || !formData.phone) {
       toast({
         title: "Erreur",
-        description: "Veuillez sélectionner les dates de location",
+        description: "Veuillez remplir tous les champs obligatoires",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (isRental && !formData.startDate) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez sélectionner la date de début de location",
         variant: "destructive",
       });
       return;
     }
 
+    if (isRental && property.type_location === 'courte_duree' && !formData.endDate) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez sélectionner la date de fin de location",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Vérifier le chevauchement pour les locations courte durée
+    if (property.type_location === 'courte_duree' && formData.startDate && formData.endDate) {
+      if (isDateRangeOverlapping(formData.startDate, formData.endDate)) {
+        toast({
+          title: "Dates non disponibles",
+          description: "Ces dates chevauchent une location existante. Veuillez choisir d'autres dates.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     try {
+      // Pour les locations longue durée, calculer automatiquement la date de fin
+      let endDate = formData.endDate;
+      if (isLongTermRental && formData.startDate) {
+        const startDate = new Date(formData.startDate);
+        const endMonth = startDate.getMonth() + 2; // +1 pour le mois suivant, +1 car les mois sont indexés à partir de 0
+        const endYear = endMonth > 11 ? startDate.getFullYear() + 1 : startDate.getFullYear();
+        const adjustedEndMonth = endMonth > 11 ? endMonth - 12 : endMonth;
+        
+        // Obtenir le dernier jour du mois suivant
+        const lastDay = new Date(endYear, adjustedEndMonth, 0).getDate();
+        const calculatedEndDate = new Date(endYear, adjustedEndMonth - 1, lastDay);
+        
+        endDate = format(calculatedEndDate, 'yyyy-MM-dd');
+      }
+      
       createReservation.mutate({
         ...formData,
+        endDate: endDate || null,
         propertyId: property.id,
         agencyId: property.agencies.id,
       });
@@ -285,6 +398,7 @@ export default function PublicPropertyDetailPage() {
   if (!property) return null;
 
   const isRental = property.property_offer_type === 'LOCATION';
+  const isLongTermRental = isRental && property.type_location === 'longue_duree';
 
   return (
     <div className="min-h-screen bg-background">
@@ -387,6 +501,8 @@ export default function PublicPropertyDetailPage() {
           price={property.price}
           bedrooms={property.bedrooms}
           surfaceArea={property.surface_area}
+          propertyOfferType={property.property_offer_type}
+          locationType={property.type_location}
         />
 
         <div className="mb-8">
@@ -507,26 +623,33 @@ export default function PublicPropertyDetailPage() {
                       id="startDate"
                       type="date"
                       value={formData.startDate}
-                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                      onChange={handleStartDateChange}
                       required
                       min={format(new Date(), 'yyyy-MM-dd')}
                     />
                   </div>
                 </div>
-                <div>
-                  <Label htmlFor="endDate">Date de fin</Label>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-gray-400" />
-                    <Input
-                      id="endDate"
-                      type="date"
-                      value={formData.endDate}
-                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                      required
-                      min={formData.startDate || format(new Date(), 'yyyy-MM-dd')}
-                    />
+                {property.type_location === 'courte_duree' && (
+                  <div>
+                    <Label htmlFor="endDate">Date de fin</Label>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-gray-400" />
+                      <Input
+                        id="endDate"
+                        type="date"
+                        value={formData.endDate}
+                        onChange={handleEndDateChange}
+                        required
+                        min={formData.startDate || format(new Date(), 'yyyy-MM-dd')}
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
+                {property.type_location === 'longue_duree' && (
+                  <div className="text-sm text-muted-foreground">
+                    <p>Pour les locations longue durée, la date de fin sera automatiquement fixée au dernier jour du mois suivant.</p>
+                  </div>
+                )}
               </>
             )}
             <DialogFooter>

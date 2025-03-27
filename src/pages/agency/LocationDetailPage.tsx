@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -90,16 +89,30 @@ export default function LocationDetailPage() {
     if (!location?.id) return;
 
     try {
-      const { error } = await supabase
+      // Mettre à jour le statut de la location à "TERMINÉ"
+      const { error: locationError } = await supabase
         .from("locations")
         .update({
           statut: "TERMINÉ",
+          rental_end_date: new Date().toISOString(),
           effective_end_date: new Date().toISOString()
         })
         .eq("id", location.id);
 
-      if (error) {
-        throw error;
+      if (locationError) {
+        throw locationError;
+      }
+
+      // Mettre à jour le statut du bien à "DISPONIBLE"
+      const { error: propertyError } = await supabase
+        .from("properties")
+        .update({
+          property_status: "DISPONIBLE"
+        })
+        .eq("id", location.property.id);
+
+      if (propertyError) {
+        throw propertyError;
       }
 
       toast.success("Contrat résilié avec succès");

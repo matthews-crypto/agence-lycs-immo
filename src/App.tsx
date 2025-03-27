@@ -43,6 +43,8 @@ import ClientsPage from "@/pages/agency/ClientsPage"
 import PlanningPage from "@/pages/agency/PlanningPage"
 import LocationDetailPage from "@/pages/agency/LocationDetailPage"
 import ProprietairesPage from "@/pages/agency/ProprietairesPage"
+import PaymentsPage from "@/pages/agency/PaymentsPage"
+import PaymentDetailsPage from "@/pages/agency/PaymentDetailsPage"
 
 const queryClient = new QueryClient()
 
@@ -112,6 +114,8 @@ const App = () => (
                   <Route path="appointments" element={<AppointmentsPage />} />
                   <Route path="planning" element={<PlanningPage />} />
                   <Route path="planning/:locationId" element={<LocationDetailPage />} />
+                  <Route path="payments" element={<PaymentsPage />} />
+                  <Route path="payments/:locationId" element={<PaymentDetailsPage />} />
                   <Route path="settings" element={<AgencySettingsPage />} />
                   <Route
                     path="properties"

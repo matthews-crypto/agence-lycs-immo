@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Search, History, Calendar } from "lucide-react";
+import { Search, History, Calendar, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type LocationData = {
@@ -195,6 +195,13 @@ export default function PlanningPage() {
                   <option value="longue_duree">Longue durée</option>
                 </select>
               </div>
+              <Button 
+                onClick={() => navigate(`/${agency?.slug}/agency/payments`)}
+                className="w-full md:w-auto flex items-center gap-2"
+              >
+                <DollarSign className="h-4 w-4" />
+                Gestion paiement
+              </Button>
             </div>
           </div>
           
