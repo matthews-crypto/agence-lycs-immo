@@ -20,6 +20,9 @@ import { LoadingLayout } from "@/components/LoadingLayout";
 import { useNavigate, useParams } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
 
+// URL de l'API d'envoi d'emails déployée sur Render
+const API_URL = 'https://agence-lycs-mails.onrender.com'; // À remplacer par l'URL de votre API déployée
+
 interface Lot {
   id: string;
   nom: string;
@@ -121,7 +124,7 @@ const AppelDeFondDetailPage = () => {
 
       setLot(lotData);
 
-      // Calculer le montant par client
+      // Calculer le montant par client basé sur le nombre de propriétés
       if (lotData.properties && lotData.properties.length > 0) {
         setMontantParClient(appelData.montant / lotData.properties.length);
       }
@@ -130,51 +133,55 @@ const AppelDeFondDetailPage = () => {
       if (lotData.properties && lotData.properties.length > 0) {
         const propertyIds = lotData.properties.map(property => property.id);
         
-        // Récupérer les locations pour ces propriétés
-        const { data: locationsData, error: locationsError } = await supabase
-          .from('locations')
-          .select(`
-            id,
-            property_id,
-            client_id,
-            clients:client_id(
+        // Pour chaque propriété, récupérer la dernière location active
+        const clientsMap = new Map(); // Map pour stocker le dernier client par propriété
+        
+        for (const propertyId of propertyIds) {
+          // Récupérer la dernière location pour cette propriété
+          const { data: locationData, error: locationError } = await supabase
+            .from('locations')
+            .select(`
               id,
-              first_name,
-              last_name,
-              email,
-              phone_number
-            )
-          `)
-          .in('property_id', propertyIds)
-          .eq('statut', 'EN COURS');
-
-        if (locationsError) {
-          console.error('Error fetching locations:', locationsError);
-          toast.error('Erreur lors du chargement des locations');
-          return;
-        }
-
-        console.log("Locations data:", locationsData);
-
-        // Extraire les clients uniques des locations
-        const uniqueClients: Client[] = [];
-        const clientIds = new Set();
-
-        locationsData.forEach(location => {
-          if (location.clients && !clientIds.has(location.clients.id)) {
-            clientIds.add(location.clients.id);
-            uniqueClients.push({
-              id: location.clients.id,
-              first_name: location.clients.first_name,
-              last_name: location.clients.last_name,
-              email: location.clients.email,
-              phone_number: location.clients.phone_number,
-              has_paid: false
-            });
+              property_id,
+              client_id,
+              created_at,
+              clients:client_id(
+                id,
+                first_name,
+                last_name,
+                email,
+                phone_number
+              )
+            `)
+            .eq('property_id', propertyId)
+            .eq('statut', 'EN COURS')
+            .order('created_at', { ascending: false })
+            .limit(1);
+            
+          if (locationError) {
+            console.error(`Error fetching location for property ${propertyId}:`, locationError);
+            continue;
           }
-        });
-
-        setClients(uniqueClients);
+          
+          // Si une location a été trouvée, ajouter le client à la map
+          if (locationData && locationData.length > 0 && locationData[0].clients) {
+            clientsMap.set(propertyId, locationData[0].clients);
+          }
+        }
+        
+        console.log("Clients map:", clientsMap);
+        
+        // Convertir la map en tableau de clients
+        const clientsList: Client[] = Array.from(clientsMap.values()).map(client => ({
+          id: client.id,
+          first_name: client.first_name,
+          last_name: client.last_name,
+          email: client.email,
+          phone_number: client.phone_number,
+          has_paid: false
+        }));
+        
+        setClients(clientsList);
       }
     } catch (error) {
       console.error('Error in fetch operation:', error);
@@ -263,11 +270,68 @@ L'équipe de gestion`);
     setIsEmailDialogOpen(true);
   };
 
-  const handleSendEmail = () => {
-    // Cette fonction serait implémentée pour envoyer réellement les emails
-    // Pour l'instant, on simule juste l'envoi
-    toast.success('Simulation d\'envoi d\'email aux clients sélectionnés');
-    setIsEmailDialogOpen(false);
+  const handleSendEmail = async () => {
+    if (selectedClientIds.length === 0 || !emailSubject || !emailContent) {
+      toast.error('Veuillez remplir tous les champs et sélectionner au moins un destinataire');
+      return;
+    }
+
+    try {
+      // Afficher un toast de chargement
+      const loadingToast = toast.loading('Envoi des emails en cours...');
+      
+      // Récupérer les informations des clients sélectionnés
+      const selectedClients = clients.filter(client => selectedClientIds.includes(client.id));
+      
+      // Préparer les données pour l'API
+      const recipients = selectedClients.map(client => ({
+        email: client.email,
+        first_name: client.first_name,
+        last_name: client.last_name,
+        montant: formatMontant(montantParClient) + ' FCFA'
+      }));
+
+      // Personnaliser le contenu HTML avec des variables
+      const htmlContent = emailContent
+        .replace(/\n/g, '<br>')
+        .replace(/{{MONTANT}}/g, formatMontant(montantParClient) + ' FCFA')
+        .replace(/{{DATE_ECHEANCE}}/g, appelDeFond ? format(new Date(appelDeFond.date_echeance), 'dd/MM/yyyy') : '')
+        .replace(/{{LOT_NOM}}/g, lot?.nom || '');
+
+      // Envoyer les emails
+      const response = await fetch(`${API_URL}/api/send-bulk-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          recipients,
+          subject: emailSubject,
+          html: htmlContent,
+          from: 'Agence LYCS Immo <noreply@lycsimmo.com>'
+        }),
+      });
+
+      // Fermer le toast de chargement
+      toast.dismiss(loadingToast);
+
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success(`${result.results.length} email(s) envoyé(s) avec succès`);
+        setIsEmailDialogOpen(false);
+      } else {
+        toast.error(`Erreur lors de l'envoi des emails: ${result.summary}`);
+        console.error('Erreurs détaillées:', result.errors);
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'envoi des emails:', error);
+      toast.error('Une erreur est survenue lors de l\'envoi des emails');
+    }
   };
 
   const generatePDF = () => {
@@ -622,7 +686,7 @@ L'équipe de gestion`);
 
       {/* Dialog pour envoyer des emails */}
       <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Envoyer un email</DialogTitle>
             <DialogDescription>
@@ -652,6 +716,58 @@ L'équipe de gestion`);
                 onChange={(e) => setEmailContent(e.target.value)}
                 rows={10}
               />
+              <p className="text-xs text-gray-500">
+                Variables disponibles: {{NOM}}, {{PRENOM}}, {{MONTANT}}, {{DATE_ECHEANCE}}, {{LOT_NOM}}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => {
+                  setEmailContent(`<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background-color: #0066FF; color: white; padding: 20px; text-align: center; }
+    .content { padding: 20px; background-color: #f9f9f9; }
+    .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
+    .button { display: inline-block; padding: 10px 20px; background-color: #0066FF; color: white; text-decoration: none; border-radius: 4px; }
+    .info-box { background-color: #e6f7ff; border-left: 4px solid #0066FF; padding: 15px; margin: 20px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Appel de Fond - Lot {{LOT_NOM}}</h1>
+    </div>
+    <div class="content">
+      <p>Cher(e) {{NOM}},</p>
+      
+      <p>Nous vous informons qu'un appel de fond a été émis pour le lot "{{LOT_NOM}}" dont vous êtes propriétaire.</p>
+      
+      <div class="info-box">
+        <p><strong>Montant total:</strong> ${appelDeFond?.montant} FCFA</p>
+        <p><strong>Montant à payer:</strong> {{MONTANT}}</p>
+        <p><strong>Date d'échéance:</strong> {{DATE_ECHEANCE}}</p>
+      </div>
+      
+      <p>Merci de bien vouloir procéder au règlement avant la date d'échéance.</p>
+      
+      <p>Cordialement,<br>L'équipe de gestion</p>
+    </div>
+    <div class="footer">
+      <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+    </div>
+  </div>
+</body>
+</html>`);
+                }}
+              >
+                Utiliser le modèle HTML
+              </Button>
             </div>
           </div>
           <DialogFooter>

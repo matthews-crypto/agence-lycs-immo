@@ -587,7 +587,17 @@ const AppelDeFondPage = () => {
                 id="montant" 
                 type="number" 
                 value={newAppelDeFond.montant} 
-                onChange={(e) => setNewAppelDeFond({...newAppelDeFond, montant: parseFloat(e.target.value)})}
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value);
+                  // Limiter le montant à 99,999,999.99 pour éviter le dépassement numérique
+                  if (value > 99999999.99) {
+                    toast.error("Le montant maximum autorisé est de 99,999,999.99 FCFA");
+                    return;
+                  }
+                  setNewAppelDeFond({...newAppelDeFond, montant: value});
+                }}
+                max="99999999.99"
+                step="0.01"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
