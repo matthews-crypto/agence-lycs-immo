@@ -12,6 +12,7 @@ import {
   FileSearch,
   MapPin,
   UserSquare,
+  Banknote,
 } from "lucide-react"
 import {
   Sidebar,
@@ -55,6 +56,12 @@ export function AgencySidebar() {
 
   useEffect(() => {
     if (!agency?.id) return;
+    
+    // Ne pas configurer l'abonnement en temps réel pour la page d'appel de fond
+    if (location.pathname.includes('/agency/appel-de-fond')) {
+      console.log('Skipping realtime subscription for appel-de-fond page');
+      return;
+    }
 
     console.log('Setting up realtime subscription for reservations');
     
@@ -83,7 +90,7 @@ export function AgencySidebar() {
       console.log('Cleaning up realtime subscription');
       supabase.removeChannel(channel);
     };
-  }, [agency?.id]);
+  }, [agency?.id, location.pathname]);
 
   const handleLogout = async () => {
     try {
@@ -108,7 +115,7 @@ export function AgencySidebar() {
       ],
     },
     {
-      label: "Gestion",
+      label: "Gestion Immobilière",
       items: [
         {
           title: "Offres",
@@ -126,6 +133,11 @@ export function AgencySidebar() {
           icon: Calendar,
           url: `/${agency?.slug}/agency/appointments`,
         },
+      ],
+    },
+    {
+      label: "Gestion Locative",
+      items: [
         {
           title: "Planning location",
           icon: MapPin,
@@ -144,22 +156,27 @@ export function AgencySidebar() {
       ],
     },
     {
-      label: "Analyse & Configuration",
+      label: "Gestion Copropriété",
       items: [
         {
-          title: "Analytics & Rapports",
-          icon: ChartBar,
-          url: `/${agency?.slug}/agency/analytics`,
+          title: "Lots",
+          icon: Home,
+          url: `/${agency?.slug}/agency/copropriete`,
         },
+        {
+          title: "Appel de fond",
+          icon: Banknote,
+          url: `/${agency?.slug}/agency/appel-de-fond`,
+        },
+      ],
+    },
+    {
+      label: "Analyse & Configuration",
+      items: [
         {
           title: "Configuration",
           icon: Settings,
           url: `/${agency?.slug}/agency/settings`,
-        },
-        {
-          title: "Chat WhatsApp",
-          icon: MessageSquare,
-          url: `/${agency?.slug}/agency/whatsapp`,
         },
       ],
     },

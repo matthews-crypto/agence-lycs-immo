@@ -45,6 +45,9 @@ import LocationDetailPage from "@/pages/agency/LocationDetailPage"
 import ProprietairesPage from "@/pages/agency/ProprietairesPage"
 import PaymentsPage from "@/pages/agency/PaymentsPage"
 import PaymentDetailsPage from "@/pages/agency/PaymentDetailsPage"
+import CoproprieteePage from "@/pages/agency/CoproprieteePage"
+import AppelDeFondPage from "@/pages/agency/AppelDeFondPage"
+import AppelDeFondDetailPage from "@/pages/agency/AppelDeFondDetailPage"
 
 const queryClient = new QueryClient()
 
@@ -123,6 +126,9 @@ const App = () => (
                   />
                   <Route path="clients" element={<ClientsPage />} />
                   <Route path="proprietaires" element={<ProprietairesPage />} />
+                  <Route path="copropriete" element={<CoproprieteePage />} />
+                  <Route path="appel-de-fond" element={<AppelDeFondPage />} />
+                  <Route path="appel-de-fond/:id" element={<AppelDeFondDetailPage />} />
                 </Route>
 
                 {/* Agent routes */}
