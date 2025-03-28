@@ -555,7 +555,7 @@ const AppelDeFondPage = () => {
 
       {/* Dialog pour créer un appel de fond */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-w-[95vw] w-full overflow-y-auto max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>Créer un nouvel appel de fond</DialogTitle>
             <DialogDescription>
@@ -572,7 +572,7 @@ const AppelDeFondPage = () => {
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionnez un lot" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[40vh] overflow-y-auto">
                   {lots.map((lot) => (
                     <SelectItem key={lot.id} value={lot.id}>
                       {lot.nom}
@@ -600,7 +600,7 @@ const AppelDeFondPage = () => {
                 step="0.01"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="date_emission">Date d'émission</Label>
                 <Input 
@@ -627,24 +627,37 @@ const AppelDeFondPage = () => {
                 value={newAppelDeFond.description} 
                 onChange={(e) => setNewAppelDeFond({...newAppelDeFond, description: e.target.value})}
                 placeholder="Description de l'appel de fond..."
+                className="min-h-[100px]"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="document">Document (PDF ou image)</Label>
-              <Input 
-                id="document" 
-                type="file" 
-                ref={fileInputRef}
-                onChange={(e) => setDocument(e.target.files?.[0] || null)}
-              />
+              <div className="flex flex-col sm:flex-row items-center gap-2">
+                <Input 
+                  id="document" 
+                  type="file" 
+                  ref={fileInputRef}
+                  onChange={(e) => setDocument(e.target.files?.[0] || null)}
+                  className="w-full"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                />
+                {document && (
+                  <div className="text-sm text-green-600 mt-1 sm:mt-0">
+                    Fichier sélectionné: {document.name}
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Formats acceptés: PDF, JPG, JPEG, PNG
+              </p>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)} className="w-full sm:w-auto">
               Annuler
             </Button>
-            <Button onClick={handleCreateAppelDeFond}>
-              Créer
+            <Button onClick={handleCreateAppelDeFond} disabled={isUploading} className="w-full sm:w-auto">
+              {isUploading ? 'Création en cours...' : 'Créer'}
             </Button>
           </DialogFooter>
         </DialogContent>
