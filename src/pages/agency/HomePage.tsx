@@ -5,12 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { MapPin, User, BedDouble, ChevronUp, Phone, Mail, ChevronDown, Briefcase, Search, Filter, Home, Tags, Info } from "lucide-react";
+import { MapPin, User, BedDouble, ChevronUp, Phone, Mail, ChevronDown, Briefcase, Search, Filter, Home, Tags, Info, MessageCircle } from "lucide-react";
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { useNavigate } from "react-router-dom";
 import { AuthDrawer } from "@/components/agency/AuthDrawer";
 import { FilterSidebar, FilterType } from "@/components/property/FilterSidebar";
-import { FloatingButtons } from "@/components/ui/floating-buttons";
 import { 
   Carousel,
   CarouselContent,
@@ -19,6 +18,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Textarea } from "@/components/ui/textarea";
+import { AgencyChatDialog } from "@/components/ui/agency-chat-dialog";
 
 const propertyTypeLabels: { [key: string]: string } = {
   "APARTMENT": "Appartement",
@@ -179,12 +179,21 @@ export default function AgencyHomePage() {
   const { agency } = useAgencyContext();
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  // Log pour vérifier l'objet agency
+  useEffect(() => {
+    console.log('Agency object in HomePage:', agency);
+  }, [agency]);
+
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [heroApi, setHeroApi] = useState<CarouselApi | null>(null);
   const [propertiesApi, setPropertiesApi] = useState<CarouselApi | null>(null);
   const [showCategoryMenu, setShowCategoryMenu] = useState(false);
   const [isServicesVisible, setIsServicesVisible] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
   const categoryMenuRef = useRef<HTMLDivElement>(null);
   const servicesRef = useRef<HTMLDivElement>(null);
   const [isFilterSidebarOpen, setIsFilterSidebarOpen] = useState(false);
@@ -282,10 +291,10 @@ export default function AgencyHomePage() {
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 300) {
-        setShowScrollTop(true);
-      } else {
-        setShowScrollTop(false);
+      const nav = document.querySelector('nav');
+      if (nav) {
+        const navBottom = nav.getBoundingClientRect().bottom;
+        setShowScrollTop(navBottom < 0);
       }
     };
 
@@ -307,6 +316,21 @@ export default function AgencyHomePage() {
   }, []);
 
   useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsServicesVisible(entry.isIntersecting);
+      },
+      { threshold: 0.1 }
+    );
+
+    if (servicesRef.current) {
+      observer.observe(servicesRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
     if (!heroApi || !propertiesApi) return;
 
     const heroAutoplay = setInterval(() => {
@@ -324,21 +348,6 @@ export default function AgencyHomePage() {
       clearInterval(propertiesAutoplay);
     };
   }, [heroApi, propertiesApi]);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsServicesVisible(entry.isIntersecting);
-      },
-      { threshold: 0.1 }
-    );
-
-    if (servicesRef.current) {
-      observer.observe(servicesRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
 
   const scrollToTop = () => {
     window.scrollTo({
@@ -445,6 +454,7 @@ export default function AgencyHomePage() {
     if (!agency?.id) return;
 
     try {
+      // Enregistrer le message de contact dans la base de données
       const { error } = await supabase.from('contact_messages').insert({
         agency_id: agency.id,
         name: name,
@@ -455,6 +465,42 @@ export default function AgencyHomePage() {
       });
 
       if (error) throw error;
+
+      // Envoyer les données au webhook spécifique à l'agence
+      try {
+        console.log('Envoi de données au webhook spécifique à l\'agence:', {
+          name,
+          email,
+          phone,
+          message,
+          agencyName: agency?.agency_name,
+          agencyId: agency?.id
+        });
+        
+        const response = await fetch('https://lycs.app.n8n.cloud/webhook/specAg', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-is-trusted': 'yes'
+          },
+          body: JSON.stringify({
+            name: name,
+            email: email,
+            phone: phone,
+            message: message,
+            agencyName: agency?.agency_name,
+            agencyId: agency?.id
+          })
+        });
+
+        const data = await response.json();
+        console.log('Réponse complète du webhook spécifique à l\'agence:', data);
+        console.log('Statut de la réponse:', response.status, response.statusText);
+      } catch (webhookError) {
+        console.error('Erreur lors de l\'envoi au webhook:', webhookError);
+        console.error('Détails de l\'erreur:', JSON.stringify(webhookError));
+        // On continue même si le webhook échoue, car les données sont déjà sauvegardées dans la base de données
+      }
 
       setName('');
       setEmail('');
@@ -530,7 +576,7 @@ export default function AgencyHomePage() {
                         className="p-2 hover:bg-gray-100 rounded-md transition-colors cursor-pointer relative"
                         style={{ color: agency?.primary_color || '#000000' }}
                       >
-                        <span className="font-medium relative inline-block after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-0.5 after:bottom-0 after:left-0 after:bg-current after:origin-bottom-right after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-bottom-left">
+                        <span className="font-medium relative inline-block after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-0.5 after:bottom-0 after:left-0 after:bg-current after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-bottom-left">
                           {propertyTypeLabels[type] || type}
                         </span>
                       </div>
@@ -894,6 +940,23 @@ export default function AgencyHomePage() {
         </div>
       </div>
 
+      <Button
+        onClick={() => setIsChatOpen(true)}
+        className="fixed bottom-4 right-4 rounded-full p-3 hover:opacity-90"
+        size="icon"
+        style={{ backgroundColor: agency?.primary_color || '#000000' }}
+      >
+        <MessageCircle className="h-4 w-4 text-white" />
+      </Button>
+
+      {isChatOpen && (
+        <AgencyChatDialog
+          isOpen={isChatOpen}
+          onClose={() => setIsChatOpen(false)}
+          agency={agency}
+        />
+      )}
+
       <FilterSidebar
         open={isFilterSidebarOpen}
         onOpenChange={setIsFilterSidebarOpen}
@@ -906,7 +969,7 @@ export default function AgencyHomePage() {
         onOpenChange={setIsAuthOpen}
       />
 
-      <FloatingButtons />
+      {/* Suppression du composant FloatingButtons pour éviter le conflit avec AgencyChatDialog */}
 
       <footer 
         id="about"
@@ -982,6 +1045,15 @@ export default function AgencyHomePage() {
           </div>
         </div>
       </footer>
+
+      <Button
+        onClick={scrollToTop}
+        className={`fixed bottom-4 left-4 rounded-full p-3 hover:opacity-90 ${showScrollTop ? 'block' : 'hidden'}`}
+        size="icon"
+        style={{ backgroundColor: agency?.primary_color || '#000000' }}
+      >
+        <ChevronUp className="h-4 w-4 text-white" />
+      </Button>
     </div>
   );
 }

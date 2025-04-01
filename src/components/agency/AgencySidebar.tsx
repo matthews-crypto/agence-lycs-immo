@@ -13,6 +13,7 @@ import {
   MapPin,
   UserSquare,
   Banknote,
+  ShoppingBag,
 } from "lucide-react"
 import {
   Sidebar,
@@ -142,6 +143,11 @@ export function AgencySidebar() {
           title: "Planning location",
           icon: MapPin,
           url: `/${agency?.slug}/agency/planning`,
+        },
+        {
+          title: "Ventes",
+          icon: ShoppingBag,
+          url: `/${agency?.slug}/agency/sales`,
         },
         {
           title: "Clients",

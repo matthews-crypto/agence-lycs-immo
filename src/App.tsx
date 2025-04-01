@@ -48,6 +48,7 @@ import PaymentDetailsPage from "@/pages/agency/PaymentDetailsPage"
 import CoproprieteePage from "@/pages/agency/CoproprieteePage"
 import AppelDeFondPage from "@/pages/agency/AppelDeFondPage"
 import AppelDeFondDetailPage from "@/pages/agency/AppelDeFondDetailPage"
+import SalesPage from "@/pages/agency/SalesPage"
 
 const queryClient = new QueryClient()
 
@@ -117,6 +118,7 @@ const App = () => (
                   <Route path="appointments" element={<AppointmentsPage />} />
                   <Route path="planning" element={<PlanningPage />} />
                   <Route path="planning/:locationId" element={<LocationDetailPage />} />
+                  <Route path="sales" element={<SalesPage />} />
                   <Route path="payments" element={<PaymentsPage />} />
                   <Route path="payments/:locationId" element={<PaymentDetailsPage />} />
                   <Route path="settings" element={<AgencySettingsPage />} />
