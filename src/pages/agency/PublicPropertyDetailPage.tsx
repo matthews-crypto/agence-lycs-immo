@@ -209,7 +209,8 @@ export default function PublicPropertyDetailPage() {
         type: isRental ? 'LOCATION' : 'VENTE',
         status: 'En attente',
         rental_start_date: isRental && startDate ? startDate : null,
-        rental_end_date: isRental && endDate ? endDate : null
+        rental_end_date: isRental && endDate ? endDate : null,
+        email: email || null
       };
 
       const { data: reservation, error: reservationError } = await supabase
@@ -259,7 +260,7 @@ export default function PublicPropertyDetailPage() {
     const isRental = property.property_offer_type === 'LOCATION';
     const isLongTermRental = isRental && property.type_location === 'longue_duree';
     
-    if (!formData.firstName || !formData.lastName || !formData.phone || !formData.email) {
+    if (!formData.firstName || !formData.lastName || !formData.phone) {
       toast({
         title: "Erreur",
         description: "Veuillez remplir tous les champs obligatoires",
@@ -605,13 +606,12 @@ export default function PublicPropertyDetailPage() {
               />
             </div>
             <div>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Email (optionnel)</Label>
               <Input
                 id="email"
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                required
               />
             </div>
             <div>

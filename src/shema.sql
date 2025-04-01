@@ -258,6 +258,7 @@ create table public.proprietaire (
   adresse text null,
   numero_telephone character varying(20) null,
   adresse_email character varying(100) null,
+  created_at timestamp with time zone not null default timezone ('utc'::text, now()),
   constraint proprietaire_pkey primary key (id)
 ) TABLESPACE pg_default;
 
@@ -287,6 +288,7 @@ create table public.reservations (
   rental_end_date timestamp with time zone null,
   appointment_date timestamp with time zone null,
   note_rv text null,
+  email text null,
   constraint reservations_pkey primary key (id),
   constraint reservations_reservation_number_key unique (reservation_number),
   constraint reservations_agency_id_fkey foreign KEY (agency_id) references agencies (id),

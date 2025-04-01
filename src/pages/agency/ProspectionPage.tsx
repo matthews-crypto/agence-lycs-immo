@@ -81,7 +81,6 @@ const ProspectionPage = () => {
   
   const [showContractFields, setShowContractFields] = useState(false);
   const [clientCIN, setClientCIN] = useState('');
-  const [clientEmail, setClientEmail] = useState('');
   const [clientDocument, setClientDocument] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [locationData, setLocationData] = useState<Location | null>(null);
@@ -486,7 +485,6 @@ const ProspectionPage = () => {
   const resetContractFields = () => {
     setShowContractFields(false);
     setClientCIN("");
-    setClientEmail("");
     setClientDocument(null);
     setRentalStartDate("");
     setRentalEndDate("");
@@ -502,12 +500,7 @@ const ProspectionPage = () => {
     }
     
     if (!clientCIN.trim()) {
-      toast.error('Le numéro CIN est obligatoire');
-      return;
-    }
-    
-    if (!clientEmail.trim()) {
-      toast.error('L\'email du client est obligatoire');
+      toast.error('Le numéro CIN ou passeport est obligatoire');
       return;
     }
     
@@ -529,14 +522,6 @@ const ProspectionPage = () => {
     setIsUploading(true);
     
     try {
-      // Mise à jour de l'email du client
-      const emailUpdateSuccess = await updateClientEmail(clientDetails.id, clientEmail);
-      
-      if (!emailUpdateSuccess) {
-        setIsUploading(false);
-        return;
-      }
-      
       // Upload du document d'identité
       const fileExt = clientDocument.name.split('.').pop();
       const fileName = `${clientDetails.id}_${Date.now()}.${fileExt}`;
@@ -676,17 +661,27 @@ const ProspectionPage = () => {
         }
       }
       
+      // Check if email exists in reservations table
+      const { data: emailData, error: emailError } = await supabase
+        .from('reservations')
+        .select('email')
+        .eq('id', selectedReservation.id)
+        .single();
+
+      if (emailError || !emailData) {
+        clientDetails.email = null;
+      }
+      
       if (selectedReservation.type === 'LOCATION') {
         generateContractPDF(
           selectedReservation, 
           clientDetails, 
           clientCIN, 
-          clientEmail,
           rentalStartDate, 
           rentalEndDate
         );
       } else {
-        generateContractPDF(selectedReservation, clientDetails, clientCIN, clientEmail);
+        generateContractPDF(selectedReservation, clientDetails, clientCIN);
       }
       
       if (selectedReservation) {
@@ -723,8 +718,7 @@ const ProspectionPage = () => {
   const generateContractPDF = (
     reservation: Reservation, 
     client: Client, 
-    cin: string, 
-    email: string,
+    cin: string,
     startDate?: string, 
     endDate?: string
   ) => {
@@ -773,8 +767,11 @@ const ProspectionPage = () => {
       doc.setFontSize(12);
       doc.text(`Nom complet: ${client.first_name || ''} ${client.last_name || ''}`, 20, 170);
       doc.text(`Téléphone: ${client.phone_number || ''}`, 20, 180);
-      doc.text(`Email: ${email}`, 20, 190);
-      doc.text(`CIN: ${cin}`, 20, 200);
+      doc.text(`CIN/Passeport: ${cin}`, 20, 190);
+      
+      if (client.email) {
+        doc.text(`Email: ${client.email}`, 20, 200);
+      }
       
       doc.setFontSize(14);
       doc.text("DÉTAILS DE LA TRANSACTION", 20, 220);
@@ -1017,26 +1014,6 @@ const ProspectionPage = () => {
 
   const isReservationClosed = (status: string) => {
     return status === 'Fermée Gagnée' || status === 'Fermée Perdu';
-  };
-
-  const updateClientEmail = async (clientId: string, email: string) => {
-    try {
-      const { error } = await supabase
-        .from('clients')
-        .update({ email })
-        .eq('id', clientId);
-
-      if (error) {
-        console.error('Error updating client email:', error);
-        toast.error('Erreur lors de la mise à jour de l\'email du client');
-        return false;
-      }
-      
-      return true;
-    } catch (error) {
-      console.error('Exception during client email update:', error);
-      return false;
-    }
   };
 
   if (isLoading) {
@@ -1425,22 +1402,12 @@ const ProspectionPage = () => {
                       <div className="space-y-4">
                         <div>
                           <label className="text-sm font-medium mb-1 block">
-                            Numéro CIN du client
+                            Numéro CIN ou passeport du client
                           </label>
                           <Input
                             value={clientCIN}
                             onChange={(e) => setClientCIN(e.target.value)}
-                            placeholder="Entrez le numéro CIN"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium mb-1 block">
-                            Email du client
-                          </label>
-                          <Input
-                            value={clientEmail}
-                            onChange={(e) => setClientEmail(e.target.value)}
-                            placeholder="Entrez l'email du client"
+                            placeholder="Entrez le numéro CIN ou passeport"
                           />
                         </div>
                         <div>

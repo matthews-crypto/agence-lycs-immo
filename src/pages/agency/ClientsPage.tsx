@@ -31,6 +31,7 @@ type Client = {
   last_name: string | null;
   phone_number: string | null;
   cin: string | null;
+  created_at: string;
 };
 
 type Location = {
@@ -64,6 +65,9 @@ export default function ClientsPage() {
   const [clientTypeFilter, setClientTypeFilter] = useState<string>("all");
   // État pour stocker toutes les locations de tous les clients
   const [allLocations, setAllLocations] = useState<Location[]>([]);
+  // État pour le tri des clients
+  const [sortOrder, setSortOrder] = useState<string>("desc");
+  const [timeFilter, setTimeFilter] = useState<string>("all");
 
   const { data: clients, isLoading, error } = useQuery({
     queryKey: ['clients', agency?.id],
@@ -77,9 +81,11 @@ export default function ClientsPage() {
           id,
           first_name, 
           last_name,
-          phone_number
+          phone_number,
+          created_at
         `)
-        .eq('agency_id', agency.id);
+        .eq('agency_id', agency.id)
+        .order('created_at', { ascending: false }); // Par défaut, les plus récents en premier
 
       if (clientsError) {
         console.error("Error fetching clients:", clientsError);
@@ -161,7 +167,8 @@ export default function ClientsPage() {
   const filteredClients = useMemo(() => {
     if (!clients) return [];
     
-    return clients.filter(client => {
+    // Filtrer par recherche et type de client
+    let filtered = clients.filter(client => {
       const fullName = `${client.first_name} ${client.last_name}`.toLowerCase();
       const matchesSearch = searchTerm === "" || fullName.includes(searchTerm.toLowerCase());
       
@@ -184,7 +191,33 @@ export default function ClientsPage() {
       
       return matchesSearch && matchesClientType;
     });
-  }, [clients, searchTerm, clientTypeFilter, allLocations]);
+    
+    // Filtrer par période
+    if (timeFilter !== "all") {
+      const now = new Date();
+      let cutoffDate = new Date();
+      
+      if (timeFilter === "week") {
+        // Dernière semaine
+        cutoffDate.setDate(now.getDate() - 7);
+      } else if (timeFilter === "month") {
+        // Dernier mois
+        cutoffDate.setMonth(now.getMonth() - 1);
+      }
+      
+      filtered = filtered.filter(client => {
+        const createdAt = new Date(client.created_at);
+        return createdAt >= cutoffDate;
+      });
+    }
+    
+    // Trier par date de création
+    return [...filtered].sort((a, b) => {
+      const dateA = new Date(a.created_at).getTime();
+      const dateB = new Date(b.created_at).getTime();
+      return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
+    });
+  }, [clients, searchTerm, clientTypeFilter, allLocations, sortOrder, timeFilter]);
 
   const handleClientClick = async (client: Client) => {
     setSelectedClient(client);
@@ -271,7 +304,7 @@ export default function ClientsPage() {
                     />
                   </div>
                   
-                  <div className="grid grid-cols-1 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <Select value={clientTypeFilter} onValueChange={setClientTypeFilter}>
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Type de client" />
@@ -280,6 +313,27 @@ export default function ClientsPage() {
                         <SelectItem value="all">Tous les clients</SelectItem>
                         <SelectItem value="rental">Locataires</SelectItem>
                         <SelectItem value="buyer">Acheteurs</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    
+                    <Select value={sortOrder} onValueChange={setSortOrder}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Ordre de tri" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="desc">Plus récents d'abord</SelectItem>
+                        <SelectItem value="asc">Plus anciens d'abord</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    
+                    <Select value={timeFilter} onValueChange={setTimeFilter}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Période" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tous les temps</SelectItem>
+                        <SelectItem value="week">Dernière semaine</SelectItem>
+                        <SelectItem value="month">Dernier mois</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

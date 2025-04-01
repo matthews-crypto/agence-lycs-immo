@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Search, History, Calendar, DollarSign } from "lucide-react";
+import { Search, History, Calendar, DollarSign, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type LocationData = {
@@ -26,6 +26,7 @@ type LocationData = {
     last_name: string;
     phone_number: string;
   };
+  created_at: string;
 };
 
 export default function PlanningPage() {
@@ -41,6 +42,9 @@ export default function PlanningPage() {
   const [typeLocationFilter, setTypeLocationFilter] = useState<string | null>(null);
   const [filteredActiveLocations, setFilteredActiveLocations] = useState<LocationData[]>([]);
   const [filteredHistoricalLocations, setFilteredHistoricalLocations] = useState<LocationData[]>([]);
+  // Sorting and time filtering states
+  const [sortOrder, setSortOrder] = useState<string>("desc");
+  const [timeFilter, setTimeFilter] = useState<string>("all");
 
   useEffect(() => {
     if (!agency?.id) return;
@@ -56,13 +60,14 @@ export default function PlanningPage() {
             rental_end_date,
             property_id,
             client_id,
+            created_at,
             property:properties(title, reference_number, type_location),
             client:clients(first_name, last_name, phone_number)
           `)
           .not("rental_start_date", "is", null)
           .not("rental_end_date", "is", null)
           .eq("statut", "EN COURS")
-          .order("rental_start_date", { ascending: true });
+          .order("created_at", { ascending: false }); // Most recent first by default
 
         if (error) {
           throw error;
@@ -89,11 +94,12 @@ export default function PlanningPage() {
             rental_end_date,
             property_id,
             client_id,
+            created_at,
             property:properties(title, reference_number, type_location),
             client:clients(first_name, last_name, phone_number)
           `)
           .eq("statut", "TERMINÉ")
-          .order("rental_end_date", { ascending: false });
+          .order("created_at", { ascending: false }); // Most recent first by default
 
         if (error) {
           throw error;
@@ -113,13 +119,23 @@ export default function PlanningPage() {
     fetchHistoricalLocations();
   }, [agency?.id]);
 
-  // Handle filtering based on search term and type_location
+  // Handle filtering based on search term, type_location, sort order, and time filter
   useEffect(() => {
     const filterLocations = () => {
       const lowerSearchTerm = searchTerm.toLowerCase();
+      const now = new Date();
+      const cutoffDate = new Date();
+      
+      if (timeFilter === "week") {
+        // Last week
+        cutoffDate.setDate(now.getDate() - 7);
+      } else if (timeFilter === "month") {
+        // Last month
+        cutoffDate.setMonth(now.getMonth() - 1);
+      }
       
       // Filter active locations
-      const activeFiltered = locations.filter(location => {
+      let activeFiltered = locations.filter(location => {
         const clientName = `${location.client?.first_name || ""} ${location.client?.last_name || ""}`.toLowerCase();
         const propertyTitle = location.property?.title.toLowerCase() || "";
         const phoneNumber = location.client?.phone_number?.toLowerCase() || "";
@@ -133,11 +149,18 @@ export default function PlanningPage() {
         const matchesTypeLocation = !typeLocationFilter || 
                                    location.property?.type_location === typeLocationFilter;
         
-        return matchesSearch && matchesTypeLocation;
+        // Check if matches time filter
+        let matchesTimeFilter = true;
+        if (timeFilter !== "all") {
+          const createdAt = new Date(location.created_at);
+          matchesTimeFilter = createdAt >= cutoffDate;
+        }
+        
+        return matchesSearch && matchesTypeLocation && matchesTimeFilter;
       });
       
       // Filter historical locations
-      const historicalFiltered = historicalLocations.filter(location => {
+      let historicalFiltered = historicalLocations.filter(location => {
         const clientName = `${location.client?.first_name || ""} ${location.client?.last_name || ""}`.toLowerCase();
         const propertyTitle = location.property?.title.toLowerCase() || "";
         const phoneNumber = location.client?.phone_number?.toLowerCase() || "";
@@ -151,7 +174,27 @@ export default function PlanningPage() {
         const matchesTypeLocation = !typeLocationFilter || 
                                    location.property?.type_location === typeLocationFilter;
         
-        return matchesSearch && matchesTypeLocation;
+        // Check if matches time filter
+        let matchesTimeFilter = true;
+        if (timeFilter !== "all") {
+          const createdAt = new Date(location.created_at);
+          matchesTimeFilter = createdAt >= cutoffDate;
+        }
+        
+        return matchesSearch && matchesTypeLocation && matchesTimeFilter;
+      });
+      
+      // Apply sorting
+      activeFiltered = [...activeFiltered].sort((a, b) => {
+        const dateA = new Date(a.created_at).getTime();
+        const dateB = new Date(b.created_at).getTime();
+        return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
+      });
+      
+      historicalFiltered = [...historicalFiltered].sort((a, b) => {
+        const dateA = new Date(a.created_at).getTime();
+        const dateB = new Date(b.created_at).getTime();
+        return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
       });
       
       setFilteredActiveLocations(activeFiltered);
@@ -159,7 +202,7 @@ export default function PlanningPage() {
     };
     
     filterLocations();
-  }, [searchTerm, typeLocationFilter, locations, historicalLocations]);
+  }, [searchTerm, typeLocationFilter, locations, historicalLocations, sortOrder, timeFilter]);
 
   const handleLocationClick = (locationId: string) => {
     navigate(`/${agency?.slug}/agency/planning/${locationId}`);
@@ -172,9 +215,10 @@ export default function PlanningPage() {
         <main className="flex-1 p-4 md:p-8 overflow-auto">
           <h1 className="text-2xl font-bold mb-4 md:mb-6">Planning des Locations</h1>
           
-          <div className="mb-6 space-y-4">
-            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
-              <div className="relative w-full md:w-96">
+          <div className="mb-6 space-y-4 bg-white p-4 rounded-lg shadow-sm">
+            <h2 className="text-lg font-medium mb-3">Filtres et recherche</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input 
                   type="search" 
@@ -184,7 +228,7 @@ export default function PlanningPage() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <div className="w-full md:w-auto">
+              <div>
                 <select
                   className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
                   value={typeLocationFilter || ""}
@@ -195,9 +239,32 @@ export default function PlanningPage() {
                   <option value="longue_duree">Longue durée</option>
                 </select>
               </div>
+              <div>
+                <select
+                  className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(e.target.value)}
+                >
+                  <option value="desc">Plus récents d'abord</option>
+                  <option value="asc">Plus anciens d'abord</option>
+                </select>
+              </div>
+              <div>
+                <select
+                  className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+                  value={timeFilter}
+                  onChange={(e) => setTimeFilter(e.target.value)}
+                >
+                  <option value="all">Tous les temps</option>
+                  <option value="week">Dernière semaine</option>
+                  <option value="month">Dernier mois</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end">
               <Button 
                 onClick={() => navigate(`/${agency?.slug}/agency/payments`)}
-                className="w-full md:w-auto flex items-center gap-2"
+                className="flex items-center gap-2"
               >
                 <DollarSign className="h-4 w-4" />
                 Gestion paiement
@@ -219,34 +286,83 @@ export default function PlanningPage() {
             
             <TabsContent value="active">
               <Card>
-                <CardHeader>
-                  <CardTitle>Locations actives</CardTitle>
+                <CardHeader className="bg-muted/30">
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-primary" />
+                    Locations actives
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                   {isLoading ? (
-                    <p>Chargement...</p>
+                    <div className="flex justify-center items-center h-40">
+                      <p className="text-muted-foreground">Chargement des locations...</p>
+                    </div>
                   ) : filteredActiveLocations.length === 0 ? (
-                    <p>Aucune location en cours</p>
+                    <div className="text-center py-10 border border-dashed rounded-lg">
+                      <p className="text-muted-foreground">Aucune location en cours</p>
+                    </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {filteredActiveLocations.map(location => (
                         <div 
                           key={location.id} 
-                          className="border p-4 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                          className="border rounded-lg shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden cursor-pointer bg-white"
                           onClick={() => handleLocationClick(location.id)}
                         >
-                          <h3 className="font-medium">
-                            {location.property?.title} ({location.property?.reference_number})
-                          </h3>
-                          <p>
-                            Client: {location.client?.first_name} {location.client?.last_name}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            Téléphone: {location.client?.phone_number || 'Non spécifié'}
-                          </p>
-                          <div className="flex justify-between text-sm text-gray-500 mt-2">
-                            <p>Début: {location.rental_start_date ? format(new Date(location.rental_start_date), 'dd/MM/yyyy') : 'N/A'}</p>
-                            <p>Fin: {location.rental_end_date ? format(new Date(location.rental_end_date), 'dd/MM/yyyy') : 'N/A'}</p>
+                          <div className="p-4 border-b bg-muted/10">
+                            <div className="flex justify-between items-start">
+                              <h3 className="font-medium text-lg truncate">
+                                {location.property?.title}
+                              </h3>
+                              <div className={`px-2 py-1 rounded-full text-xs ${location.property?.type_location === 'longue_duree' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}`}>
+                                {location.property?.type_location === 'longue_duree' ? 'Longue durée' : 'Courte durée'}
+                              </div>
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Réf: {location.property?.reference_number}
+                            </p>
+                          </div>
+                          
+                          <div className="p-4">
+                            <div className="flex items-center gap-2 mb-3">
+                              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                                <User className="h-4 w-4" />
+                              </div>
+                              <div>
+                                <p className="font-medium">
+                                  {location.client?.first_name} {location.client?.last_name}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {location.client?.phone_number || 'Non spécifié'}
+                                </p>
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-2 mt-4">
+                              <div className="bg-muted/20 p-2 rounded">
+                                <p className="text-xs text-muted-foreground">Début</p>
+                                <p className="font-medium">
+                                  {location.rental_start_date ? format(new Date(location.rental_start_date), 'dd/MM/yyyy') : 'N/A'}
+                                </p>
+                              </div>
+                              <div className="bg-muted/20 p-2 rounded">
+                                <p className="text-xs text-muted-foreground">Fin</p>
+                                <p className="font-medium">
+                                  {location.rental_end_date ? format(new Date(location.rental_end_date), 'dd/MM/yyyy') : 'N/A'}
+                                </p>
+                              </div>
+                            </div>
+                            
+                            <Button 
+                              variant="outline" 
+                              className="w-full mt-4 hover:bg-primary hover:text-white transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleLocationClick(location.id);
+                              }}
+                            >
+                              Voir détails
+                            </Button>
                           </div>
                         </div>
                       ))}
@@ -258,34 +374,88 @@ export default function PlanningPage() {
             
             <TabsContent value="history">
               <Card>
-                <CardHeader>
-                  <CardTitle>Historique des locations</CardTitle>
+                <CardHeader className="bg-muted/30">
+                  <CardTitle className="flex items-center gap-2">
+                    <History className="h-5 w-5 text-primary" />
+                    Historique des locations
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                   {isHistoryLoading ? (
-                    <p>Chargement...</p>
+                    <div className="flex justify-center items-center h-40">
+                      <p className="text-muted-foreground">Chargement de l'historique...</p>
+                    </div>
                   ) : filteredHistoricalLocations.length === 0 ? (
-                    <p>Aucune location terminée</p>
+                    <div className="text-center py-10 border border-dashed rounded-lg">
+                      <p className="text-muted-foreground">Aucune location terminée</p>
+                    </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {filteredHistoricalLocations.map(location => (
                         <div 
                           key={location.id} 
-                          className="border p-4 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                          className="border rounded-lg shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden cursor-pointer bg-white"
                           onClick={() => handleLocationClick(location.id)}
                         >
-                          <h3 className="font-medium">
-                            {location.property?.title} ({location.property?.reference_number})
-                          </h3>
-                          <p>
-                            Client: {location.client?.first_name} {location.client?.last_name}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            Téléphone: {location.client?.phone_number || 'Non spécifié'}
-                          </p>
-                          <div className="flex justify-between text-sm text-gray-500 mt-2">
-                            <p>Début: {location.rental_start_date ? format(new Date(location.rental_start_date), 'dd/MM/yyyy') : 'N/A'}</p>
-                            <p>Fin: {location.rental_end_date ? format(new Date(location.rental_end_date), 'dd/MM/yyyy') : 'N/A'}</p>
+                          <div className="p-4 border-b bg-muted/10">
+                            <div className="flex justify-between items-start">
+                              <h3 className="font-medium text-lg truncate">
+                                {location.property?.title}
+                              </h3>
+                              <div className={`px-2 py-1 rounded-full text-xs ${location.property?.type_location === 'longue_duree' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}`}>
+                                {location.property?.type_location === 'longue_duree' ? 'Longue durée' : 'Courte durée'}
+                              </div>
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Réf: {location.property?.reference_number}
+                            </p>
+                          </div>
+                          
+                          <div className="p-4">
+                            <div className="flex items-center gap-2 mb-3">
+                              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                                <User className="h-4 w-4" />
+                              </div>
+                              <div>
+                                <p className="font-medium">
+                                  {location.client?.first_name} {location.client?.last_name}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {location.client?.phone_number || 'Non spécifié'}
+                                </p>
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-2 mt-4">
+                              <div className="bg-muted/20 p-2 rounded">
+                                <p className="text-xs text-muted-foreground">Début</p>
+                                <p className="font-medium">
+                                  {location.rental_start_date ? format(new Date(location.rental_start_date), 'dd/MM/yyyy') : 'N/A'}
+                                </p>
+                              </div>
+                              <div className="bg-muted/20 p-2 rounded">
+                                <p className="text-xs text-muted-foreground">Fin</p>
+                                <p className="font-medium">
+                                  {location.rental_end_date ? format(new Date(location.rental_end_date), 'dd/MM/yyyy') : 'N/A'}
+                                </p>
+                              </div>
+                            </div>
+                            
+                            <div className="mt-4 flex justify-between items-center">
+                              <div className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">
+                                Terminée
+                              </div>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleLocationClick(location.id);
+                                }}
+                              >
+                                Détails
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       ))}

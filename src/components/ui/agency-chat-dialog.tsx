@@ -9,7 +9,7 @@ interface Message {
   timestamp?: string;
 }
 
-interface ChatDialogProps {
+interface AgencyChatDialogProps {
   isOpen: boolean;
   onClose: () => void;
   agency?: {
@@ -19,11 +19,16 @@ interface ChatDialogProps {
   };
 }
 
-export function ChatDialog({ isOpen, onClose, agency }: Readonly<ChatDialogProps>) {
+export function AgencyChatDialog({ isOpen, onClose, agency }: Readonly<AgencyChatDialogProps>) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Log pour vérifier l'objet agency
+  useEffect(() => {
+    console.log('Agency object in AgencyChatDialog:', agency);
+  }, [agency]);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -45,12 +50,14 @@ export function ChatDialog({ isOpen, onClose, agency }: Readonly<ChatDialogProps
     setIsLoading(true);
 
     try {
-      console.log('Envoi de message au webhook principal:', userMessage.content);
+      console.log('Envoi de message au webhook spécifique à l\'agence:', userMessage.content);
       console.log('Données envoyées:', {
-        message: userMessage.content
+        message: userMessage.content,
+        agencyName: agency?.agency_name,
+        agencyId: agency?.id
       });
       
-      const response = await fetch('https://lycs.app.n8n.cloud/webhook/webChatTest', {
+      const response = await fetch('https://lycs.app.n8n.cloud/webhook/specAg', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -63,33 +70,24 @@ export function ChatDialog({ isOpen, onClose, agency }: Readonly<ChatDialogProps
           'x-real-ip': '127.0.0.1'
         },
         body: JSON.stringify({
-          message: userMessage.content
+          message: userMessage.content,
+          agencyName: agency?.agency_name,
+          agencyId: agency?.id
         })
       });
 
       const data = await response.json();
-      console.log('Réponse complète du webhook principal:', data);
-      
-      let botResponse = '';
-      if (data.status === 'success' && data.data && data.data.output) {
-        botResponse = data.data.output;
-      } else if (data.output) {
-        botResponse = data.output;
-      } else if (typeof data === 'string') {
-        botResponse = data;
-      } else {
-        botResponse = "Désolé, je n'ai pas pu comprendre votre demande.";
-      }
+      console.log('Réponse complète du webhook spécifique à l\'agence:', data);
       
       const botMessage: Message = {
         role: 'bot',
-        content: botResponse,
+        content: data.output || (typeof data === 'string' ? data : 'Désolé, je n\'ai pas compris votre demande.'),
         timestamp: new Date().toISOString(),
       };
 
       setMessages(prev => [...prev, botMessage]);
     } catch (error) {
-      console.error('Error sending message to main webhook:', error);
+      console.error('Error sending message to agency webhook:', error);
       const errorMessage: Message = {
         role: 'bot',
         content: "Désolé, une erreur est survenue lors de l'envoi du message.",
@@ -106,7 +104,7 @@ export function ChatDialog({ isOpen, onClose, agency }: Readonly<ChatDialogProps
   return (
     <div className="fixed bottom-20 right-4 w-80 bg-white rounded-lg shadow-lg border p-4 z-50">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-semibold">Assistant LYCS IMMO</h3>
+        <h3 className="font-semibold">Assistant {agency?.agency_name}</h3>
         <Button
           onClick={onClose}
           variant="ghost"
@@ -118,6 +116,11 @@ export function ChatDialog({ isOpen, onClose, agency }: Readonly<ChatDialogProps
       </div>
       
       <div className="h-60 overflow-y-auto mb-4 space-y-2 p-2 border rounded-md">
+        {messages.length === 0 && (
+          <div className="bg-gray-100 text-gray-800 p-2 rounded-lg max-w-[80%]">
+            Bonjour et bienvenue chez {agency?.agency_name || 'notre agence'}. Comment puis-je vous aider aujourd'hui ?
+          </div>
+        )}
         {messages.map((message, index) => (
           <div
             key={`${message.role}-${index}`}
@@ -159,7 +162,7 @@ export function ChatDialog({ isOpen, onClose, agency }: Readonly<ChatDialogProps
           onClick={sendMessage}
           disabled={isLoading || !inputMessage.trim()}
           size="icon"
-          className="bg-blue-500 hover:bg-blue-600"
+          style={{ backgroundColor: agency?.primary_color || '#000000' }}
         >
           <Send className="h-4 w-4" />
         </Button>

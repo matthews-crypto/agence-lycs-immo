@@ -40,6 +40,7 @@ type Proprietaire = {
   adresse: string | null;
   numero_telephone: string | null;
   adresse_email: string | null;
+  created_at: string;
 };
 
 // Schéma de validation pour le formulaire d'ajout de propriétaire
@@ -63,6 +64,9 @@ export default function ProprietairesPage() {
 
   // État pour la recherche
   const [searchTerm, setSearchTerm] = useState("");
+  // États pour le tri et le filtrage par période
+  const [sortOrder, setSortOrder] = useState<string>("desc");
+  const [timeFilter, setTimeFilter] = useState<string>("all");
 
   // Formulaire pour ajouter un propriétaire
   const form = useForm<ProprietaireFormValues>({
@@ -90,9 +94,10 @@ export default function ProprietairesPage() {
           nom,
           adresse,
           numero_telephone,
-          adresse_email
+          adresse_email,
+          created_at
         `)
-        .order('nom', { ascending: true });
+        .order('created_at', { ascending: false }); // Par défaut, les plus récents en premier
 
       if (error) {
         console.error("Error fetching proprietaires:", error);
@@ -104,11 +109,12 @@ export default function ProprietairesPage() {
     enabled: !!agency?.id,
   });
 
-  // Filtrer les propriétaires en fonction du terme de recherche
+  // Filtrer les propriétaires en fonction du terme de recherche, de l'ordre de tri et de la période
   const filteredProprietaires = useMemo(() => {
     if (!proprietaires) return [];
     
-    return proprietaires.filter(proprietaire => {
+    // Filtrer par terme de recherche
+    let filtered = proprietaires.filter(proprietaire => {
       const fullName = `${proprietaire.prenom} ${proprietaire.nom}`.toLowerCase();
       const email = proprietaire.adresse_email?.toLowerCase() || "";
       const phone = proprietaire.numero_telephone?.toLowerCase() || "";
@@ -120,7 +126,33 @@ export default function ProprietairesPage() {
              phone.includes(searchTerm.toLowerCase()) ||
              address.includes(searchTerm.toLowerCase());
     });
-  }, [proprietaires, searchTerm]);
+    
+    // Filtrer par période
+    if (timeFilter !== "all") {
+      const now = new Date();
+      const cutoffDate = new Date();
+      
+      if (timeFilter === "week") {
+        // Dernière semaine
+        cutoffDate.setDate(now.getDate() - 7);
+      } else if (timeFilter === "month") {
+        // Dernier mois
+        cutoffDate.setMonth(now.getMonth() - 1);
+      }
+      
+      filtered = filtered.filter(proprietaire => {
+        const createdAt = new Date(proprietaire.created_at);
+        return createdAt >= cutoffDate;
+      });
+    }
+    
+    // Trier par date de création
+    return [...filtered].sort((a, b) => {
+      const dateA = new Date(a.created_at).getTime();
+      const dateB = new Date(b.created_at).getTime();
+      return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
+    });
+  }, [proprietaires, searchTerm, sortOrder, timeFilter]);
 
   // Gérer le clic sur un propriétaire
   const handleProprietaireClick = (proprietaire: Proprietaire) => {
@@ -186,6 +218,31 @@ export default function ProprietairesPage() {
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="pl-10 w-full"
                     />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="w-full">
+                      <select
+                        className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+                        value={sortOrder}
+                        onChange={(e) => setSortOrder(e.target.value)}
+                      >
+                        <option value="desc">Plus récents d'abord</option>
+                        <option value="asc">Plus anciens d'abord</option>
+                      </select>
+                    </div>
+                    
+                    <div className="w-full">
+                      <select
+                        className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+                        value={timeFilter}
+                        onChange={(e) => setTimeFilter(e.target.value)}
+                      >
+                        <option value="all">Tous les temps</option>
+                        <option value="week">Dernière semaine</option>
+                        <option value="month">Dernier mois</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
                 

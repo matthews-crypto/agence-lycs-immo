@@ -17,7 +17,7 @@ import {
   CardTitle 
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Home, MapPin, Euro } from 'lucide-react';
+import { Home, MapPin, CreditCard } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -82,10 +82,9 @@ export function ProprietairePropertiesDialog({
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('fr-FR', { 
-      style: 'currency', 
-      currency: 'EUR',
+      style: 'decimal',
       maximumFractionDigits: 0
-    }).format(price);
+    }).format(price) + ' FCFA';
   };
 
   return (
@@ -113,11 +112,11 @@ export function ProprietairePropertiesDialog({
             </p>
           </div>
         ) : properties && properties.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {properties.map((property) => (
               <Card 
                 key={property.id} 
-                className="cursor-pointer hover:shadow-md transition-all duration-300 border-l-4 border-l-primary"
+                className="cursor-pointer hover:shadow-md transition-all duration-300 border-l-4 border-l-primary flex flex-col"
                 onClick={() => handlePropertyClick(property.id)}
               >
                 <CardHeader className="pb-2 bg-muted/30">
@@ -126,16 +125,16 @@ export function ProprietairePropertiesDialog({
                     <span className="truncate">{property.title}</span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="pt-4">
+                <CardContent className="pt-4 flex-grow">
                   <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Euro className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <div className="flex items-start gap-2">
+                      <CreditCard className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-1" />
                       <span className="font-medium">{formatPrice(property.price)}</span>
                     </div>
                     {property.address && (
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        <span className="truncate">{property.address}</span>
+                      <div className="flex items-start gap-2">
+                        <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-1" />
+                        <span className="line-clamp-2">{property.address}</span>
                       </div>
                     )}
                     <div className="flex items-center gap-2">
@@ -149,7 +148,7 @@ export function ProprietairePropertiesDialog({
                     </div>
                   </div>
                 </CardContent>
-                <CardFooter>
+                <CardFooter className="pt-2">
                   <Button 
                     variant="outline" 
                     className="w-full hover:bg-primary hover:text-white transition-colors"
