@@ -16,6 +16,7 @@ interface AgencyChatDialogProps {
     id: string;
     agency_name: string;
     primary_color?: string;
+    slug?: string;
   };
 }
 
@@ -54,7 +55,8 @@ export function AgencyChatDialog({ isOpen, onClose, agency }: Readonly<AgencyCha
       console.log('Données envoyées:', {
         message: userMessage.content,
         agencyName: agency?.agency_name,
-        agencyId: agency?.id
+        agencyId: agency?.id,
+        agencySlug: agency?.slug
       });
       
       const response = await fetch('https://lycs.app.n8n.cloud/webhook-test/specAg', {
@@ -72,7 +74,8 @@ export function AgencyChatDialog({ isOpen, onClose, agency }: Readonly<AgencyCha
         body: JSON.stringify({
           message: userMessage.content,
           agencyName: agency?.agency_name,
-          agencyId: agency?.id
+          agencyId: agency?.id,
+          agencySlug: agency?.slug
         })
       });
 
