@@ -57,7 +57,7 @@ export function AgencyChatDialog({ isOpen, onClose, agency }: Readonly<AgencyCha
         agencyId: agency?.id
       });
       
-      const response = await fetch('https://lycs.app.n8n.cloud/webhook/specAg', {
+      const response = await fetch('https://lycs.app.n8n.cloud/webhook-test/specAg', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

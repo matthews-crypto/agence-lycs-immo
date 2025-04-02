@@ -413,6 +413,7 @@ export default function PublicPropertyDetailPage() {
         description={property.description || ""}
         price={property.price}
         photos={property.photos}
+        address={property.zone?.nom}
       />
 
       <PropertyHeader
