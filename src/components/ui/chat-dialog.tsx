@@ -50,7 +50,7 @@ export function ChatDialog({ isOpen, onClose, agency }: Readonly<ChatDialogProps
         message: userMessage.content
       });
       
-      const response = await fetch('https://lycs.app.n8n.cloud/webhook/webChatTest', {
+      const response = await fetch('https://lycs.app.n8n.cloud/webhook-test/webChatTest', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
