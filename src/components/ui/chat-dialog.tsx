@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, X, Loader2 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 
 interface Message {
   role: 'user' | 'bot';
@@ -127,7 +128,26 @@ export function ChatDialog({ isOpen, onClose, agency }: Readonly<ChatDialogProps
                 : 'bg-gray-100 text-gray-800'
             }`}
           >
-            {message.content}
+            {message.role === 'user' ? (
+              message.content
+            ) : (
+              <div className="markdown-content">
+                <ReactMarkdown
+                  components={{
+                    a: ({ node, ...props }) => (
+                      <a 
+                        {...props} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 underline hover:text-blue-800"
+                      />
+                    )
+                  }}
+                >
+                  {message.content}
+                </ReactMarkdown>
+              </div>
+            )}
             {message.timestamp && (
               <small className="block text-xs opacity-70 mt-1">
                 {new Date(message.timestamp).toLocaleTimeString()}
