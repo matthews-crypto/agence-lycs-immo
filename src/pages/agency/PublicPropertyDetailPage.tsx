@@ -449,7 +449,7 @@ export default function PublicPropertyDetailPage() {
             style={{ backgroundColor: property.agencies?.primary_color }}
             className="text-white"
           >
-            Réserver ce bien
+            Interessé ?
           </Button>
         </div>
 

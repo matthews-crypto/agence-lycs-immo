@@ -529,13 +529,13 @@ export default function AgencyHomePage() {
   return (
     <div className="min-h-screen bg-white">
       <nav className="border-b relative" style={{ backgroundColor: agency?.primary_color || '#000000' }}>
-        <div className="container mx-auto py-4 px-4 flex justify-between items-center">
+        <div className="container mx-auto py-3 px-4 flex justify-between items-center">
           <div className="flex items-center">
             {agency?.logo_url ? (
               <img 
                 src={agency.logo_url} 
                 alt={agency.agency_name}
-                className="h-16 object-contain rounded-full"
+                className="h-14 object-contain rounded-full"
               />
             ) : (
               <h1 className="text-2xl font-light text-white">
@@ -543,7 +543,7 @@ export default function AgencyHomePage() {
               </h1>
             )}
           </div>
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-6">
             <button
               onClick={() => scrollToTop()}
               className="text-white hover:text-white/90 transition-colors flex items-center gap-2"
@@ -562,7 +562,7 @@ export default function AgencyHomePage() {
               </button>
               
               <div 
-                className="absolute left-0 right-0 mt-2 py-4 bg-white shadow-lg rounded-b-lg w-[20rem] -left-1/4 
+                className="absolute mt-2 py-4 bg-white shadow-lg rounded-b-lg w-auto min-w-[180px] 
                         opacity-0 invisible group-hover:opacity-100 group-hover:visible 
                         transition-all duration-300 ease-in-out transform origin-top scale-95 group-hover:scale-100"
                 style={{ zIndex: 50 }}
@@ -593,14 +593,13 @@ export default function AgencyHomePage() {
               <Info className="h-4 w-4" />
               <span>À propos</span>
             </button>
-          </div>
-          <div className="flex justify-end">
+            
             <Button
               variant="ghost"
               onClick={() => setIsAuthOpen(true)}
-              className="flex items-center gap-2 text-white"
+              className="flex items-center justify-center text-white p-2 h-9 w-9"
+              size="icon"
             >
-              <span>Compte</span>
               <User className="h-5 w-5" />
             </Button>
           </div>
@@ -662,7 +661,7 @@ export default function AgencyHomePage() {
                 <Search className="h-5 w-5 text-gray-400" />
               </div>
               <Input
-                placeholder="Rechercher un bien..."
+                placeholder="Rechercher par titre, type ou localisation..."
                 className="pl-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -853,8 +852,67 @@ export default function AgencyHomePage() {
                 <span className={isServicesVisible && displayText.length < typewriterText.length ? "animate-pulse" : "hidden"}>|</span>
               </p>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
+              {/* Carte 1 - Vente et Location */}
+              <div className="bg-white rounded-xl shadow-xl overflow-hidden transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl">
+                <div className="h-48 overflow-hidden relative">
+                  <img 
+                    src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1073&q=80" 
+                    alt="Vente et Location" 
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end">
+                    <h3 className="text-white text-xl font-semibold p-4">Vente & Location</h3>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <p className="text-gray-700">
+                    Trouvez votre bien idéal parmi notre sélection exclusive de propriétés premium. Notre expertise du marché immobilier sénégalais vous garantit un accompagnement personnalisé pour concrétiser votre projet d'achat ou de location.
+                  </p>
+                </div>
+              </div>
+
+              {/* Carte 2 - Gestion Immobilière */}
+              <div className="bg-white rounded-xl shadow-xl overflow-hidden transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl">
+                <div className="h-48 overflow-hidden relative">
+                  <img 
+                    src="https://images.unsplash.com/photo-1556155092-490a1ba16284?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80" 
+                    alt="Gestion Immobilière" 
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end">
+                    <h3 className="text-white text-xl font-semibold p-4">Gestion Immobilière</h3>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <p className="text-gray-700">
+                    Confiez-nous la gestion de votre patrimoine immobilier. De la recherche de locataires qualifiés à la maintenance régulière, nous veillons sur vos biens comme s'ils étaient les nôtres, vous garantissant tranquillité d'esprit et rentabilité optimale.
+                  </p>
+                </div>
+              </div>
+
+              {/* Carte 3 - Conseil & Investissement */}
+              <div className="bg-white rounded-xl shadow-xl overflow-hidden transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl">
+                <div className="h-48 overflow-hidden relative">
+                  <img 
+                    src="https://images.unsplash.com/photo-1573164574572-cb89e39749b4?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1169&q=80" 
+                    alt="Conseil et Investissement" 
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end">
+                    <h3 className="text-white text-xl font-semibold p-4">Conseil & Investissement</h3>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <p className="text-gray-700">
+                    Bénéficiez de notre expertise pour vos projets d'investissement immobilier. Notre connaissance approfondie du marché sénégalais vous permet d'identifier les opportunités les plus prometteuses et de maximiser le rendement de vos investissements.
+                  </p>
+                </div>
+              </div>
+            </div>
             
-            <div className="max-w-lg mx-auto w-full mt-8 bg-white p-8 rounded-lg shadow-lg">
+            <div className="max-w-lg mx-auto w-full mt-16 bg-white p-8 rounded-lg shadow-lg">
               <h3 
                 className="text-lg font-medium mb-4 text-center"
                 style={{ color: agency?.primary_color || '#000000' }}
@@ -973,74 +1031,151 @@ export default function AgencyHomePage() {
 
       <footer 
         id="about"
-        className="py-12"
+        className="pt-16 pb-8"
         style={{
           backgroundColor: agency?.primary_color || '#000000',
+          backgroundImage: 'linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 100%)',
           color: 'white'
         }}
       >
         <div className="container mx-auto px-4">
-          <div className="flex flex-col space-y-8">
+          {/* Vagues décoratives en haut du footer */}
+          <div className="absolute left-0 right-0 -top-10 overflow-hidden">
+            <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full h-10">
+              <path 
+                d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" 
+                style={{ fill: agency?.primary_color || '#000000' }}
+              ></path>
+            </svg>
+          </div>
+
+          {/* Section principale */}
+          <div className="flex flex-col space-y-12">
+            {/* Informations de contact avec icônes animées */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-5 h-5 text-white" />
+              <div className="transform transition-transform duration-300 hover:-translate-y-2 bg-white/10 backdrop-blur-sm p-6 rounded-xl shadow-lg">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-3 rounded-full bg-white/20 animate-pulse">
+                    <MapPin className="w-6 h-6 text-white" />
+                  </div>
                   <h3 
-                    className="text-lg font-medium"
+                    className="text-xl font-medium"
                     style={{ color: agency?.secondary_color || '#ffffff' }}
                   >
                     ADRESSE
                   </h3>
                 </div>
-                <p className="text-white">
+                <p className="text-white text-lg">
                   {agency?.address}<br />
                   {agency?.city} {agency?.postal_code}
                 </p>
               </div>
 
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Phone className="w-5 h-5 text-white" />
+              <div className="transform transition-transform duration-300 hover:-translate-y-2 bg-white/10 backdrop-blur-sm p-6 rounded-xl shadow-lg">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-3 rounded-full bg-white/20 animate-pulse">
+                    <Phone className="w-6 h-6 text-white" />
+                  </div>
                   <h3 
-                    className="text-lg font-medium"
+                    className="text-xl font-medium"
                     style={{ color: agency?.secondary_color || '#ffffff' }}
                   >
                     TÉLÉPHONE
                   </h3>
                 </div>
-                <p className="text-white">
+                <p className="text-white text-lg">
                   {agency?.contact_phone}
                 </p>
+                <button 
+                  className="mt-4 px-4 py-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors flex items-center gap-2"
+                  onClick={() => {
+                    if (agency?.contact_phone) {
+                      window.location.href = `tel:${agency.contact_phone}`;
+                    }
+                  }}
+                >
+                  <Phone className="w-4 h-4" />
+                  <span>Appeler maintenant</span>
+                </button>
               </div>
 
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Mail className="w-5 h-5 text-white" />
+              <div className="transform transition-transform duration-300 hover:-translate-y-2 bg-white/10 backdrop-blur-sm p-6 rounded-xl shadow-lg">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-3 rounded-full bg-white/20 animate-pulse">
+                    <Mail className="w-6 h-6 text-white" />
+                  </div>
                   <h3 
-                    className="text-lg font-medium"
+                    className="text-xl font-medium"
                     style={{ color: agency?.secondary_color || '#ffffff' }}
                   >
                     E-MAIL
                   </h3>
                 </div>
-                <p className="text-white">
+                <p className="text-white text-lg">
                   {agency?.contact_email}
                 </p>
+                <button 
+                  className="mt-4 px-4 py-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors flex items-center gap-2"
+                  onClick={() => {
+                    if (agency?.contact_email) {
+                      window.location.href = `mailto:${agency.contact_email}`;
+                    }
+                  }}
+                >
+                  <Mail className="w-4 h-4" />
+                  <span>Envoyer un email</span>
+                </button>
               </div>
             </div>
 
-            <div className="flex justify-center mt-8">
-              {agency?.logo_url ? (
+            {/* Logos et sponsors */}
+            <div className="flex flex-col items-center justify-center gap-8 mt-12 border-t border-white/20 pt-8">
+              {/* Logo de l'agence */}
+              <div className="transform transition-all duration-500 hover:scale-110">
+                {agency?.logo_url ? (
+                  <img 
+                    src={agency.logo_url} 
+                    alt={agency.agency_name}
+                    className="h-24 object-contain rounded-full bg-white p-3 shadow-[0_0_15px_rgba(255,255,255,0.5)]"
+                  />
+                ) : (
+                  <h2 className="text-3xl font-light text-white bg-white/10 p-6 rounded-full">
+                    {agency?.agency_name}
+                  </h2>
+                )}
+              </div>
+
+              {/* Séparateur stylisé */}
+              <div className="flex items-center w-full max-w-md my-6">
+                <div className="flex-grow h-px bg-gradient-to-r from-transparent via-white to-transparent"></div>
+                <span className="px-4 text-sm text-white/70">Propulsé par</span>
+                <div className="flex-grow h-px bg-gradient-to-r from-white to-transparent"></div>
+              </div>
+
+              {/* Logo LYCS IMMO comme sponsor */}
+              <div className="bg-white/10 backdrop-blur-sm p-4 rounded-xl hover:bg-white/20 transition-all duration-300 flex items-center gap-4">
                 <img 
-                  src={agency.logo_url} 
-                  alt={agency.agency_name}
-                  className="h-20 object-contain rounded-full bg-white p-2"
+                  src="public/lovable-uploads/4ba55583-9b92-4de1-9e56-db4c7b893b4d.png" 
+                  alt="LYCS IMMO"
+                  className="h-12 object-contain"
                 />
-              ) : (
-                <h2 className="text-2xl font-light text-white">
-                  {agency?.agency_name}
-                </h2>
-              )}
+                <div>
+                  <h4 className="text-lg font-medium" style={{ color: agency?.secondary_color || '#ffffff' }}>LYCS IMMO</h4>
+                  <p className="text-sm text-white/80">La plateforme immobilière de référence au Sénégal</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Copyright et liens légaux */}
+            <div className="mt-12 pt-6 border-t border-white/10 text-center text-sm text-white/60">
+              <p>© {new Date().getFullYear()} {agency?.agency_name}. Tous droits réservés.</p>
+              <div className="flex justify-center gap-4 mt-2">
+                <a href="#" className="hover:text-white transition-colors">Mentions légales</a>
+                <span>•</span>
+                <a href="#" className="hover:text-white transition-colors">Politique de confidentialité</a>
+                <span>•</span>
+                <a href="#" className="hover:text-white transition-colors">CGU</a>
+              </div>
             </div>
           </div>
         </div>
