@@ -33,7 +33,7 @@ export default function PropertyHeader({
           <img 
             src={agencyLogo} 
             alt={agencyName} 
-            className="h-10 object-contain"
+            className="h-10 object-contain rounded-full bg-white p-1"
           />
         ) : (
           <span className="text-white text-lg font-semibold">
