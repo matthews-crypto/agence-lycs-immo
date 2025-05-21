@@ -198,7 +198,7 @@ export function AgencySidebar() {
           <img 
             src={agency.logo_url} 
             alt={agency.agency_name}
-            className="w-32 h-32 object-cover rounded-full mx-auto"
+            className="w-24 h-24 object-cover rounded-full mx-auto"
           />
         ) : (
           <div className="flex items-center gap-2">
