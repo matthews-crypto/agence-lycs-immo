@@ -8,6 +8,7 @@ interface Message {
   role: 'user' | 'bot';
   content: string;
   timestamp?: string;
+  read?: boolean;
 }
 
 interface AgencyChatDialogProps {
@@ -19,18 +20,38 @@ interface AgencyChatDialogProps {
     primary_color?: string;
     slug?: string;
   };
+  messages: Message[];
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
+  onClickOutside?: (e: MouseEvent) => void;
 }
 
-export function AgencyChatDialog({ isOpen, onClose, agency }: Readonly<AgencyChatDialogProps>) {
-  const [messages, setMessages] = useState<Message[]>([]);
+export function AgencyChatDialog({ isOpen, onClose, agency, messages, setMessages, onClickOutside }: Readonly<AgencyChatDialogProps>) {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   // Log pour vérifier l'objet agency
   useEffect(() => {
     console.log('Agency object in AgencyChatDialog:', agency);
   }, [agency]);
+  
+  // Gestion des clics en dehors du chat
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dialogRef.current && !dialogRef.current.contains(event.target as Node) && onClickOutside) {
+        onClickOutside(event);
+      }
+    };
+    
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, onClickOutside]);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -87,6 +108,7 @@ export function AgencyChatDialog({ isOpen, onClose, agency }: Readonly<AgencyCha
         role: 'bot',
         content: data.output || (typeof data === 'string' ? data : 'Désolé, je n\'ai pas compris votre demande.'),
         timestamp: new Date().toISOString(),
+        read: false,
       };
 
       setMessages(prev => [...prev, botMessage]);
@@ -96,6 +118,7 @@ export function AgencyChatDialog({ isOpen, onClose, agency }: Readonly<AgencyCha
         role: 'bot',
         content: "Désolé, une erreur est survenue lors de l'envoi du message.",
         timestamp: new Date().toISOString(),
+        read: false,
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
@@ -106,7 +129,7 @@ export function AgencyChatDialog({ isOpen, onClose, agency }: Readonly<AgencyCha
   if (!isOpen) return null;
 
   return (
-    <div className="fixed bottom-20 right-4 w-80 bg-white rounded-lg shadow-lg border p-4 z-50">
+    <div ref={dialogRef} className="fixed bottom-20 right-4 w-80 bg-white rounded-lg shadow-lg border p-4 z-50">
       <div className="flex justify-between items-center mb-4">
         <h3 className="font-semibold">Assistant {agency?.agency_name}</h3>
         <Button

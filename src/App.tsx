@@ -49,6 +49,7 @@ import CoproprieteePage from "@/pages/agency/CoproprieteePage"
 import AppelDeFondPage from "@/pages/agency/AppelDeFondPage"
 import AppelDeFondDetailPage from "@/pages/agency/AppelDeFondDetailPage"
 import SalesPage from "@/pages/agency/SalesPage"
+import ResetPasswordPage from "@/pages/agency/ResetPasswordPage"
 
 const queryClient = new QueryClient()
 
@@ -91,6 +92,7 @@ const App = () => (
                 {/* Public agency routes */}
                 <Route index element={<AgencyHomePage />} />
                 <Route path="auth" element={<AgencyAuthPage />} />
+                <Route path="reset-password" element={<ResetPasswordPage />} />
                 <Route path="properties" element={<AgencyPropertiesPage />} />
                 <Route
                   path="properties/:propertyId"
