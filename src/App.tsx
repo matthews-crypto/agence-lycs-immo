@@ -50,6 +50,7 @@ import AppelDeFondPage from "@/pages/agency/AppelDeFondPage"
 import AppelDeFondDetailPage from "@/pages/agency/AppelDeFondDetailPage"
 import SalesPage from "@/pages/agency/SalesPage"
 import ResetPasswordPage from "@/pages/agency/ResetPasswordPage"
+import ContractEditorPage from "@/pages/agency/ContractEditorPage"
 
 const queryClient = new QueryClient()
 
@@ -124,6 +125,7 @@ const App = () => (
                   <Route path="payments" element={<PaymentsPage />} />
                   <Route path="payments/:locationId" element={<PaymentDetailsPage />} />
                   <Route path="settings" element={<AgencySettingsPage />} />
+                  <Route path="contract-editor" element={<ContractEditorPage />} />
                   <Route
                     path="properties"
                     element={<AgencyPropertiesPage />}

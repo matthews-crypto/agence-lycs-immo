@@ -62,6 +62,15 @@ interface Location {
   updated_at: string;
 }
 
+// Fonction utilitaire pour normaliser les chaînes (suppression des accents et mise en minuscules)
+const normalizeString = (str: string | null | undefined): string => {
+  if (!str) return '';
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, ''); // Supprime les accents
+};
+
 const ProspectionPage = () => {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [filteredReservations, setFilteredReservations] = useState<Reservation[]>([]);
@@ -373,14 +382,16 @@ const ProspectionPage = () => {
     let filtered = [...reservations];
 
     if (propertyRefFilter) {
+      const normalizedFilter = normalizeString(propertyRefFilter);
       filtered = filtered.filter(res => 
-        res.property?.reference_number?.toLowerCase().includes(propertyRefFilter.toLowerCase())
+        normalizeString(res.property?.reference_number).includes(normalizedFilter)
       );
     }
 
     if (reservationRefFilter) {
+      const normalizedFilter = normalizeString(reservationRefFilter);
       filtered = filtered.filter(res => 
-        res.reservation_number.toLowerCase().includes(reservationRefFilter.toLowerCase())
+        normalizeString(res.reservation_number).includes(normalizedFilter)
       );
     }
 
@@ -393,9 +404,10 @@ const ProspectionPage = () => {
     }
 
     if (searchQuery) {
+      const normalizedQuery = normalizeString(searchQuery);
       filtered = filtered.filter(res => 
-        res.client_phone.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        res.property?.title?.toLowerCase().includes(searchQuery.toLowerCase())
+        normalizeString(res.client_phone).includes(normalizedQuery) ||
+        normalizeString(res.property?.title).includes(normalizedQuery)
       );
     }
 
@@ -673,7 +685,8 @@ const ProspectionPage = () => {
       }
       
       if (selectedReservation.type === 'LOCATION') {
-        generateContractPDF(
+        // Pour les locations, essayer d'utiliser un modèle personnalisé
+        await generateCustomContractPDF(
           selectedReservation, 
           clientDetails, 
           clientCIN, 
@@ -681,6 +694,7 @@ const ProspectionPage = () => {
           rentalEndDate
         );
       } else {
+        // Pour les ventes, utiliser le modèle standard pour le moment
         generateContractPDF(selectedReservation, clientDetails, clientCIN);
       }
       
@@ -715,6 +729,308 @@ const ProspectionPage = () => {
     }
   };
 
+  // Fonction pour générer un contrat personnalisé à partir du modèle de l'agence
+  const generateCustomContractPDF = async (
+    reservation: Reservation, 
+    client: Client, 
+    cin: string,
+    startDate?: string, 
+    endDate?: string
+  ) => {
+    try {
+      // Récupérer le modèle de contrat personnalisé pour cette agence
+      // @ts-expect-error - La table contract_templates sera créée via SQL
+      const { data: templateData, error: templateError } = await supabase
+        .from('contract_templates')
+        .select('*')
+        .eq('agency_id', agency?.id)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (templateError || !templateData) {
+        console.log('Aucun modèle de contrat personnalisé trouvé, utilisation du modèle standard');
+        // Fallback au modèle standard si aucun modèle personnalisé n'est trouvé
+        generateContractPDF(reservation, client, cin, startDate, endDate);
+        return;
+      }
+      
+      console.log('Modèle de contrat personnalisé trouvé:', templateData);
+      
+      // Récupérer les données du propriétaire si disponible
+      let proprietaireData = null;
+      if (reservation.property?.proprio_id) {
+        const { data: proprio, error: proprioError } = await supabase
+          .from('proprietaire')
+          .select('*')
+          .eq('id', reservation.property.proprio_id)
+          .single();
+        
+        if (!proprioError && proprio) {
+          proprietaireData = proprio;
+        }
+      }
+      // Récupérer les données de l'agence
+      const agencyData = agency;
+      
+      // Créer un nouveau document PDF
+      const doc = new jsPDF();
+      
+      // Interface pour les options de texte de jsPDF
+      interface TextOptions {
+        align?: 'left' | 'center' | 'right';
+        baseline?: string;
+        angle?: number;
+        charSpace?: number;
+        lineHeightFactor?: number;
+        maxWidth?: number;
+        flags?: { noBOM?: boolean; autoencode?: boolean };
+      }
+      
+      // Dessiner un rectangle pour l'en-tête avec la couleur spécifiée
+      const headerColor = templateData.template_json.settings.headerColor || '#f8f9fa';
+      // Convertir la couleur hex en valeurs RGB
+      const hexToRgb = (hex: string) => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16)
+        } : { r: 248, g: 249, b: 250 }; // Valeur par défaut #f8f9fa
+      };
+      
+      const headerRgb = hexToRgb(headerColor);
+      doc.setFillColor(headerRgb.r, headerRgb.g, headerRgb.b);
+      
+      // Ajouter le logo de l'agence si disponible et si l'option est activée
+      const showLogo = templateData.template_json.settings.showLogo !== false; // Par défaut true si non défini
+      
+      // Dessiner le rectangle de l'en-tête avec une hauteur dépendant du contenu
+      doc.rect(0, 0, 210, showLogo ? 50 : 30, 'F'); // Dessiner un rectangle pour l'en-tête
+      
+      if (showLogo && agency?.logo_url) {
+        try {
+          // Position du logo selon les paramètres du modèle
+          const logoPosition = templateData.template_json.settings.logoPosition || 'center';
+          let xPos = 20; // Position par défaut (gauche)
+          
+          if (logoPosition === 'center') {
+            xPos = 85; // Centre
+          } else if (logoPosition === 'right') {
+            xPos = 150; // Droite
+          }
+          
+          doc.addImage(agency.logo_url, 'JPEG', xPos, 10, 40, 25);
+        } catch (error) {
+          console.error('Error adding logo to PDF:', error);
+        }
+      }
+      
+      // Ajouter le nom de l'agence si l'option est activée
+      const showAgencyName = templateData.template_json.settings.showAgencyName !== false; // Par défaut true si non défini
+      
+      if (showAgencyName && agency?.agency_name) {
+        const agencyNamePosition = templateData.template_json.settings.agencyNamePosition || 'center';
+        let xPos = 20; // Position par défaut (gauche)
+        const textOptions: TextOptions = { align: 'left' };
+        
+        if (agencyNamePosition === 'center') {
+          xPos = 105; // Centre de la page (210/2)
+          textOptions.align = 'center';
+        } else if (agencyNamePosition === 'right') {
+          xPos = 190; // Droite (marge de 20 depuis la droite)
+          textOptions.align = 'right';
+        }
+        
+        // Définir la couleur du texte pour le nom de l'agence
+        const agencyNameColor = templateData.template_json.settings.agencyNameColor || '#000000';
+        doc.setTextColor(agencyNameColor);
+        
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text(agency.agency_name, xPos, showLogo ? 40 : 20, textOptions);
+        
+        // Réinitialiser la couleur du texte pour le reste du document
+        doc.setTextColor(0, 0, 0); // Noir par défaut
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(12);
+      }
+        
+      // Créer un dictionnaire de valeurs pour remplacer les variables
+      const valueMap: Record<string, Record<string, string>> = {
+        client: {
+          nom: client.last_name || '',
+          prenom: client.first_name || '',
+          email: client.email || '',
+          telephone: client.phone_number || '',
+          adresse: client.address || ''
+        },
+        properties: {
+          title: reservation.property?.title || '',
+          address: reservation.property?.address || '',
+          price: new Intl.NumberFormat('fr-FR').format(reservation.property?.price || 0).replace(/\//g, ''),
+          surface_area: reservation.property?.surface_area?.toString() || '',
+          bedrooms: reservation.property?.bedrooms?.toString() || '',
+          reference_number: reservation.property?.reference_number || ''
+        },
+        locations: {
+          date_debut: startDate ? format(new Date(startDate), 'dd/MM/yyyy', { locale: fr }) : '',
+          date_fin: endDate ? format(new Date(endDate), 'dd/MM/yyyy', { locale: fr }) : '',
+          prix_location: new Intl.NumberFormat('fr-FR').format(reservation.property?.price || 0).replace(/\//g, ''),
+          caution: new Intl.NumberFormat('fr-FR').format((reservation.property?.price || 0) * 2).replace(/\//g, '')
+        },
+        proprietaire: {
+          nom: proprietaireData?.nom || '',
+          prenom: proprietaireData?.prenom || '',
+          email: proprietaireData?.email || '',
+          telephone: proprietaireData?.telephone || '',
+          adresse: proprietaireData?.adresse || ''
+        },
+        agencies: {
+          agency_name: agencyData?.agency_name || '',
+          contact_email: agencyData?.contact_email || '',
+          contact_phone: agencyData?.contact_phone || '',
+          address: agencyData?.address || '',
+          city: agencyData?.city || '',
+          postal_code: agencyData?.postal_code || ''
+        }
+      };
+      
+      // Fonction pour remplacer les variables dans un texte
+      const replaceVariables = (text: string): string => {
+        return text.replace(/\{\{([\w]+)\.([\w]+)\}\}/g, (match, table, field) => {
+          if (valueMap[table] && valueMap[table][field] !== undefined) {
+            return valueMap[table][field];
+          }
+          return match; // Garder la variable telle quelle si pas de correspondance
+        });
+      };
+      
+      // Parcourir les blocs du modèle et les ajouter au PDF
+      // Définir la position verticale initiale en fonction de la hauteur de l'en-tête
+      let yPosition = showLogo ? 60 : 40; // Position verticale initiale ajustée pour commencer après l'en-tête
+      
+      // Interface pour les blocs du modèle de contrat
+      interface TemplateBlock {
+        id: string;
+        type: string;
+        content: string;
+        position: { x: number; y: number };
+        style?: {
+          fontSize?: string;
+          fontWeight?: string;
+          fontFamily?: string;
+          color?: string;
+          textAlign?: 'left' | 'center' | 'right';
+        };
+      }
+      
+      // Traiter chaque bloc de texte du modèle
+      templateData.template_json.blocks.forEach((block: TemplateBlock) => {
+        if (block.type === 'text' && block.content) {
+          // Remplacer les variables dans le contenu du bloc
+          const processedContent = replaceVariables(block.content);
+          
+          // Définir le style du texte
+          const fontSize = block.style?.fontSize ? parseInt(block.style.fontSize) : 12;
+          doc.setFontSize(fontSize);
+          
+          if (block.style?.fontWeight === 'bold') {
+            doc.setFont('helvetica', 'bold');
+          } else {
+            doc.setFont('helvetica', 'normal');
+          }
+          
+          // Ajouter le texte au PDF avec l'alignement approprié
+          const lines = doc.splitTextToSize(processedContent, 170); // Largeur maximale
+          
+          // Déterminer l'alignement horizontal
+          const textAlign = block.style?.textAlign || 'left';
+          let xPosition = 20; // Position par défaut (gauche)
+          
+          // Interface pour les options de texte de jsPDF
+          interface TextOptions {
+            align?: 'left' | 'center' | 'right';
+            baseline?: string;
+            angle?: number;
+            charSpace?: number;
+            lineHeightFactor?: number;
+            maxWidth?: number;
+            flags?: { noBOM?: boolean; autoencode?: boolean };
+          }
+          
+          const textOptions: TextOptions = {};
+          
+          if (textAlign === 'center') {
+            xPosition = 105; // Centre de la page (210/2)
+            textOptions.align = 'center';
+          } else if (textAlign === 'right') {
+            xPosition = 190; // Droite (marge de 20 depuis la droite)
+            textOptions.align = 'right';
+          }
+          
+          doc.text(lines, xPosition, yPosition, textOptions);
+          
+          // Mettre à jour la position verticale pour le prochain bloc
+          yPosition += lines.length * (fontSize / 2) + 10;
+        }
+      });
+      
+      // Ajouter les signatures au bas de la page
+      if (templateData.template_json.settings.signatures) {
+        // Positionner les signatures au bas de la page
+        const pageHeight = doc.internal.pageSize.height;
+        const signatureY = pageHeight - 20; // 20 units from the bottom
+        
+        // Ajouter chaque signature activée
+        templateData.template_json.settings.signatures
+          .filter(signature => signature.enabled)
+          .forEach(signature => {
+            // Déterminer la position horizontale de la signature
+            let xPos = 40; // Position par défaut (gauche)
+            const textOptions: TextOptions = { align: 'left' };
+            
+            if (signature.position === 'center') {
+              xPos = 105; // Centre de la page (210/2)
+              textOptions.align = 'center';
+            } else if (signature.position === 'right') {
+              xPos = 170; // Droite
+              textOptions.align = 'right';
+            }
+            
+            // Ajouter le texte de la signature
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text(signature.text, xPos, signatureY, textOptions);
+            
+            // Ajouter un trait sous la signature
+            const lineWidth = 60; // Largeur du trait
+            let lineStartX = xPos - lineWidth / 2;
+            
+            if (signature.position === 'left') {
+              lineStartX = 20;
+            } else if (signature.position === 'right') {
+              lineStartX = 130;
+            }
+            
+            doc.line(lineStartX, signatureY + 5, lineStartX + lineWidth, signatureY + 5);
+          });
+      }
+      
+      // Sauvegarder le PDF
+      doc.save(`Contrat_${reservation.reservation_number}.pdf`);
+      
+      toast.success('Contrat personnalisé généré avec succès');
+    } catch (error) {
+      console.error('Error generating custom contract PDF:', error);
+      toast.error('Erreur lors de la génération du contrat personnalisé');
+      
+      // Fallback au modèle standard en cas d'erreur
+      generateContractPDF(reservation, client, cin, startDate, endDate);
+    }
+  };
+
+  // Fonction standard de génération de contrat (utilisée comme fallback)
   const generateContractPDF = (
     reservation: Reservation, 
     client: Client, 
@@ -804,12 +1120,7 @@ const ProspectionPage = () => {
         }
       }
       
-      // Position des signatures
-      doc.setFontSize(12);
-      doc.text("Signature du Client", 40, signatureY);
-      doc.text("Signature de l'Agent", 150, signatureY);
-      doc.line(20, signatureY + 10, 80, signatureY + 10);
-      doc.line(130, signatureY + 10, 190, signatureY + 10);
+      // Les signatures ont été supprimées à la demande du client
       
       doc.save(`Contrat_${reservation.reservation_number}.pdf`);
       
