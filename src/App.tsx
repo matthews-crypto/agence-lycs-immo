@@ -51,6 +51,7 @@ import AppelDeFondDetailPage from "@/pages/agency/AppelDeFondDetailPage"
 import SalesPage from "@/pages/agency/SalesPage"
 import ResetPasswordPage from "@/pages/agency/ResetPasswordPage"
 import ContractEditorPage from "@/pages/agency/ContractEditorPage"
+import ContactRequestsPage from "@/pages/agency/ContactRequestsPage"
 
 const queryClient = new QueryClient()
 
@@ -135,6 +136,7 @@ const App = () => (
                   <Route path="copropriete" element={<CoproprieteePage />} />
                   <Route path="appel-de-fond" element={<AppelDeFondPage />} />
                   <Route path="appel-de-fond/:id" element={<AppelDeFondDetailPage />} />
+                  <Route path="contact-requests" element={<ContactRequestsPage />} />
                 </Route>
 
                 {/* Agent routes */}

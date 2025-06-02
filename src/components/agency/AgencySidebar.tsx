@@ -14,6 +14,7 @@ import {
   UserSquare,
   Banknote,
   ShoppingBag,
+  Receipt,
 } from "lucide-react"
 import {
   Sidebar,
@@ -40,6 +41,7 @@ export function AgencySidebar() {
   const { logout } = useAgencyAuthStore()
   const { agency } = useAgencyContext()
   const [newOpportunityCount, setNewOpportunityCount] = useState(0)
+  const [newContactMessagesCount, setNewContactMessagesCount] = useState(0)
 
   useEffect(() => {
     if (agency?.secondary_color) {
@@ -53,6 +55,11 @@ export function AgencySidebar() {
       console.log('Resetting opportunity count - visiting prospection page');
       setNewOpportunityCount(0);
     }
+    
+    if (location.pathname.includes('/agency/contact-requests')) {
+      console.log('Resetting contact messages count - visiting contact-requests page');
+      setNewContactMessagesCount(0);
+    }
   }, [location.pathname]);
 
   useEffect(() => {
@@ -64,9 +71,10 @@ export function AgencySidebar() {
       return;
     }
 
-    console.log('Setting up realtime subscription for reservations');
+    console.log('Setting up realtime subscription for reservations and contact messages');
     
-    const channel = supabase
+    // Abonnement aux réservations
+    const reservationsChannel = supabase
       .channel('agency-reservations')
       .on('postgres_changes', 
         {
@@ -84,14 +92,90 @@ export function AgencySidebar() {
         }
       )
       .subscribe((status) => {
-        console.log('Subscription status:', status);
+        console.log('Reservations subscription status:', status);
       });
+      
+    // Abonnement aux messages de contact
+    const contactMessagesChannel = supabase
+      .channel('agency-contact-messages')
+      .on('postgres_changes', 
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'contact_messages',
+          filter: `agency_id=eq.${agency.id}`
+        },
+        (payload) => {
+          console.log('New contact message received:', payload);
+          setNewContactMessagesCount(prev => prev + 1);
+          toast.success('Nouveau message de contact reçu!', {
+            position: 'top-right',
+          });
+        }
+      )
+      .subscribe((status) => {
+        console.log('Contact messages subscription status:', status);
+      });
+      
+    // Écouteur d'événement pour la réinitialisation du compteur de messages
+    const handleContactMessagesViewed = (event: CustomEvent) => {
+      if (event.detail?.agencyId === agency.id) {
+        setNewContactMessagesCount(0);
+      }
+    };
+    
+    window.addEventListener('contact-messages-viewed', handleContactMessagesViewed as EventListener);
 
     return () => {
-      console.log('Cleaning up realtime subscription');
-      supabase.removeChannel(channel);
+      console.log('Cleaning up realtime subscriptions');
+      supabase.removeChannel(reservationsChannel);
+      supabase.removeChannel(contactMessagesChannel);
+      window.removeEventListener('contact-messages-viewed', handleContactMessagesViewed as EventListener);
     };
   }, [agency?.id, location.pathname]);
+  
+  // Charger le compteur initial de messages non lus au démarrage
+  useEffect(() => {
+    if (!agency?.id) return;
+    
+    const checkNewContactMessages = async () => {
+      try {
+        // Récupérer le dernier timestamp de consultation depuis localStorage
+        const storedData = localStorage.getItem(`contact_messages_viewed_${agency.id}`);
+        let lastViewedTimestamp = 0;
+        let viewedMessageIds: string[] = [];
+        
+        if (storedData) {
+          const parsedData = JSON.parse(storedData) as { lastViewedTimestamp: number, messageIds: string[] };
+          lastViewedTimestamp = parsedData.lastViewedTimestamp;
+          viewedMessageIds = parsedData.messageIds;
+        }
+        
+        // Convertir le timestamp en date ISO pour la comparaison avec created_at
+        const lastViewedDate = new Date(lastViewedTimestamp).toISOString();
+        
+        // Récupérer le nombre de nouveaux messages depuis la dernière consultation
+        const { data, error, count } = await supabase
+          .from('contact_messages')
+          .select('id', { count: 'exact' })
+          .eq('agency_id', agency.id)
+          .gt('created_at', lastViewedDate);
+          
+        if (error) {
+          console.error('Erreur lors de la vérification des nouveaux messages:', error);
+          return;
+        }
+        
+        // Filtrer les messages déjà vus (si l'ID est dans viewedMessageIds)
+        const newCount = data ? data.filter(msg => !viewedMessageIds.includes(msg.id)).length : 0;
+        setNewContactMessagesCount(newCount);
+      } catch (error) {
+        console.error('Erreur lors de la vérification des nouveaux messages:', error);
+      }
+    };
+    
+    checkNewContactMessages();
+  }, [agency?.id]);
 
   const handleLogout = async () => {
     try {
@@ -134,6 +218,12 @@ export function AgencySidebar() {
           icon: Calendar,
           url: `/${agency?.slug}/agency/appointments`,
         },
+        {
+          title: "Demandes de contact",
+          icon: MessageSquare,
+          url: `/${agency?.slug}/agency/contact-requests`,
+          badgeCount: newContactMessagesCount,
+        },
       ],
     },
     {
@@ -143,6 +233,11 @@ export function AgencySidebar() {
           title: "Planning location",
           icon: MapPin,
           url: `/${agency?.slug}/agency/planning`,
+        },
+        {
+          title: "Paiements",
+          icon: Receipt,
+          url: `/${agency?.slug}/agency/payments`,
         },
         {
           title: "Ventes",

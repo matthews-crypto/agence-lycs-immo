@@ -82,6 +82,7 @@ const ProspectionPage = () => {
   const [reservationRefFilter, setReservationRefFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [opportunityTypeFilter, setOpportunityTypeFilter] = useState("");
+  const [monthFilter, setMonthFilter] = useState("");
   const [clientDetails, setClientDetails] = useState<Client | null>(null);
   const [isClientReservationsOpen, setIsClientReservationsOpen] = useState(false);
   const [clientReservations, setClientReservations] = useState<Reservation[]>([]);
@@ -153,6 +154,7 @@ const ProspectionPage = () => {
               rental_start_date,
               rental_end_date,
               appointment_date,
+              note_rv,
               property:property_id (
                 id,
                 title,
@@ -256,7 +258,7 @@ const ProspectionPage = () => {
 
   useEffect(() => {
     applyFilters();
-  }, [searchQuery, propertyRefFilter, reservationRefFilter, statusFilter, opportunityTypeFilter, reservations]);
+  }, [searchQuery, propertyRefFilter, reservationRefFilter, statusFilter, opportunityTypeFilter, monthFilter, reservations]);
 
   const fetchClientDetails = async (phoneNumber: string) => {
     try {
@@ -303,32 +305,57 @@ const ProspectionPage = () => {
 
   const fetchLocationData = async (clientId: string, propertyId: string) => {
     try {
+      console.log('Fetching location data for client:', clientId, 'and property:', propertyId);
+      
+      // Vérifier si les dates sont déjà présentes dans la réservation sélectionnée
+      if (selectedReservation) {
+        console.log('Selected reservation dates:', {
+          start: selectedReservation.rental_start_date,
+          end: selectedReservation.rental_end_date
+        });
+        
+        // Si la réservation contient déjà les dates, les utiliser directement
+        if (selectedReservation.rental_start_date) {
+          setRentalStartDate(format(new Date(selectedReservation.rental_start_date), 'yyyy-MM-dd'));
+          console.log('Using start date from reservation:', format(new Date(selectedReservation.rental_start_date), 'yyyy-MM-dd'));
+        }
+        
+        if (selectedReservation.rental_end_date) {
+          setRentalEndDate(format(new Date(selectedReservation.rental_end_date), 'yyyy-MM-dd'));
+          console.log('Using end date from reservation:', format(new Date(selectedReservation.rental_end_date), 'yyyy-MM-dd'));
+        }
+      }
+      
+      // Continuer à récupérer les données de location pour les autres informations
       const { data, error } = await supabase
         .from('locations')
-        .select('id, client_cin, document_url, rental_start_date, rental_end_date')
-        .eq('client_id', clientId)
-        .eq('property_id', propertyId)
-        .single();
+        .select('id, client_cin, document_url, rental_start_date, rental_end_date, client_id')
+        .eq('property_id', propertyId);
 
       if (error) {
-        if (error.code !== 'PGRST116') {
-          console.error('Error fetching location data:', error);
-        }
+        console.error('Error fetching location data:', error);
+        setLocationData(null);
+        return;
+      }
+      
+      console.log('Location data received:', data);
+      
+      // Filtrer pour trouver la location correspondant au client
+      const clientLocation = data?.find(loc => loc.client_id === clientId);
+      
+      if (!clientLocation) {
+        console.log('No location found for this client and property');
         setLocationData(null);
         return;
       }
 
-      setLocationData(data);
-      if (data?.client_cin) {
-        setClientCIN(data.client_cin);
-      }
+      console.log('Client location found:', clientLocation);
       
-      if (data?.rental_start_date) {
-        setRentalStartDate(format(new Date(data.rental_start_date), 'yyyy-MM-dd'));
-      }
+      // Utiliser les données de la location trouvée
+      setLocationData(clientLocation);
       
-      if (data?.rental_end_date) {
-        setRentalEndDate(format(new Date(data.rental_end_date), 'yyyy-MM-dd'));
+      if (clientLocation?.client_cin) {
+        setClientCIN(clientLocation.client_cin);
       }
       
     } catch (error) {
@@ -401,6 +428,33 @@ const ProspectionPage = () => {
 
     if (opportunityTypeFilter && opportunityTypeFilter !== "all") {
       filtered = filtered.filter(res => res.type.toUpperCase() === opportunityTypeFilter.toUpperCase());
+    }
+
+    // Filtre par mois
+    if (monthFilter && monthFilter !== "all") {
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1; // getMonth() retourne 0-11
+      
+      filtered = filtered.filter(res => {
+        const creationDate = new Date(res.created_at);
+        const creationMonth = creationDate.getMonth() + 1; // 1-12
+        const creationYear = creationDate.getFullYear();
+        
+        if (monthFilter === "current") {
+          // Mois en cours
+          return creationMonth === currentMonth && creationYear === currentYear;
+        } else if (monthFilter === "previous") {
+          // Mois précédent
+          const previousMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+          const previousMonthYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+          return creationMonth === previousMonth && creationYear === previousMonthYear;
+        } else {
+          // Mois spécifique (01-12)
+          const selectedMonth = parseInt(monthFilter);
+          return creationMonth === selectedMonth && creationYear === currentYear;
+        }
+      });
     }
 
     if (searchQuery) {
@@ -1134,8 +1188,13 @@ const ProspectionPage = () => {
   const handleReservationClick = (reservation: Reservation) => {
     setSelectedReservation(reservation);
     
+    // Initialiser la date de rendez-vous
     setAppointmentDate(reservation.appointment_date ? new Date(reservation.appointment_date) : null);
     
+    // Initialiser la note de visite
+    setVisitNote(reservation.note_rv || "");
+    
+    // Initialiser les dates de location
     if (reservation.type === 'Location') {
       if (reservation.rental_start_date) {
         setRentalStartDate(format(new Date(reservation.rental_start_date), 'yyyy-MM-dd'));
@@ -1207,24 +1266,35 @@ const ProspectionPage = () => {
         toast.error('Erreur lors de la mise à jour de la réservation');
         return;
       }
-
+      
       toast.success('Rendez-vous programmé avec succès');
       
-      if (selectedReservation) {
-        const updatedReservation = { ...selectedReservation, appointment_date: date.toISOString(), status: 'Visite programmée' };
-        setSelectedReservation(updatedReservation);
-        
-        const updatedReservations = reservations.map(res => 
-          res.id === selectedReservation.id ? updatedReservation : res
-        );
-        setReservations(updatedReservations);
-        
-        if (selectedReservation.status === 'En attente') {
-          setPendingOpportunitiesCount(count => Math.max(0, count - 1));
-        }
-        
-        applyFilters();
+      // Créer une réservation mise à jour avec le nouveau statut
+      const updatedReservation = { 
+        ...selectedReservation, 
+        appointment_date: date.toISOString(), 
+        status: 'Visite programmée'
+      };
+      
+      // Mettre à jour la réservation sélectionnée
+      setSelectedReservation(updatedReservation);
+      
+      // Initialiser la note de visite (vide puisque c'est un nouveau rendez-vous)
+      setVisitNote("");
+      
+      // Mettre à jour la liste des réservations
+      const updatedReservations = reservations.map(res => 
+        res.id === selectedReservation.id ? updatedReservation : res
+      );
+      setReservations(updatedReservations);
+      
+      // Mettre à jour le compteur d'opportunités en attente
+      if (selectedReservation.status === 'En attente') {
+        setPendingOpportunitiesCount(count => Math.max(0, count - 1));
       }
+      
+      // Appliquer les filtres pour mettre à jour l'affichage
+      applyFilters();
     } catch (error) {
       console.error('Error in appointment update operation:', error);
       toast.error('Une erreur est survenue');
@@ -1296,6 +1366,19 @@ const ProspectionPage = () => {
         toast.error('Erreur lors de l\'enregistrement de la note');
         return;
       }
+      
+      // Mettre à jour l'objet selectedReservation avec la nouvelle note
+      // pour que la note persiste si on ferme et réouvre le dialogue
+      setSelectedReservation({
+        ...selectedReservation,
+        note_rv: visitNote
+      });
+      
+      // Mettre à jour la liste des réservations pour que les données soient cohérentes
+      const updatedReservations = reservations.map(res => 
+        res.id === selectedReservation.id ? {...res, note_rv: visitNote} : res
+      );
+      setReservations(updatedReservations);
       
       toast.success('Note de visite enregistrée');
     } catch (error) {
@@ -1412,10 +1495,46 @@ const ProspectionPage = () => {
                   </SelectContent>
                 </Select>
               </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Période</label>
+                <Select value={monthFilter} onValueChange={setMonthFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Toutes les périodes" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes les périodes</SelectItem>
+                    <SelectItem value="current">Mois en cours</SelectItem>
+                    <SelectItem value="previous">Mois précédent</SelectItem>
+                    <SelectItem value="01">Janvier</SelectItem>
+                    <SelectItem value="02">Février</SelectItem>
+                    <SelectItem value="03">Mars</SelectItem>
+                    <SelectItem value="04">Avril</SelectItem>
+                    <SelectItem value="05">Mai</SelectItem>
+                    <SelectItem value="06">Juin</SelectItem>
+                    <SelectItem value="07">Juillet</SelectItem>
+                    <SelectItem value="08">Août</SelectItem>
+                    <SelectItem value="09">Septembre</SelectItem>
+                    <SelectItem value="10">Octobre</SelectItem>
+                    <SelectItem value="11">Novembre</SelectItem>
+                    <SelectItem value="12">Décembre</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             
             <div className="flex justify-end mt-4">
-              <Button variant="outline" onClick={clearFilters} className="mr-2">
+              <Button variant="outline" onClick={() => {
+                setSearchQuery("");
+                setPropertyRefFilter("");
+                setReservationRefFilter("");
+                setStatusFilter("");
+                setOpportunityTypeFilter("");
+                setMonthFilter("");
+                // Réappliquer les filtres après réinitialisation
+                setTimeout(() => {
+                  applyFilters();
+                }, 0);
+              }} className="mr-2">
                 Réinitialiser
               </Button>
             </div>
@@ -1480,7 +1599,39 @@ const ProspectionPage = () => {
             </div>
           )}
 
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+              // Si le dialogue est ouvert, on s'assure que les données sont correctement initialisées
+              if (open && selectedReservation) {
+                // Réinitialiser la date de rendez-vous
+                setAppointmentDate(selectedReservation.appointment_date ? new Date(selectedReservation.appointment_date) : null);
+                
+                // Réinitialiser la note de visite
+                setVisitNote(selectedReservation.note_rv || "");
+                
+                // Réinitialiser les dates de location
+                if (selectedReservation.type === 'Location') {
+                  if (selectedReservation.rental_start_date) {
+                    setRentalStartDate(format(new Date(selectedReservation.rental_start_date), 'yyyy-MM-dd'));
+                  } else {
+                    setRentalStartDate("");
+                  }
+                  
+                  if (selectedReservation.rental_end_date) {
+                    setRentalEndDate(format(new Date(selectedReservation.rental_end_date), 'yyyy-MM-dd'));
+                  } else {
+                    setRentalEndDate("");
+                  }
+                }
+                
+                // Réexécuter les fonctions de récupération des données client et location
+                // à chaque ouverture du dialogue, même si c'est pour la même réservation
+                if (selectedReservation.client_phone) {
+                  fetchClientDetails(selectedReservation.client_phone);
+                  fetchClientReservations(selectedReservation.client_phone);
+                }
+              }
+              setIsDialogOpen(open);
+            }}>
             {selectedReservation && (
               <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
                 <DialogHeader className="sticky top-0 bg-white z-10 pb-2 border-b">

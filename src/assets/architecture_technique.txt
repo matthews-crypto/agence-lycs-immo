@@ -1,0 +1,46 @@
+Architecture Technique du Système LYCS IMMO (Figure 11)
+
++-------------------+     +---------------------------------------+
+|                   |     |               Frontend                |
+|    Utilisateur    +---->+   React + Shadcn/UI + React Router   |
+|                   |     |                                       |
++-------------------+     +-------------------+-------------------+
+                                              |
+                                              v
+                          +-------------------+-------------------+
+                          |           Supabase Client             |
+                          |    (Authentification, API, Storage)   |
+                          +-------------------+-------------------+
+                                              |
+                                              v
++----------------------------------------------------------------------------+
+|                           Supabase Backend                                 |
++----------------+------------------+---------------+------------------------+
+| Authentifi-    |  Base de         |  Stockage     |  Row Level Security    |
+| cation         |  données         |  (Documents)  |  (Contrôle d'accès)    |
++----------------+------------------+---------------+------------------------+
+
+Schéma de base de données simplifié:
+
++---------------+       +---------------+       +---------------+
+|   agencies    |       |  properties   |       |   locations   |
++---------------+       +---------------+       +---------------+
+| id            |       | id            |       | id            |
+| name          |<------| agency_id     |       | property_id   |
+| address       |       | title         |<------| client_id     |
+| phone         |       | description   |       | rental_start  |
+| email         |       | price         |       | rental_end    |
+| logo          |       | type_location |       | status        |
++---------------+       | zone_id       |       +---------------+
+                        +---------------+               ^
++---------------+             ^                         |
+|    clients    |             |                         |
++---------------+       +---------------+       +---------------+
+| id            |       | reservations  |       |payment_details|
+| first_name    |<------| client_id     |       +---------------+
+| last_name     |       | property_id   |       | id            |
+| email         |       | visit_date    |       | location_id   |
+| phone_number  |       | status        |       | payment_date  |
++---------------+       +---------------+       | amount        |
+                                                | payment_method|
+                                                +---------------+

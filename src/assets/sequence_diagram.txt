@@ -1,0 +1,34 @@
+Diagramme de Séquence des Interactions Principales (Figure 12)
+
++------------+     +-------------+     +-------------+     +--------------+
+|Utilisateur |     |Frontend React|     |Supabase Client|     |Supabase Backend|
++-----+------+     +------+------+     +------+------+     +-------+------+
+      |                   |                   |                    |
+      | Recherche bien    |                   |                    |
+      |------------------>|                   |                    |
+      |                   |  Requête filtrée  |                    |
+      |                   |------------------>|                    |
+      |                   |                   |  Query properties  |
+      |                   |                   |------------------->|
+      |                   |                   |                    |
+      |                   |                   |   Résultats        |
+      |                   |                   |<-------------------|
+      |                   |   Données biens   |                    |
+      |                   |<------------------|                    |
+      | Affichage biens   |                   |                    |
+      |<------------------|                   |                    |
+      |                   |                   |                    |
+      | Demande RDV       |                   |                    |
+      |------------------>|                   |                    |
+      |                   | Enregistrement RDV|                    |
+      |                   |------------------>|                    |
+      |                   |                   | Insert reservation |
+      |                   |                   |------------------->|
+      |                   |                   |                    |
+      |                   |                   |   Confirmation     |
+      |                   |                   |<-------------------|
+      |                   |   Confirmation    |                    |
+      |                   |<------------------|                    |
+      | Confirmation RDV  |                   |                    |
+      |<------------------|                   |                    |
+      |                   |                   |                    |
