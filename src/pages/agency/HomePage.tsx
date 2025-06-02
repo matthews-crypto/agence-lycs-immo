@@ -193,6 +193,7 @@ export default function AgencyHomePage() {
   const [isServicesVisible, setIsServicesVisible] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [chatMessages, setChatMessages] = useState<Array<{role: 'user' | 'bot', content: string, timestamp?: string}>>([]);
 
   const categoryMenuRef = useRef<HTMLDivElement>(null);
   const servicesRef = useRef<HTMLDivElement>(null);
@@ -999,21 +1000,42 @@ export default function AgencyHomePage() {
       </div>
 
       <Button
-        onClick={() => setIsChatOpen(true)}
+        onClick={() => {
+          // Marquer tous les messages comme lus en les mettant à jour
+          if (chatMessages.length > 0) {
+            setChatMessages(prev => prev.map(msg => ({
+              ...msg,
+              read: true
+            })));
+          }
+          // Ouvrir le chat
+          setIsChatOpen(true);
+        }}
         className="fixed bottom-4 right-4 rounded-full p-3 hover:opacity-90"
         size="icon"
         style={{ backgroundColor: agency?.primary_color || '#000000' }}
       >
         <MessageCircle className="h-4 w-4 text-white" />
+        {!isChatOpen && chatMessages.length > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+            {chatMessages.filter(m => m.role === 'bot' && !m.read).length}
+          </span>
+        )}
       </Button>
 
-      {isChatOpen && (
-        <AgencyChatDialog
-          isOpen={isChatOpen}
-          onClose={() => setIsChatOpen(false)}
-          agency={agency}
-        />
-      )}
+      <AgencyChatDialog
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        agency={agency}
+        messages={chatMessages}
+        setMessages={setChatMessages}
+        onClickOutside={(e) => {
+          // Si on clique en dehors du chat, on le ferme sans perdre les messages
+          if (!(e.target as HTMLElement).closest('button')) {
+            setIsChatOpen(false);
+          }
+        }}
+      />
 
       <FilterSidebar
         open={isFilterSidebarOpen}
@@ -1051,102 +1073,108 @@ export default function AgencyHomePage() {
 
           {/* Section principale */}
           <div className="flex flex-col space-y-12">
-            {/* Informations de contact avec icônes animées */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="transform transition-transform duration-300 hover:-translate-y-2 bg-white/10 backdrop-blur-sm p-6 rounded-xl shadow-lg">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-3 rounded-full bg-white/20 animate-pulse">
-                    <MapPin className="w-6 h-6 text-white" />
+            {/* Logos et sponsors avec informations de contact */}
+            <div className="flex flex-col items-center justify-center gap-8 mt-6">
+              {/* Logo de l'agence avec informations de contact */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full items-center">
+                {/* Téléphone et Email (à gauche sur desktop) */}
+                <div className="flex flex-col space-y-6 order-2 md:order-1">
+                  {/* Téléphone */}
+                  <div className="transform transition-transform duration-300 hover:-translate-y-2 bg-white/10 backdrop-blur-sm p-4 rounded-xl shadow-lg">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 rounded-full bg-white/20 animate-pulse">
+                        <Phone className="w-5 h-5 text-white" />
+                      </div>
+                      <h3 
+                        className="text-lg font-medium"
+                        style={{ color: agency?.secondary_color || '#ffffff' }}
+                      >
+                        TÉLÉPHONE
+                      </h3>
+                    </div>
+                    <p className="text-white">
+                      {agency?.contact_phone}
+                    </p>
+                    <button 
+                      className="mt-3 px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors flex items-center gap-2 text-sm"
+                      onClick={() => {
+                        if (agency?.contact_phone) {
+                          window.location.href = `tel:${agency.contact_phone}`;
+                        }
+                      }}
+                    >
+                      <Phone className="w-3.5 h-3.5" />
+                      <span>Appeler maintenant</span>
+                    </button>
                   </div>
-                  <h3 
-                    className="text-xl font-medium"
-                    style={{ color: agency?.secondary_color || '#ffffff' }}
-                  >
-                    ADRESSE
-                  </h3>
-                </div>
-                <p className="text-white text-lg">
-                  {agency?.address}<br />
-                  {agency?.city} {agency?.postal_code}
-                </p>
-              </div>
-
-              <div className="transform transition-transform duration-300 hover:-translate-y-2 bg-white/10 backdrop-blur-sm p-6 rounded-xl shadow-lg">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-3 rounded-full bg-white/20 animate-pulse">
-                    <Phone className="w-6 h-6 text-white" />
+                  
+                  {/* Email */}
+                  <div className="transform transition-transform duration-300 hover:-translate-y-2 bg-white/10 backdrop-blur-sm p-4 rounded-xl shadow-lg">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 rounded-full bg-white/20 animate-pulse">
+                        <Mail className="w-5 h-5 text-white" />
+                      </div>
+                      <h3 
+                        className="text-lg font-medium"
+                        style={{ color: agency?.secondary_color || '#ffffff' }}
+                      >
+                        E-MAIL
+                      </h3>
+                    </div>
+                    <p className="text-white">
+                      {agency?.contact_email}
+                    </p>
+                    <button 
+                      className="mt-3 px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors flex items-center gap-2 text-sm"
+                      onClick={() => {
+                        if (agency?.contact_email) {
+                          window.location.href = `mailto:${agency.contact_email}`;
+                        }
+                      }}
+                    >
+                      <Mail className="w-3.5 h-3.5" />
+                      <span>Envoyer un email</span>
+                    </button>
                   </div>
-                  <h3 
-                    className="text-xl font-medium"
-                    style={{ color: agency?.secondary_color || '#ffffff' }}
-                  >
-                    TÉLÉPHONE
-                  </h3>
                 </div>
-                <p className="text-white text-lg">
-                  {agency?.contact_phone}
-                </p>
-                <button 
-                  className="mt-4 px-4 py-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors flex items-center gap-2"
-                  onClick={() => {
-                    if (agency?.contact_phone) {
-                      window.location.href = `tel:${agency.contact_phone}`;
-                    }
-                  }}
-                >
-                  <Phone className="w-4 h-4" />
-                  <span>Appeler maintenant</span>
-                </button>
-              </div>
-
-              <div className="transform transition-transform duration-300 hover:-translate-y-2 bg-white/10 backdrop-blur-sm p-6 rounded-xl shadow-lg">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-3 rounded-full bg-white/20 animate-pulse">
-                    <Mail className="w-6 h-6 text-white" />
+                
+                {/* Logo de l'agence (au centre) */}
+                <div className="transform transition-all duration-500 hover:scale-110 flex justify-center order-1 md:order-2">
+                  {agency?.logo_url ? (
+                    <img 
+                      src={agency.logo_url} 
+                      alt={agency.agency_name}
+                      className="h-24 object-contain rounded-full bg-white p-3 shadow-[0_0_15px_rgba(255,255,255,0.5)]"
+                    />
+                  ) : (
+                    <h2 className="text-3xl font-light text-white bg-white/10 p-6 rounded-full">
+                      {agency?.agency_name}
+                    </h2>
+                  )}
+                </div>
+                
+                {/* Adresse (à droite sur desktop) */}
+                <div className="transform transition-transform duration-300 hover:-translate-y-2 bg-white/10 backdrop-blur-sm p-4 rounded-xl shadow-lg order-3">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 rounded-full bg-white/20 animate-pulse">
+                      <MapPin className="w-5 h-5 text-white" />
+                    </div>
+                    <h3 
+                      className="text-lg font-medium"
+                      style={{ color: agency?.secondary_color || '#ffffff' }}
+                    >
+                      ADRESSE
+                    </h3>
                   </div>
-                  <h3 
-                    className="text-xl font-medium"
-                    style={{ color: agency?.secondary_color || '#ffffff' }}
-                  >
-                    E-MAIL
-                  </h3>
+                  <p className="text-white">
+                    {agency?.address}<br />
+                    {agency?.city} {agency?.postal_code}
+                  </p>
                 </div>
-                <p className="text-white text-lg">
-                  {agency?.contact_email}
-                </p>
-                <button 
-                  className="mt-4 px-4 py-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors flex items-center gap-2"
-                  onClick={() => {
-                    if (agency?.contact_email) {
-                      window.location.href = `mailto:${agency.contact_email}`;
-                    }
-                  }}
-                >
-                  <Mail className="w-4 h-4" />
-                  <span>Envoyer un email</span>
-                </button>
               </div>
-            </div>
-
-            {/* Logos et sponsors */}
-            <div className="flex flex-col items-center justify-center gap-8 mt-12 border-t border-white/20 pt-8">
-              {/* Logo de l'agence */}
-              <div className="transform transition-all duration-500 hover:scale-110">
-                {agency?.logo_url ? (
-                  <img 
-                    src={agency.logo_url} 
-                    alt={agency.agency_name}
-                    className="h-24 object-contain rounded-full bg-white p-3 shadow-[0_0_15px_rgba(255,255,255,0.5)]"
-                  />
-                ) : (
-                  <h2 className="text-3xl font-light text-white bg-white/10 p-6 rounded-full">
-                    {agency?.agency_name}
-                  </h2>
-                )}
-              </div>
-
+              
               {/* Séparateur stylisé */}
-              <div className="flex items-center w-full max-w-md my-6">
+              <div className="flex items-center w-full max-w-md my-6 border-t border-white/20 pt-8">
                 <div className="flex-grow h-px bg-gradient-to-r from-transparent via-white to-transparent"></div>
                 <span className="px-4 text-sm text-white/70">Propulsé par</span>
                 <div className="flex-grow h-px bg-gradient-to-r from-white to-transparent"></div>

@@ -33,7 +33,7 @@ const formSchema = z.object({
   last_name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
   admin_email: z.string().email("Email invalide"),
   admin_phone: z.string().regex(/^(70|75|76|77|78)[0-9]{7}$/, "Format de téléphone sénégalais invalide (ex: 771234567)"),
-  admin_license: z.string().min(1, "Matricule agent requis"),
+  admin_license: z.string().optional(),
   
   logo_url: z.string().optional(),
   primary_color: z.string(),
@@ -122,7 +122,7 @@ export function AgencyRegistrationDialog({ open, onOpenChange }: AgencyRegistrat
     const fields = [
       ["agency_name", "contact_email", "contact_phone", "license_number", "slug"],
       ["address", "city", "postal_code"],
-      ["first_name", "last_name", "admin_email", "admin_phone", "admin_license"],
+      ["first_name", "last_name", "admin_email", "admin_phone"],
       ["primary_color", "secondary_color"],
     ][currentStep]
 
@@ -155,11 +155,30 @@ export function AgencyRegistrationDialog({ open, onOpenChange }: AgencyRegistrat
             {steps.map((step, index) => (
               <div
                 key={step.title}
-                className={`flex-1 text-center ${
+                className={`flex-1 text-center cursor-pointer transition-colors hover:text-primary ${
                   index === currentStep
                     ? "text-primary font-bold"
                     : "text-muted-foreground"
                 }`}
+                onClick={async () => {
+                  // Si on va en avant, valider les étapes intermédiaires
+                  if (index > currentStep) {
+                    for (let i = currentStep; i < index; i++) {
+                      const fields = [
+                        ["agency_name", "contact_email", "contact_phone", "license_number", "slug"],
+                        ["address", "city", "postal_code"],
+                        ["first_name", "last_name", "admin_email", "admin_phone"],
+                        ["primary_color", "secondary_color"],
+                      ][i];
+                      
+                      const isValid = await form.trigger(fields as Array<keyof FormValues>);
+                      if (!isValid) return; // Arrêter si une étape n'est pas valide
+                    }
+                  }
+                  
+                  // Changer l'étape
+                  setCurrentStep(index);
+                }}
               >
                 <span className="hidden md:inline">{step.title}</span>
                 <span className="md:hidden flex justify-center">{step.icon}</span>

@@ -102,16 +102,25 @@ export function AgencyBasicInfo({ isPublicRegistration = false }: AgencyBasicInf
         name="slug"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Identifiant unique (slug) *</FormLabel>
+            <FormLabel>URL *</FormLabel>
             <FormControl>
-              <Input 
-                placeholder="mon-agence"
-                {...field}
-                onChange={(e) => {
-                  const value = generateSlug(e.target.value);
-                  field.onChange(value);
-                }}
-              />
+              <div className="flex items-center w-full relative">
+                <div className="absolute left-3 text-gray-500 pointer-events-none">
+                  https://{window.location.hostname}/ 
+                </div>
+                <Input 
+                  placeholder="mon-agence"
+                  {...field}
+                  className="pl-[calc(7px+7ch+var(--hostname-length))]" 
+                  style={{
+                    '--hostname-length': `${window.location.hostname.length}ch`
+                  } as React.CSSProperties}
+                  onChange={(e) => {
+                    const value = generateSlug(e.target.value);
+                    field.onChange(value);
+                  }}
+                />
+              </div>
             </FormControl>
             <FormMessage />
           </FormItem>

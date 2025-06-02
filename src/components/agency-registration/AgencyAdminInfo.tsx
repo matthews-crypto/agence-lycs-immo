@@ -63,19 +63,7 @@ export function AgencyAdminInfo() {
         )}
       />
 
-      <FormField
-        control={form.control}
-        name="admin_license"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Matricule de l'administrateur</FormLabel>
-            <FormControl>
-              <Input placeholder="AG123456" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+
     </div>
   )
 }
