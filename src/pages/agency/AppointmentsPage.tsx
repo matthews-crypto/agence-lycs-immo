@@ -14,6 +14,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Textarea } from "@/components/ui/textarea"
+import { toast } from "sonner"
 
 export default function AppointmentsPage() {
   const { agencySlug } = useParams()
@@ -27,6 +29,7 @@ export default function AppointmentsPage() {
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null)
   const [clientInfo, setClientInfo] = useState<any>(null)
   const [activeTab, setActiveTab] = useState<string>("upcoming")
+  const [visitNote, setVisitNote] = useState<string>("")
 
   useEffect(() => {
     async function fetchAppointmentDates() {
@@ -37,7 +40,7 @@ export default function AppointmentsPage() {
       try {
         const { data, error } = await supabase
           .from('reservations')
-          .select('appointment_date, property_id, client_phone, status, reservation_number, note_rv, properties(title, id)')
+          .select('id, appointment_date, property_id, client_phone, status, reservation_number, note_rv, properties(title, id)')
           .eq('agency_id', agency.id)
           .not('appointment_date', 'is', null)
 
@@ -103,29 +106,56 @@ export default function AppointmentsPage() {
   }
 
   const openAppointmentDetails = async (appointment: any) => {
-    setSelectedAppointment(appointment)
+    setSelectedAppointment(appointment);
+    // Initialiser la note de visite avec la valeur existante
+    setVisitNote(appointment.note_rv || "");
     
-    if (appointment.client_phone) {
-      try {
-        const { data, error } = await supabase
-          .from('clients')
-          .select('first_name, last_name, phone_number')
-          .eq('phone_number', appointment.client_phone)
-          .single()
-        
-        if (error) {
-          console.error('Error fetching client info:', error)
-          return
-        }
-        
-        if (data) {
-          setClientInfo(data)
-        }
-      } catch (error) {
-        console.error('Error:', error)
+    try {
+      // Récupérer les détails du client
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('phone_number', appointment.client_phone)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching client details:', error);
+        return;
       }
+      
+      setClientInfo(data);
+    } catch (error) {
+      console.error('Error:', error);
     }
-  }
+  };
+
+  const handleVisitNoteChange = async () => {
+    if (!selectedAppointment) return;
+    
+    try {
+      const { error } = await supabase
+        .from('reservations')
+        .update({ note_rv: visitNote })
+        .eq('id', selectedAppointment.id);
+      
+      if (error) {
+        console.error('Error updating visit note:', error);
+        toast.error('Erreur lors de l\'enregistrement de la note');
+        return;
+      }
+      
+      // Mettre à jour l'objet selectedAppointment avec la nouvelle note
+      setSelectedAppointment({
+        ...selectedAppointment,
+        note_rv: visitNote
+      });
+      
+      toast.success('Note de visite enregistrée');
+    } catch (error) {
+      console.error('Error in visit note update:', error);
+      toast.error('Une erreur est survenue');
+    }
+  };
 
   const renderStatusBadge = (status: string) => {
     let variant: "default" | "secondary" | "success" | "destructive" | "outline" = "default";
@@ -330,15 +360,27 @@ export default function AppointmentsPage() {
                   </span>
                 </div>
                 
-                {selectedAppointment.note_rv && (
-                  <div className="flex gap-2">
-                    <FileText className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
-                    <div className="bg-gray-50 p-3 rounded-md w-full">
-                      <p className="text-sm font-medium mb-1">Note de visite</p>
-                      <p className="text-sm text-gray-600 whitespace-pre-wrap">{selectedAppointment.note_rv}</p>
+                <div className="flex gap-2">
+                  <FileText className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
+                  <div className="bg-gray-50 p-3 rounded-md w-full">
+                    <p className="text-sm font-medium mb-1">Note de visite</p>
+                    <Textarea
+                      value={visitNote}
+                      onChange={(e) => setVisitNote(e.target.value)}
+                      placeholder="Ajouter une note de visite (optionnel)"
+                      className="min-h-[100px] mb-2"
+                      autoFocus={false}
+                    />
+                    <div className="flex justify-end space-x-2">
+                      <Button 
+                        size="sm" 
+                        onClick={handleVisitNoteChange}
+                      >
+                        {selectedAppointment.note_rv ? 'Modifier' : 'Enregistrer'}
+                      </Button>
                     </div>
                   </div>
-                )}
+                </div>
 
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-muted-foreground" />

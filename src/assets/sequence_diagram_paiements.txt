@@ -1,0 +1,61 @@
+Diagramme de Séquence de la Gestion des Paiements (Figure 7)
+
++---------------+     +----------------+     +----------------+     +----------------+
+| Agent         |     | Interface      |     | Supabase       |     | Base de        |
+| Immobilier    |     | Paiements      |     | Client         |     | Données        |
++-------+-------+     +--------+-------+     +-------+--------+     +-------+--------+
+        |                      |                     |                      |
+        | Accède à la page     |                     |                      |
+        | des paiements        |                     |                      |
+        +--------------------->|                     |                      |
+        |                      | Initialise          |                      |
+        |                      | le composant        |                      |
+        |                      +-------------------->|                      |
+        |                      |                     | Requête les          |
+        |                      |                     | paiements            |
+        |                      |                     +--------------------->|
+        |                      |                     |                      |
+        |                      |                     |                      |
+        |                      |                     | Récupère les données |
+        |                      |                     | de paiement avec     |
+        |                      |                     | jointures            |
+        |                      |                     |<---------------------+
+        |                      |                     |                      |
+        |                      | Retourne les        |                      |
+        |                      | données formatées   |                      |
+        |                      |<--------------------+                      |
+        |                      |                     |                      |
+        | Affiche les          |                     |                      |
+        | paiements            |                     |                      |
+        |<---------------------+                     |                      |
+        |                      |                     |                      |
+        | Filtre par méthode   |                     |                      |
+        | de paiement          |                     |                      |
+        +--------------------->|                     |                      |
+        |                      | Filtre les données  |                      |
+        |                      | côté client         |                      |
+        |                      +-------------------->|                      |
+        |                      |                     |                      |
+        |                      | Retourne les        |                      |
+        |                      | données filtrées    |                      |
+        |                      |<--------------------+                      |
+        |                      |                     |                      |
+        | Affiche les résultats|                     |                      |
+        | filtrés              |                     |                      |
+        |<---------------------+                     |                      |
+        |                      |                     |                      |
+        | Clique pour exporter |                     |                      |
+        | en CSV               |                     |                      |
+        +--------------------->|                     |                      |
+        |                      | Génère le fichier   |                      |
+        |                      | CSV                 |                      |
+        |                      +-------------------->|                      |
+        |                      |                     |                      |
+        |                      | Télécharge le       |                      |
+        |                      | fichier CSV         |                      |
+        |                      |<--------------------+                      |
+        |                      |                     |                      |
+        | Fichier CSV          |                     |                      |
+        | téléchargé           |                     |                      |
+        |<---------------------+                     |                      |
+        |                      |                     |                      |

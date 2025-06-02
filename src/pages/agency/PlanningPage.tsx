@@ -262,13 +262,6 @@ export default function PlanningPage() {
               </div>
             </div>
             <div className="flex justify-end">
-              <Button 
-                onClick={() => navigate(`/${agency?.slug}/agency/payments`)}
-                className="flex items-center gap-2"
-              >
-                <DollarSign className="h-4 w-4" />
-                Gestion paiement
-              </Button>
             </div>
           </div>
           

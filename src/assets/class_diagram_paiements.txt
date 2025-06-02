@@ -1,0 +1,36 @@
+Diagramme de Classes de la Gestion des Paiements (Figure 8)
+
++-------------------+       +-------------------+       +-------------------+
+|   PaymentsPage    |       |  PaymentDetails   |       |   FilterOptions   |
++-------------------+       +-------------------+       +-------------------+
+| - payments        |       | - id              |       | - month           |
+| - isLoading       |       | - location_id     |       | - paymentMethod   |
+| - searchTerm      |       | - payment_date    |       | - startDate       |
+| - filters         |       | - amount          |       | - endDate         |
+| - exportStartDate |       | - payment_method   |       +-------------------+
+| - exportEndDate   |       | - months_covered   |
++-------------------+       | - created_at      |       +-------------------+
+| + fetchPayments() |       +-------------------+       | PaymentWithDetails|
+| + filterPayments()|                                   +-------------------+
+| + exportToCSV()   |       +-------------------+       | - client          |
+| + formatMethod()  |       |   SupabaseClient  |       | - property        |
++-------------------+       +-------------------+       | - months_paid     |
+         |                  | - supabase        |       +-------------------+
+         |                  +-------------------+
+         |                  | + select()        |       +-------------------+
+         |                  | + from()          |       |    UIComponents   |
+         |                  | + order()         |       +-------------------+
+         v                  +-------------------+       | - Table           |
++-------------------+                |                  | - Dialog          |
+|  React Components |                |                  | - Select          |
++-------------------+                |                  | - Button          |
+| - Table           |                |                  | - Calendar        |
+| - Dialog          |                v                  +-------------------+
+| - Select          |       +-------------------+
+| - Button          |       |   Database Tables |
++-------------------+       +-------------------+
+                            | - payment_details |
+                            | - locations       |
+                            | - clients         |
+                            | - properties      |
+                            +-------------------+

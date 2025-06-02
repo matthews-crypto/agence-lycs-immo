@@ -1,0 +1,70 @@
+Schéma Détaillé de la Base de Données (Figure 13)
+
++-------------------+        +-------------------+        +-------------------+
+|      admin_users  |        |      agencies     |        |     clients       |
++-------------------+        +-------------------+        +-------------------+
+| id                |        | id                |        | id                |
+| email             |        | name              |        | first_name        |
+| password          |        | address           |        | last_name         |
+| role              |        | phone             |        | email             |
+| created_at        |        | email             |        | phone_number      |
++-------------------+        | logo              |        | agency_id         |
+                             | created_at        |        | created_at        |
+                             +-------------------+        +-------------------+
+                                      |
+                                      |
+                                      v
++-------------------+        +-------------------+        +-------------------+
+|    properties     |        |      regions      |        |       zones       |
++-------------------+        +-------------------+        +-------------------+
+| id                |        | id                |        | id                |
+| title             |        | name              |        | name              |
+| description       |        | created_at        |        | region_id         |
+| price             |        +-------------------+        | latitude          |
+| type_location     |                 ^                   | longitude         |
+| zone_id           |                 |                   | circle_radius     |
+| agency_id         |                 |                   | created_at        |
+| reference_number  |                 |                   +-------------------+
+| proprio           |                 |                           ^
+| created_at        |                 |                           |
++-------------------+                 |                           |
+        |                             |                           |
+        |                             |                           |
+        v                             |                           |
++-------------------+        +-------------------+                |
+|     locations     |        |   proprietaire    |                |
++-------------------+        +-------------------+                |
+| id                |        | id                |                |
+| client_id         |        | nom               |                |
+| property_id       |        | prenom            |                |
+| rental_start_date |        | telephone         |                |
+| rental_end_date   |        | email             |                |
+| status            |        | agency_id         |                |
+| created_at        |        | created_at        |                |
++-------------------+        +-------------------+                |
+        |                                                         |
+        |                                                         |
+        v                                                         |
++-------------------+        +-------------------+                |
+|  payment_details  |        |    reservations   |                |
++-------------------+        +-------------------+                |
+| id                |        | id                |                |
+| location_id       |        | client_id         |                |
+| payment_date      |        | property_id       |                |
+| amount            |        | visit_date        |                |
+| payment_method    |        | status            |                |
+| months_covered    |        | created_at        |                |
+| created_at        |        +-------------------+                |
++-------------------+                                             |
+                                                                  |
+                                                                  |
++-------------------+        +-------------------+                |
+|   appel_de_fond   |        |        lot        |<---------------+
++-------------------+        +-------------------+
+| id                |        | id                |
+| date              |        | nom               |
+| montant           |        | surface           |
+| date_limite       |        | quote_part        |
+| informations      |        | zone_id           |
+| created_at        |        | created_at        |
++-------------------+        +-------------------+
