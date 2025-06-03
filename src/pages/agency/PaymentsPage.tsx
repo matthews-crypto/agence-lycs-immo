@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { AgencySidebar } from "@/components/agency/AgencySidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { format, parse, startOfMonth, endOfMonth, isWithinInterval, subMonths } from "date-fns";
+import { format, parse, startOfMonth, endOfMonth, isWithinInterval, subMonths, addMonths } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,16 +38,19 @@ type PaymentWithDetails = PaymentDetails & {
     first_name: string | null;
     last_name: string | null;
     email: string | null;
-    phone_number: string | null;
-  };
-  property: {
+    phone_number?: string | null;
+  } | null;
+  property?: {
     id: string;
-    title: string;
-    reference_number: string;
-    price: number;
+    title: string | null;
+    reference_number: string | null;
+    price: number | null;
     type_location: string | null;
-  };
-  months_paid: string[];
+  } | null;
+  months_paid?: string[];
+  covered_months_dates: Date[];
+  covered_months_text: string;
+  covered_months_list: string[];
 };
 
 type FilterOptions = {
@@ -115,20 +118,113 @@ export default function PaymentsPage() {
         const paymentDate = new Date(payment.payment_date);
         const paymentMonth = `${String(paymentDate.getMonth() + 1).padStart(2, '0')}/${paymentDate.getFullYear()}`;
         
-        return {
+        const paymentObj = {
           id: payment.id,
           location_id: payment.location_id,
           payment_date: payment.payment_date,
           amount: payment.amount,
           payment_method: payment.payment_method,
-          months_covered: payment.months_covered,
+          months_covered: payment.months_covered || 1,
           created_at: payment.created_at,
           client: payment.locations?.client,
           property: payment.locations?.property,
           // Créer un tableau avec le mois du paiement
-          months_paid: [paymentMonth]
+          months_paid: [paymentMonth],
+          // Champs pour stocker les mois couverts calculés
+          covered_months_dates: [] as Date[],
+          covered_months_text: '',
+          covered_months_list: [] as string[]
         };
+        
+        return paymentObj;
       });
+      
+      // Approche radicalement différente pour résoudre le problème des mois qui se chevauchent
+      // Nous allons d'abord créer une ligne du temps complète pour chaque location
+      
+      // Créer un objet pour stocker la ligne du temps de chaque location
+      const locationTimelines = new Map<string, Map<string, string>>();
+      
+      // Première étape : trier tous les paiements par date et par ID
+      const sortedPayments = [...paymentsData].sort((a, b) => {
+        // D'abord par date de paiement
+        const dateA = new Date(a.payment_date).getTime();
+        const dateB = new Date(b.payment_date).getTime();
+        if (dateA !== dateB) return dateA - dateB;
+        
+        // Si même date, par ID pour avoir un ordre stable
+        return a.id.localeCompare(b.id);
+      });
+      
+      // Deuxième étape : construire la ligne du temps pour chaque location
+      sortedPayments.forEach(payment => {
+        const locationId = payment.location_id;
+        const paymentId = payment.id;
+        const monthsCovered = payment.months_covered || 1;
+        
+        // Initialiser la ligne du temps pour cette location si nécessaire
+        if (!locationTimelines.has(locationId)) {
+          locationTimelines.set(locationId, new Map<string, string>());
+        }
+        
+        const timeline = locationTimelines.get(locationId)!;
+        
+        // Trouver le dernier mois couvert pour cette location
+        let lastCoveredMonthDate: Date | null = null;
+        
+        if (timeline.size > 0) {
+          // Convertir les clés de la timeline en dates et trouver la plus récente
+          const monthKeys = Array.from(timeline.keys());
+          const monthDates = monthKeys.map(key => {
+            const [year, month] = key.split('-').map(Number);
+            return new Date(year, month - 1, 1); // Mois en JavaScript est 0-indexé
+          });
+          
+          // Trier les dates et prendre la plus récente
+          monthDates.sort((a, b) => a.getTime() - b.getTime());
+          lastCoveredMonthDate = monthDates[monthDates.length - 1];
+        }
+        
+        // Déterminer le mois de départ pour ce paiement
+        let startDate: Date;
+        
+        if (lastCoveredMonthDate) {
+          // Commencer au mois suivant le dernier mois couvert
+          startDate = addMonths(lastCoveredMonthDate, 1);
+        } else {
+          // Si aucun mois n'est encore couvert, commencer à la date du paiement
+          startDate = new Date(payment.payment_date);
+          startDate.setDate(1); // Normaliser au premier jour du mois
+        }
+        
+        // Ajouter les mois couverts par ce paiement à la timeline
+        const coveredMonths: Date[] = [];
+        
+        for (let i = 0; i < monthsCovered; i++) {
+          const coveredMonth = addMonths(startDate, i);
+          coveredMonth.setDate(1); // Normaliser au premier jour du mois
+          coveredMonth.setHours(0, 0, 0, 0);
+          
+          // Ajouter ce mois à la timeline avec l'ID du paiement
+          const monthKey = `${coveredMonth.getFullYear()}-${coveredMonth.getMonth() + 1}`;
+          timeline.set(monthKey, paymentId);
+          
+          coveredMonths.push(coveredMonth);
+        }
+        
+        // Mettre à jour le paiement avec les mois calculés
+        payment.covered_months_dates = coveredMonths;
+        payment.covered_months_text = formatCoveredMonthsText(coveredMonths);
+        payment.covered_months_list = coveredMonths.map(date => formatMonthYear(date));
+        
+        console.log(`[DEBUG] Paiement ${paymentId.substring(0, 6)}... pour location ${locationId} couvre:`, 
+                    coveredMonths.map(date => formatMonthYear(date)).join(', '));
+      });
+      
+      // Rétablir l'ordre original des paiements (par date décroissante)
+      paymentsData.sort((a, b) => 
+        new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime()
+      );
 
       setPayments(paymentsData);
     } catch (error) {
@@ -206,6 +302,136 @@ export default function PaymentsPage() {
       case 'orange_money': return 'Orange Money';
       default: return method;
     }
+  };
+
+  // Formater un mois en texte lisible (ex: Mai 2024)
+  const formatMonthYear = (date: Date) => {
+    return format(date, 'MMMM yyyy', { locale: fr });
+  };
+
+  // Calculer les mois couverts par un paiement
+  const calculateCoveredMonths = (payment: { id: string; location_id: string; payment_date: string; months_covered: number; created_at?: string }, allPayments: PaymentWithDetails[]) => {
+    // Convertir la date de paiement en objet Date
+    const paymentDateObj = new Date(payment.payment_date);
+    const paymentId = payment.id;
+    const locationId = payment.location_id;
+    const monthsCovered = payment.months_covered || 1;
+    
+    // Fonction de débogage pour tracer les calculs
+    const debug = (message: string, data?: unknown) => {
+      console.log(`[DEBUG][Payment ${paymentId.substring(0, 6)}...] ${message}`, data || '');
+    };
+    
+    debug(`Calcul des mois pour le paiement du ${formatMonthYear(paymentDateObj)} couvrant ${monthsCovered} mois`);
+    debug(`Location ID: ${locationId}`);
+    
+    // Normaliser la date de paiement au premier jour du mois pour les comparaisons
+    const normalizedPaymentDate = new Date(paymentDateObj);
+    normalizedPaymentDate.setDate(1);
+    normalizedPaymentDate.setHours(0, 0, 0, 0);
+    
+    // Trouver tous les paiements pour cette location
+    const locationPayments = allPayments
+      .filter(p => p.location_id === locationId && p.id !== paymentId) // Exclure le paiement actuel
+      .sort((a, b) => {
+        // D'abord trier par date de paiement
+        const dateComparison = new Date(a.payment_date).getTime() - new Date(b.payment_date).getTime();
+        if (dateComparison !== 0) return dateComparison;
+        
+        // Si même date, trier par date de création si disponible
+        if (a.created_at && b.created_at) {
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        }
+        return 0;
+      });
+    
+    debug(`Nombre de paiements précédents pour cette location: ${locationPayments.length}`);
+    if (locationPayments.length > 0) {
+      debug('Paiements précédents:', locationPayments.map(p => ({
+        id: p.id.substring(0, 6) + '...',
+        date: formatMonthYear(new Date(p.payment_date)),
+        months: p.months_covered
+      })));
+    }
+    
+    // Collecter tous les mois déjà couverts par les paiements précédents
+    const coveredMonthsMap = new Map<string, Date>(); // Utiliser une Map pour éviter les doublons
+    
+    locationPayments.forEach(prevPayment => {
+      const prevPaymentDate = new Date(prevPayment.payment_date);
+      const prevMonthsCovered = prevPayment.months_covered || 1;
+      
+      debug(`Traitement du paiement précédent ${prevPayment.id.substring(0, 6)}... du ${formatMonthYear(prevPaymentDate)} couvrant ${prevMonthsCovered} mois`);
+      
+      // Pour chaque mois couvert par ce paiement
+      for (let i = 0; i < prevMonthsCovered; i++) {
+        const coveredMonth = addMonths(prevPaymentDate, i);
+        // Normaliser au premier jour du mois
+        coveredMonth.setDate(1);
+        coveredMonth.setHours(0, 0, 0, 0);
+        
+        // Utiliser YYYY-MM comme clé pour identifier uniquement le mois et l'année
+        const monthKey = `${coveredMonth.getFullYear()}-${coveredMonth.getMonth() + 1}`;
+        coveredMonthsMap.set(monthKey, coveredMonth);
+        debug(`  - Mois couvert: ${formatMonthYear(coveredMonth)} (clé: ${monthKey})`);
+      }
+    });
+    
+    // Convertir la Map en tableau et trier par date
+    const coveredMonthsArray = Array.from(coveredMonthsMap.values());
+    coveredMonthsArray.sort((a, b) => a.getTime() - b.getTime());
+    
+    debug(`Mois déjà couverts (après dédoublonnage): ${coveredMonthsArray.map(date => formatMonthYear(date)).join(', ')}`);
+    
+    // Déterminer le mois de départ pour ce paiement
+    let startDate;
+    
+    if (coveredMonthsArray.length > 0) {
+      // Trouver le dernier mois couvert
+      const lastCoveredMonth = coveredMonthsArray[coveredMonthsArray.length - 1];
+      debug(`Dernier mois couvert: ${formatMonthYear(lastCoveredMonth)}`);
+      
+      // Commencer au mois suivant le dernier mois couvert
+      startDate = addMonths(lastCoveredMonth, 1);
+      debug(`Mois de départ pour ce paiement: ${formatMonthYear(startDate)} (mois suivant le dernier couvert)`);
+    } else {
+      // Si aucun paiement précédent, commencer à la date du paiement actuel
+      startDate = normalizedPaymentDate;
+      debug(`Mois de départ pour ce paiement: ${formatMonthYear(startDate)} (date du paiement actuel)`);
+    }
+    
+    // Calculer les mois couverts par ce paiement
+    const resultMonths = [];
+    for (let i = 0; i < monthsCovered; i++) {
+      const coveredMonth = addMonths(startDate, i);
+      resultMonths.push(coveredMonth);
+      debug(`  - Mois ${i+1}/${monthsCovered} couvert: ${formatMonthYear(coveredMonth)}`);
+    }
+    
+    debug(`Résultat final: ${resultMonths.map(date => formatMonthYear(date)).join(', ')}`);
+    
+    return resultMonths;
+  };
+  
+  // Formater la liste des mois couverts en texte
+  const formatCoveredMonthsText = (coveredMonths: Date[]) => {
+    if (coveredMonths.length === 0) return '';
+    if (coveredMonths.length === 1) return formatMonthYear(coveredMonths[0]);
+    
+    // Pour une période continue, afficher "De X à Y"
+    return `${formatMonthYear(coveredMonths[0])} à ${formatMonthYear(coveredMonths[coveredMonths.length - 1])}`;
+  };
+  
+  // Générer la liste des mois couverts pour l'affichage
+  const getCoveredMonthsList = (payment: PaymentWithDetails) => {
+    const paymentDate = new Date(payment.payment_date);
+    const coveredMonths = [];
+    
+    for (let i = 0; i < payment.months_covered; i++) {
+      coveredMonths.push(addMonths(paymentDate, i));
+    }
+    
+    return coveredMonths.map(date => formatMonthYear(date));
   };
 
   // Fonction pour exporter les paiements en CSV
@@ -451,15 +677,13 @@ export default function PaymentsPage() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <div className="flex flex-wrap gap-1">
-                              {payment.months_paid?.map((month, index) => (
-                                <Badge key={index} variant="outline" className="text-xs bg-primary/5 border-primary/20">
-                                  {month}
-                                </Badge>
-                              ))}
+                            <div className="flex flex-col gap-1">
+                              <div className="text-sm font-medium">
+                                {payment.covered_months_text}
+                              </div>
                               {payment.months_covered > 1 && (
-                                <Badge variant="secondary" className="text-xs ml-1">
-                                  +{payment.months_covered - 1}
+                                <Badge variant="outline" className="text-xs bg-primary/10 border-primary/20 w-fit">
+                                  {payment.months_covered} mois
                                 </Badge>
                               )}
                             </div>
@@ -550,19 +774,19 @@ export default function PaymentsPage() {
                 </div>
                 <div className="bg-muted/10 p-3 rounded-md">
                   <Label className="text-sm text-muted-foreground mb-1 block">
-                    Mois couverts ({paymentDetails.months_covered || 1})
+                    Mois couverts
                   </Label>
+                  <div className="font-medium text-base mb-2">
+                    Ce paiement couvre {paymentDetails.months_covered === 1 
+                      ? "le mois de " + paymentDetails.covered_months_text 
+                      : "les mois de " + paymentDetails.covered_months_text}
+                  </div>
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {paymentDetails.months_paid?.map((month, index) => (
+                    {paymentDetails.covered_months_list.map((month, index) => (
                       <Badge key={index} variant="outline" className="bg-primary/5 border-primary/20">
                         {month}
                       </Badge>
                     ))}
-                    {paymentDetails.months_covered > 1 && (
-                      <Badge variant="secondary" className="ml-1">
-                        +{paymentDetails.months_covered - 1} mois
-                      </Badge>
-                    )}
                   </div>
                 </div>
               </div>
