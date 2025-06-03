@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Download, Calendar as CalendarIcon, Receipt } from "lucide-react";
+import { Search, Download, Calendar as CalendarIcon, Receipt, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -359,7 +359,7 @@ export default function PaymentsPage() {
                       }}
                       className="text-xs h-8 px-2 text-muted-foreground hover:text-primary"
                     >
-                      <X className="mr-1 h-3 w-3" />
+                      {X ? <X className="mr-1 h-3 w-3" /> : <span className="mr-1">×</span>}
                       Réinitialiser les filtres
                     </Button>
                   )}
