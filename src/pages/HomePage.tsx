@@ -626,32 +626,52 @@ export default function HomePage() {
                 <div className="absolute w-16 h-16 rounded-2xl border border-[#aa1ca0] -top-2 -right-2 opacity-0 group-hover:opacity-100 group-hover:top-1 group-hover:right-1 transition-all duration-300"></div>
               </div>
               <h3 className="text-xl font-semibold mb-3">Achat et vente</h3>
-              <p className="text-gray-600 mb-4">
-                Nous vous accompagnons dans l'achat ou la vente de votre bien immobilier avec une expertise du marché local.  
-              </p>
-              <a href="#" className="inline-flex items-center text-[#aa1ca0] hover:text-[#c71585] transition-colors duration-300">
-                En savoir plus
-                <ChevronRight className="w-4 h-4 ml-1" />
-              </a>
+               <p className="text-gray-600 mb-4">
+                 Nous vous accompagnons dans l'achat ou la vente de votre bien immobilier avec une expertise du marché local.  
+               </p>
             </div>
             
-            {/* Service 2 */}
-            <div className="group">
-              <div className="mb-6 relative">
-                <div className="w-16 h-16 rounded-2xl bg-[#aa1ca0]/10 flex items-center justify-center group-hover:bg-[#aa1ca0] transition-colors duration-300">
-                  <Building className="w-8 h-8 text-[#aa1ca0] group-hover:text-white transition-colors duration-300" />
-                </div>
-                <div className="absolute w-16 h-16 rounded-2xl border border-[#aa1ca0] -top-2 -right-2 opacity-0 group-hover:opacity-100 group-hover:top-1 group-hover:right-1 transition-all duration-300"></div>
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Location saisonnière et longue durée</h3>
-              <p className="text-gray-600 mb-4">
-                Un large choix de biens en location, des appartements aux villas, pour des séjours courts ou longs.  
-              </p>
-              <a href="#" className="inline-flex items-center text-[#aa1ca0] hover:text-[#c71585] transition-colors duration-300">
-                En savoir plus
-                <ChevronRight className="w-4 h-4 ml-1" />
-              </a>
-            </div>
+            {/* Service 2 - Gestion immobilière */}
+<div className="group">
+  <div className="mb-6 relative">
+    <div className="w-16 h-16 rounded-2xl bg-[#aa1ca0]/10 flex items-center justify-center group-hover:bg-[#aa1ca0] transition-colors duration-300">
+      <Home className="w-8 h-8 text-[#aa1ca0] group-hover:text-white transition-colors duration-300" />
+    </div>
+    <div className="absolute w-16 h-16 rounded-2xl border border-[#aa1ca0] -top-2 -right-2 opacity-0 group-hover:opacity-100 group-hover:top-1 group-hover:right-1 transition-all duration-300"></div>
+  </div>
+  <h3 className="text-xl font-semibold mb-3">Gestion immobilière</h3>
+  <p className="text-gray-600 mb-4">
+    Gestion complète de votre patrimoine immobilier : valorisation, entretien, suivi locatif, et reporting personnalisé.
+  </p>
+  <button
+    className="inline-flex items-center text-[#aa1ca0] hover:text-[#c71585] transition-colors duration-300 focus:outline-none"
+    onClick={() => navigate('/services/gestion-immobiliere#gestion-immobiliere')}
+  >
+    En savoir plus
+    <ChevronRight className="w-4 h-4 ml-1" />
+  </button>
+</div>
+
+{/* Service 3 - Gestion copropriété */}
+<div className="group">
+  <div className="mb-6 relative">
+    <div className="w-16 h-16 rounded-2xl bg-[#aa1ca0]/10 flex items-center justify-center group-hover:bg-[#aa1ca0] transition-colors duration-300">
+      <Building className="w-8 h-8 text-[#aa1ca0] group-hover:text-white transition-colors duration-300" />
+    </div>
+    <div className="absolute w-16 h-16 rounded-2xl border border-[#aa1ca0] -top-2 -right-2 opacity-0 group-hover:opacity-100 group-hover:top-1 group-hover:right-1 transition-all duration-300"></div>
+  </div>
+  <h3 className="text-xl font-semibold mb-3">Gestion copropriété</h3>
+  <p className="text-gray-600 mb-4">
+    Prise en charge administrative, financière et technique de vos immeubles en copropriété. Assemblées, budgets, travaux, communication avec les copropriétaires.
+  </p>
+  <button
+    className="inline-flex items-center text-[#aa1ca0] hover:text-[#c71585] transition-colors duration-300 focus:outline-none"
+    onClick={() => navigate('/services/gestion-copropriete#gestion-copropriete')}
+  >
+    En savoir plus
+    <ChevronRight className="w-4 h-4 ml-1" />
+  </button>
+</div>
             
             {/* Service 3 */}
             <div className="group">
@@ -663,12 +683,36 @@ export default function HomePage() {
               </div>
               <h3 className="text-xl font-semibold mb-3">Gestion locative</h3>
               <p className="text-gray-600 mb-4">
-                Confiez-nous la gestion de votre bien et bénéficiez d'un suivi régulier et d'une rentabilité optimisée.  
+                Confiez-nous la gestion de votre bien et bénéficiez d'un suivi régulier et d'une rentabilité optimisée.
               </p>
-              <a href="#" className="inline-flex items-center text-[#aa1ca0] hover:text-[#c71585] transition-colors duration-300">
+              <button
+                className="inline-flex items-center text-[#aa1ca0] hover:text-[#c71585] transition-colors duration-300 focus:outline-none"
+                onClick={() => navigate('/services/gestion-locative#gestion-locative')}
+              >
                 En savoir plus
                 <ChevronRight className="w-4 h-4 ml-1" />
-              </a>
+              </button>
+            </div>
+
+            {/* Service 4 - Agent immobilier (bot WhatsApp) */}
+            <div className="group">
+              <div className="mb-6 relative">
+                <div className="w-16 h-16 rounded-2xl bg-[#25D366]/10 flex items-center justify-center group-hover:bg-[#25D366] transition-colors duration-300">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-[#25D366] group-hover:text-white transition-colors duration-300" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.031-.967-.273-.099-.472-.148-.672.15-.197.297-.768.966-.941 1.164-.173.199-.347.223-.644.075-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.447-.52.151-.174.2-.298.298-.497.099-.198.05-.372-.025-.521-.075-.149-.672-1.623-.922-2.222-.242-.583-.487-.503-.672-.513l-.573-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.099 3.205 5.077 4.372.71.306 1.263.489 1.694.626.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.174-1.414-.073-.124-.27-.198-.568-.347z"/><path d="M12.004 2.003c-5.514 0-9.997 4.484-9.997 9.998 0 1.76.464 3.468 1.348 4.974l-1.429 5.221 5.348-1.404c1.47.805 3.141 1.235 4.73 1.235 5.514 0 9.996-4.484 9.996-9.998s-4.482-9.998-9.996-9.998zm5.428 15.428c-.23.654-1.347 1.257-1.844 1.332-.497.075-1.13.107-1.834-.117-.438-.138-1.002-.322-1.726-.631-3.009-1.193-4.965-4.14-5.123-4.338-.157-.198-1.224-1.629-1.224-3.114 0-1.484.789-2.211 1.069-2.49.28-.28.613-.351.815-.351.202 0 .405.002.581.011.185.008.432-.07.678.513.246.583.836 2.011.909 2.16.073.149.122.322.024.521-.097.198-.173.322-.322.497-.149.174-.316.387-.447.52-.133.133-.184.228-.13.326.053.099.211.347.452.562.619.553 1.099.888 1.256.987.157.099.248.074.341-.045.093-.119.392-.454.497-.609.104-.154.208-.128.353-.073.144.055.915.432 1.074.512.159.08.265.119.304.186.04.067.04.385-.189 1.039z"/></svg>
+                </div>
+                <div className="absolute w-16 h-16 rounded-2xl border border-[#25D366] -top-2 -right-2 opacity-0 group-hover:opacity-100 group-hover:top-1 group-hover:right-1 transition-all duration-300"></div>
+              </div>
+              <h3 className="text-xl font-semibold mb-3">Agent immobilier (bot WhatsApp)</h3>
+              <p className="text-gray-600 mb-4">
+                Un agent virtuel sur WhatsApp qui répond instantanément à vos critères et vous propose les biens adaptés, 24h/24.
+              </p>
+              <button
+                className="inline-flex items-center text-[#25D366] hover:text-[#128C7E] transition-colors duration-300 focus:outline-none"
+                onClick={() => navigate('/services/bot-whatsapp#bot-whatsapp')}
+              >
+                En savoir plus
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </button>
             </div>
           </div>
         </div>

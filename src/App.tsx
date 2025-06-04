@@ -7,6 +7,11 @@ import { HelmetProvider } from 'react-helmet-async'
 import RootLayout from "@/layouts/RootLayout"
 import AdminLayout from "@/layouts/AdminLayout"
 import AgencyLayout from "@/layouts/AgencyLayout"
+import AgentLayout from "@/layouts/AgentLayout"
+import ClientLayout from "@/layouts/ClientLayout"
+import ImmoLayout from "@/layouts/ImmoLayout"
+import LocativeLayout from "@/layouts/LocativeLayout"
+import CoproLayout from "@/layouts/CoproLayout"
 import { AgencyProvider } from "@/contexts/AgencyContext"
 
 // Pages
@@ -52,6 +57,11 @@ import SalesPage from "@/pages/agency/SalesPage"
 import ResetPasswordPage from "@/pages/agency/ResetPasswordPage"
 import ContractEditorPage from "@/pages/agency/ContractEditorPage"
 import ContactRequestsPage from "@/pages/agency/ContactRequestsPage"
+import ServicesPage from "@/pages/agency/ServicesPage"
+import ImmoDashboardPage from "@/pages/immo/DashboardPage"
+import LocativeDashboardPage from "@/pages/locative/DashboardPage"
+import CoproDashboardPage from "@/pages/copro/DashboardPage"
+import ServiceDetailsPage from "@/pages/services/ServiceDetailsPage"
 
 const queryClient = new QueryClient()
 
@@ -66,12 +76,16 @@ const App = () => (
             <Route element={<RootLayout />}>
               {/* Public routes */}
               <Route index element={<HomePage />} />
+              <Route path="/services/gestion-immobiliere" element={<ServiceDetailsPage />} />
+              <Route path="/services/gestion-copropriete" element={<ServiceDetailsPage />} />
+              <Route path="/services/gestion-locative" element={<ServiceDetailsPage />} />
+              <Route path="/services/bot-whatsapp" element={<ServiceDetailsPage />} />
               <Route path="404" element={<NotFoundPage />} />
 
               {/* Admin routes */}
               <Route path="admin/auth" element={<AdminAuthPage />} />
               <Route path="admin" element={<AdminLayout />}>
-                <Route index element={<Navigate to="dashboard" replace />} />
+                <Route index element={<Navigate to="services" replace />} />
                 <Route path="dashboard" element={<AdminDashboardPage />} />
                 <Route path="agencies" element={<AdminAgenciesPage />} />
                 <Route path="agencies/create" element={<CreateAgencyPage />} />
@@ -91,7 +105,6 @@ const App = () => (
                   </AgencyProvider>
                 }
               >
-                {/* Public agency routes */}
                 <Route index element={<AgencyHomePage />} />
                 <Route path="auth" element={<AgencyAuthPage />} />
                 <Route path="reset-password" element={<ResetPasswordPage />} />
@@ -109,13 +122,41 @@ const App = () => (
                   element={<PropertyImagesPage />}
                 />
                 <Route path="register" element={<AgencyRegisterPage />} />
+                
+                {/* Nouvelles routes pour les différentes applications */}
+                <Route path="immo" element={<ImmoLayout />}>
+                  <Route index element={<Navigate to="dashboard" replace />} />
+                  <Route path="dashboard" element={<ImmoDashboardPage />} />
+                  <Route path="properties" element={<AgencyPropertiesPage />} />
+                  <Route path="prospection" element={<AgencyProspectionPage />} />
+                  <Route path="appointments" element={<AppointmentsPage />} />
+                  <Route path="contact-requests" element={<ContactRequestsPage />} />
+                </Route>
+                
+                <Route path="locative" element={<LocativeLayout />}>
+                  <Route index element={<Navigate to="dashboard" replace />} />
+                  <Route path="dashboard" element={<LocativeDashboardPage />} />
+                  <Route path="planning" element={<PlanningPage />} />
+                  <Route path="payments" element={<PaymentsPage />} />
+                  <Route path="sales" element={<SalesPage />} />
+                  <Route path="clients" element={<ClientsPage />} />
+                  <Route path="proprietaires" element={<ProprietairesPage />} />
+                </Route>
+                
+                <Route path="copro" element={<CoproLayout />}>
+                  <Route index element={<Navigate to="dashboard" replace />} />
+                  <Route path="dashboard" element={<CoproDashboardPage />} />
+                  <Route path="lots" element={<CoproprieteePage />} />
+                  <Route path="appel-de-fond" element={<AppelDeFondPage />} />
+                </Route>
 
                 {/* Agency admin routes */}
                 <Route path="agency">
                   <Route
                     index
-                    element={<Navigate to="dashboard" replace />}
+                    element={<Navigate to="services" replace />}
                   />
+                  <Route path="services" element={<ServicesPage />} />
                   <Route path="dashboard" element={<AgencyDashboardPage />} />
                   <Route path="agents" element={<AgencyAgentsPage />} />
                   <Route path="prospection" element={<AgencyProspectionPage />} />
@@ -143,7 +184,7 @@ const App = () => (
                 <Route path="agent">
                   <Route
                     index
-                    element={<Navigate to="dashboard" replace />}
+                    element={<Navigate to="services" replace />}
                   />
                   <Route path="dashboard" element={<AgentDashboardPage />} />
                   <Route
@@ -160,7 +201,7 @@ const App = () => (
                 <Route path="client">
                   <Route
                     index
-                    element={<Navigate to="dashboard" replace />}
+                    element={<Navigate to="services" replace />}
                   />
                   <Route
                     path="dashboard"
