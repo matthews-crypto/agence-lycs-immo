@@ -40,7 +40,7 @@ export function AuthDrawer({ open, onOpenChange }: AuthDrawerProps) {
     }
     
     onOpenChange(false);
-    navigate(`/${agency.slug}/agency/dashboard`);
+    navigate(`/${agency.slug}/agency/services`);
     toast.success("Connexion réussie");
   };
 

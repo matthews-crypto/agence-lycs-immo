@@ -42,6 +42,25 @@ export function AgencySidebar() {
   const { agency } = useAgencyContext()
   const [newOpportunityCount, setNewOpportunityCount] = useState(0)
   const [newContactMessagesCount, setNewContactMessagesCount] = useState(0)
+  
+  // Déterminer quelle section afficher en fonction du chemin
+  const currentPath = location.pathname
+  const isImmoSection = currentPath.includes('/immo/dashboard') ||
+                       currentPath.includes('/properties') || 
+                       currentPath.includes('/prospection') || 
+                       currentPath.includes('/appointments') || 
+                       currentPath.includes('/contact-requests')
+  
+  const isLocativeSection = currentPath.includes('/locative/dashboard') ||
+                           currentPath.includes('/planning') || 
+                           currentPath.includes('/payments') || 
+                           currentPath.includes('/sales') || 
+                           currentPath.includes('/clients') || 
+                           currentPath.includes('/proprietaires')
+  
+  const isCoproSection = currentPath.includes('/copro/dashboard') ||
+                        currentPath.includes('/copropriete') || 
+                        currentPath.includes('/appel-de-fond')
 
   useEffect(() => {
     if (agency?.secondary_color) {
@@ -190,18 +209,13 @@ export function AgencySidebar() {
 
   const menuGroups = [
     {
-      label: "Vue d'ensemble",
-      items: [
-        {
-          title: "Tableau de bord",
-          icon: LayoutDashboard,
-          url: `/${agency?.slug}/agency/dashboard`,
-        },
-      ],
-    },
-    {
       label: "Gestion Immobilière",
       items: [
+        {
+          title: "Dashboard",
+          icon: LayoutDashboard,
+          url: `/${agency?.slug}/immo/dashboard`,
+        },
         {
           title: "Offres",
           icon: Home,
@@ -229,6 +243,11 @@ export function AgencySidebar() {
     {
       label: "Gestion Locative",
       items: [
+        {
+          title: "Dashboard",
+          icon: LayoutDashboard,
+          url: `/${agency?.slug}/locative/dashboard`,
+        },
         {
           title: "Planning location",
           icon: MapPin,
@@ -260,28 +279,34 @@ export function AgencySidebar() {
       label: "Gestion Copropriété",
       items: [
         {
+          title: "Dashboard",
+          icon: LayoutDashboard,
+          url: `/${agency?.slug}/copro/dashboard`,
+        },
+        {
           title: "Lots",
           icon: Home,
           url: `/${agency?.slug}/agency/copropriete`,
-        },
-        {
-          title: "Appel de fond",
-          icon: Banknote,
-          url: `/${agency?.slug}/agency/appel-de-fond`,
-        },
-      ],
-    },
-    {
-      label: "Analyse & Configuration",
-      items: [
-        {
-          title: "Configuration",
-          icon: Settings,
-          url: `/${agency?.slug}/agency/settings`,
-        },
+        }
       ],
     },
   ]
+
+  // Filtrer les groupes de menu en fonction du chemin actuel
+  const filteredMenuGroups = menuGroups.filter(group => {
+    if (isImmoSection) {
+      // Si on est dans une section Immo, n'afficher que la section Gestion Immobilière (avec Dashboard inclus)
+      return group.label === "Gestion Immobilière";
+    } else if (isLocativeSection) {
+      // Si on est dans une section Locative, n'afficher que la section Gestion Locative (avec Dashboard inclus)
+      return group.label === "Gestion Locative";
+    } else if (isCoproSection) {
+      // Si on est dans une section Copro, n'afficher que la section Gestion Copropriété (avec Dashboard inclus)
+      return group.label === "Gestion Copropriété";
+    }
+    // Si on n'est pas dans une section spécifique, afficher tous les groupes
+    return true;
+  });
 
   return (
     <Sidebar 
@@ -301,9 +326,15 @@ export function AgencySidebar() {
             <h2 className="text-lg font-semibold">{agency?.agency_name}</h2>
           </div>
         )}
+        {/* Titre métier dynamique sous le logo */}
+        <div className="mt-2 text-center">
+          {isImmoSection && <span className="text-white text-base font-bold tracking-wide">Gestion Immobilière</span>}
+          {isLocativeSection && <span className="text-white text-base font-bold tracking-wide">Gestion Locative</span>}
+          {isCoproSection && <span className="text-white text-base font-bold tracking-wide">Gestion Copropriété</span>}
+        </div>
       </SidebarHeader>
       <SidebarContent>
-        {menuGroups.map((group) => (
+        {filteredMenuGroups.map((group) => (
           <SidebarGroup key={group.label}>
             <SidebarGroupLabel className="text-white/70">{group.label}</SidebarGroupLabel>
             <SidebarGroupContent>
@@ -332,7 +363,18 @@ export function AgencySidebar() {
           </SidebarGroup>
         ))}
 
-        <div className="mt-auto p-4">
+        <div className="mt-auto p-4 flex flex-col gap-2">
+          {agency && (
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-primary hover:text-white hover:bg-sidebar-primary mb-2 border border-sidebar-primary"
+              onClick={() => navigate(`/${agency.slug}/agency/services`)}
+              
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+              Retour aux services
+            </Button>
+          )}
           <Button
             variant="ghost"
             className="w-full justify-start text-white hover:text-white hover:bg-sidebar-primary"

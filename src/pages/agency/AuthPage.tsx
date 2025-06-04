@@ -45,7 +45,7 @@ export default function AgencyAuthPage() {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (session && agency?.slug) {
         console.log("Session found:", session);
-        navigate(`/${agency.slug}/agency/dashboard`);
+        navigate(`/${agency.slug}/agency/services`);
       }
       if (error) {
         console.error("Session check error:", error);
@@ -57,7 +57,7 @@ export default function AgencyAuthPage() {
 
   useEffect(() => {
     if (isAuthenticated && agency?.slug) {
-      navigate(`/${agency.slug}/agency/dashboard`);
+      navigate(`/${agency.slug}/agency/services`);
     }
   }, [isAuthenticated, navigate, agency?.slug]);
 
