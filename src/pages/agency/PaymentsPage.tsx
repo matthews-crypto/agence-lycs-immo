@@ -1,3 +1,4 @@
+import jsPDF from "jspdf";
 import { useEffect, useState, useMemo } from "react";
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { AgencySidebar } from "@/components/agency/AgencySidebar";
@@ -30,6 +31,7 @@ type PaymentDetails = {
   payment_method: PaymentMethod;
   months_covered: number;
   created_at: string;
+  receipt_url?: string | null;
 };
 
 type PaymentWithDetails = PaymentDetails & {
@@ -66,6 +68,7 @@ export default function PaymentsPage() {
   
   // États pour les paiements et le chargement
   const [payments, setPayments] = useState<PaymentWithDetails[]>([]);
+  const [loadingReceiptId, setLoadingReceiptId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [paymentDetails, setPaymentDetails] = useState<PaymentWithDetails | null>(null);
   const [isPaymentDetailsOpen, setIsPaymentDetailsOpen] = useState(false);
@@ -101,6 +104,7 @@ export default function PaymentsPage() {
           payment_method,
           months_covered,
           created_at,
+          receipt_url,
           locations!inner (
             client:client_id (id, first_name, last_name, email, phone_number),
             property:property_id (id, title, reference_number, price, type_location)
@@ -133,7 +137,8 @@ export default function PaymentsPage() {
           // Champs pour stocker les mois couverts calculés
           covered_months_dates: [] as Date[],
           covered_months_text: '',
-          covered_months_list: [] as string[]
+          covered_months_list: [] as string[],
+          receipt_url: payment.receipt_url || null,
         };
         
         return paymentObj;
@@ -485,6 +490,87 @@ export default function PaymentsPage() {
     toast.success("Export CSV réussi");
   };
 
+  // Génération du reçu PDF, upload et mise à jour
+  async function handleGenerateReceipt(payment: PaymentWithDetails) {
+    setLoadingReceiptId(payment.id);
+    try {
+      // 1. Générer le PDF avec jsPDF
+      const doc = new jsPDF();
+      const datePaiement = format(new Date(payment.payment_date), "dd/MM/yyyy");
+      const clientName = `${payment.client?.first_name || ''} ${payment.client?.last_name || ''}`.trim();
+      const propertyRef = payment.property?.reference_number || '';
+      const propertyTitle = payment.property?.title || '';
+      const monthsText = payment.covered_months_text;
+      const agencyName = agency?.name || 'Votre agence';
+      const receiptNumber = `REC-${payment.id.slice(-6).toUpperCase()}`;
+      const montant = payment.amount.toLocaleString() + ' FCFA';
+      const now = format(new Date(), "dd/MM/yyyy à HH:mm");
+      
+      doc.setFontSize(18);
+      doc.text("Reçu de paiement", 105, 18, { align: "center" });
+      doc.setFontSize(12);
+      doc.text(`N° reçu : ${receiptNumber}`, 15, 30);
+      doc.text(`Date d'émission : ${now}`, 15, 38);
+      doc.text(`Agence : ${agencyName}`, 15, 46);
+      doc.text(`Client : ${clientName}`, 15, 54);
+      doc.text(`Bien : ${propertyTitle}`, 15, 62);
+      doc.text(`Référence : ${propertyRef}`, 15, 70);
+      doc.text(`Date de paiement : ${datePaiement}`, 15, 78);
+      doc.text(`Montant : ${montant}`, 15, 86);
+      doc.text(`Méthode : ${formatPaymentMethod(payment.payment_method)}`, 15, 94);
+      doc.text(`Période couverte : ${monthsText}`, 15, 102);
+      doc.setLineWidth(0.5);
+      doc.line(15, 110, 195, 110);
+      doc.setFontSize(10);
+      doc.text("Merci pour votre paiement.", 15, 120);
+      
+      // 2. Convertir le PDF en blob
+      const pdfBlob = doc.output("blob");
+      const fileName = `recu-paiement-${payment.id}.pdf`;
+      
+      // 3. Upload sur Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('recu-paiement-loc')
+        .upload(fileName, pdfBlob, {
+          cacheControl: '3600',
+          upsert: true,
+          contentType: 'application/pdf',
+        });
+      if (error) throw error;
+      
+      // 4. Récupérer l'URL publique
+      const { data: urlData } = supabase.storage.from('recu-paiement-loc').getPublicUrl(fileName);
+      const receipt_url = urlData.publicUrl;
+      
+      // 5. Mettre à jour la table payment_details
+      const { error: updateError } = await supabase
+        .from('payment_details')
+        .update({ receipt_url })
+        .eq('id', payment.id);
+      if (updateError) throw updateError;
+      
+      toast.success('Reçu généré et enregistré avec succès.');
+      // Refresh les paiements
+      fetchPayments();
+    } catch (err: any) {
+      toast.error('Erreur lors de la génération du reçu: ' + (err?.message || err));
+    } finally {
+      setLoadingReceiptId(null);
+    }
+  }
+
+  // Téléchargement du reçu
+  function handleDownloadReceipt(payment: PaymentWithDetails) {
+    if (!payment.receipt_url) return;
+    const link = document.createElement('a');
+    link.href = payment.receipt_url;
+    link.target = '_blank';
+    link.download = `recu-paiement-${payment.id}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
   return (
     <SidebarProvider>
       <div className="flex h-screen overflow-hidden">
@@ -688,15 +774,37 @@ export default function PaymentsPage() {
                               )}
                             </div>
                           </TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="text-right flex flex-col gap-2 items-end">
                             <Button
                               variant="outline"
                               size="sm"
-                              className="hover:bg-primary/10 hover:text-primary"
+                              className="hover:bg-primary/10 hover:text-primary mb-1"
                               onClick={() => handlePaymentDetailsClick(payment)}
                             >
                               Détails
                             </Button>
+                            {/* Bouton reçu PDF */}
+                            {payment.receipt_url ? (
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                className="hover:bg-green-50 text-green-800 border-green-200"
+                                onClick={() => handleDownloadReceipt(payment)}
+                              >
+                                <Receipt className="h-4 w-4 mr-1" /> Télécharger le reçu
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                className="hover:bg-primary/10 hover:text-primary"
+                                disabled={loadingReceiptId === payment.id}
+                                onClick={() => handleGenerateReceipt(payment)}
+                              >
+                                <Receipt className="h-4 w-4 mr-1" />
+                                {loadingReceiptId === payment.id ? 'Génération...' : 'Générer le reçu'}
+                              </Button>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))}

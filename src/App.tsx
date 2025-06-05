@@ -7,8 +7,6 @@ import { HelmetProvider } from 'react-helmet-async'
 import RootLayout from "@/layouts/RootLayout"
 import AdminLayout from "@/layouts/AdminLayout"
 import AgencyLayout from "@/layouts/AgencyLayout"
-import AgentLayout from "@/layouts/AgentLayout"
-import ClientLayout from "@/layouts/ClientLayout"
 import ImmoLayout from "@/layouts/ImmoLayout"
 import LocativeLayout from "@/layouts/LocativeLayout"
 import CoproLayout from "@/layouts/CoproLayout"
@@ -57,6 +55,7 @@ import SalesPage from "@/pages/agency/SalesPage"
 import ResetPasswordPage from "@/pages/agency/ResetPasswordPage"
 import ContractEditorPage from "@/pages/agency/ContractEditorPage"
 import ContactRequestsPage from "@/pages/agency/ContactRequestsPage"
+import SaleOpportunityDetailPage from "@/pages/agency/SaleOpportunityDetailPage"
 import ServicesPage from "@/pages/agency/ServicesPage"
 import ImmoDashboardPage from "@/pages/immo/DashboardPage"
 import LocativeDashboardPage from "@/pages/locative/DashboardPage"
@@ -177,6 +176,7 @@ const App = () => (
                   <Route path="copropriete" element={<CoproprieteePage />} />
                   <Route path="appel-de-fond" element={<AppelDeFondPage />} />
                   <Route path="appel-de-fond/:id" element={<AppelDeFondDetailPage />} />
+                  <Route path="opportunities/sale/:opportunityId" element={<SaleOpportunityDetailPage />} />
                   <Route path="contact-requests" element={<ContactRequestsPage />} />
                 </Route>
 

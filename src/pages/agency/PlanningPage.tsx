@@ -9,8 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Search, History, Calendar, DollarSign, User } from "lucide-react";
+import { Search, History, Calendar, DollarSign, User, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { CheckCircle, XCircle } from "lucide-react";
 
 type LocationData = {
   id: string;
@@ -27,6 +29,25 @@ type LocationData = {
     phone_number: string;
   };
   created_at: string;
+  paiement?: boolean | null;
+};
+
+const getPaymentStatusBadge = (status: boolean | null | undefined) => {
+  if (status === true) {
+    return (
+      <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
+        <CheckCircle className="h-3 w-3 mr-1" />
+        Payé
+      </Badge>
+    );
+  } else {
+    return (
+      <Badge className="bg-red-100 text-red-800 hover:bg-red-200">
+        <XCircle className="h-3 w-3 mr-1" />
+        Non payé
+      </Badge>
+    );
+  }
 };
 
 export default function PlanningPage() {
@@ -62,7 +83,8 @@ export default function PlanningPage() {
             client_id,
             created_at,
             property:properties(title, reference_number, type_location),
-            client:clients(first_name, last_name, phone_number)
+            client:clients(first_name, last_name, phone_number),
+            paiement
           `)
           .not("rental_start_date", "is", null)
           .not("rental_end_date", "is", null)
@@ -96,9 +118,10 @@ export default function PlanningPage() {
             client_id,
             created_at,
             property:properties(title, reference_number, type_location),
-            client:clients(first_name, last_name, phone_number)
+            client:clients(first_name, last_name, phone_number),
+            paiement
           `)
-          .eq("statut", "TERMINÉ")
+          .eq("statut", "TERMINE")
           .order("created_at", { ascending: false }); // Most recent first by default
 
         if (error) {
@@ -119,7 +142,7 @@ export default function PlanningPage() {
     fetchHistoricalLocations();
   }, [agency?.id]);
 
-  // Handle filtering based on search term, type_location, sort order, and time filter
+  // Handle filtering based on search term, sort order, and time filter
   useEffect(() => {
     const filterLocations = () => {
       const lowerSearchTerm = searchTerm.toLowerCase();
@@ -145,10 +168,6 @@ export default function PlanningPage() {
                               propertyTitle.includes(lowerSearchTerm) || 
                               phoneNumber.includes(lowerSearchTerm);
         
-        // Check if matches type_location filter
-        const matchesTypeLocation = !typeLocationFilter || 
-                                   location.property?.type_location === typeLocationFilter;
-        
         // Check if matches time filter
         let matchesTimeFilter = true;
         if (timeFilter !== "all") {
@@ -156,7 +175,7 @@ export default function PlanningPage() {
           matchesTimeFilter = createdAt >= cutoffDate;
         }
         
-        return matchesSearch && matchesTypeLocation && matchesTimeFilter;
+        return matchesSearch && matchesTimeFilter;
       });
       
       // Filter historical locations
@@ -170,10 +189,6 @@ export default function PlanningPage() {
                               propertyTitle.includes(lowerSearchTerm) || 
                               phoneNumber.includes(lowerSearchTerm);
         
-        // Check if matches type_location filter
-        const matchesTypeLocation = !typeLocationFilter || 
-                                   location.property?.type_location === typeLocationFilter;
-        
         // Check if matches time filter
         let matchesTimeFilter = true;
         if (timeFilter !== "all") {
@@ -181,7 +196,7 @@ export default function PlanningPage() {
           matchesTimeFilter = createdAt >= cutoffDate;
         }
         
-        return matchesSearch && matchesTypeLocation && matchesTimeFilter;
+        return matchesSearch && matchesTimeFilter;
       });
       
       // Apply sorting
