@@ -57,17 +57,41 @@ export default function AgencyAuthPage() {
 
   useEffect(() => {
     if (isAuthenticated && agency?.slug) {
-      navigate(`/${agency.slug}/agency/services`);
+      // Vérifier si l'utilisateur doit changer son mot de passe
+      const mustChangePassword = useAgencyAuthStore.getState().checkPasswordChangeRequired();
+      const userRole = useAgencyAuthStore.getState().userRole;
+      
+      console.log("Auth state:", { isAuthenticated, userRole, mustChangePassword, agencySlug: agency.slug });
+      
+      if (mustChangePassword) {
+        // Rediriger vers la page de changement de mot de passe
+        console.log("Redirecting to change password page");
+        navigate(`/${agency.slug}/agency/change-password`);
+      } else if (userRole === 'proprietaire') {
+        // Rediriger vers le dashboard propriétaire
+        console.log("Redirecting to proprietaire dashboard");
+        navigate(`/${agency.slug}/proprietaire/dashboard`);
+      } else {
+        // Rediriger vers le dashboard admin par défaut
+        console.log("Redirecting to admin dashboard");
+        navigate(`/${agency.slug}/agency/services`);
+      }
     }
   }, [isAuthenticated, navigate, agency?.slug]);
 
   const onSubmit = async (values: FormValues) => {
     try {
-      console.log("Attempting agency login with:", values.email);
+      console.log("Attempting login with:", values.email);
       if (!agency?.slug) {
         throw new Error("Agency slug not found");
       }
-      await login(values.email, values.password, agency.slug);
+      const result = await login(values.email, values.password, agency.slug);
+      
+      // Si un chemin de redirection spécifique est retourné, l'utiliser
+      if (result?.redirectPath) {
+        navigate(result.redirectPath);
+      }
+      // Sinon, la redirection sera gérée par l'effet useEffect ci-dessus
     } catch (error) {
       console.error("Login error:", error);
     }

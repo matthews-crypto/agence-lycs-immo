@@ -6,7 +6,9 @@ import {
   LogOut,
   Image,
   Banknote,
-  ArrowLeft
+  ArrowLeft,
+  FileText,
+  CreditCard
 } from "lucide-react"
 import {
   Sidebar,
@@ -60,21 +62,31 @@ export function CoproSidebar() {
       label: "Gestion Copropriété",
       items: [
         {
-          title: "Dashboard",
+          title: "Tableau de bord",
           icon: LayoutDashboard,
           url: `/${agency?.slug}/copro/dashboard`,
         },
         {
-          title: "Lots",
-          icon: Home,
-          url: `/${agency?.slug}/agency/copropriete`,
+          title: "Appels de fond",
+          icon: Banknote,
+          url: `/${agency?.slug}/copro/appels-de-fond`,
         },
         {
-          title: "Appel de fond",
-          icon: Banknote,
-          url: `/${agency?.slug}/agency/appel-de-fond`,
+          title: "Lots",
+          icon: Home,
+          url: `/${agency?.slug}/copro/lots`,
         },
 
+        {
+          title: "Demandes",
+          icon: FileText,
+          url: `/${agency?.slug}/copro/demandes`,
+        },
+        {
+          title: "Paiements",
+          icon: CreditCard,
+          url: `/${agency?.slug}/copro/paiements`,
+        }
       ],
     }
   ];
