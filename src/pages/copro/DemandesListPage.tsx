@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { useAgencyContext } from "@/contexts/AgencyContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -80,22 +81,23 @@ const DemandesListPage: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
+  const { agency } = useAgencyContext();
+
   // Récupérer toutes les demandes + propriétaire
   const { data: demandes, isLoading, error, refetch } = useQuery({
-    queryKey: ["demandes", tab],
+    queryKey: ["demandes", agency?.id, tab],
     queryFn: async () => {
+      if (!agency?.id) return [];
       const { data, error } = await supabase
         .from("demandes")
-        .select(
-          `*, proprietaire:proprietaire_id(id, prenom, nom)`
-        )
-        .eq("agence_id", supabase.auth.user()?.user_metadata?.agency_id)
+        .select(`*, proprietaire:proprietaire_id(id, prenom, nom)`)
+        .eq("agence_id", agency.id)
         .eq("type_demande", tab)
         .order("date_creation", { ascending: false });
       if (error) throw error;
       return data as Demande[];
     },
-    enabled: !!tab,
+    enabled: !!agency?.id && !!tab,
   });
 
   // Filtres propriétaires
@@ -163,9 +165,14 @@ const DemandesListPage: React.FC = () => {
         if (error) throw error;
         fichier_reponse_url = data?.path;
       }
+      // Préparer le payload pour éviter d'envoyer undefined
+      const updatePayload: any = { commentaire_admin: commentaire };
+      if (fichier_reponse_url !== null) {
+        updatePayload.fichier_reponse = fichier_reponse_url;
+      }
       const { error } = await supabase
         .from("demandes")
-        .update({ commentaire_admin: commentaire, fichier_reponse: fichier_reponse_url })
+        .update(updatePayload)
         .eq("id", id);
       if (error) throw error;
     },
