@@ -39,7 +39,8 @@ export default function MessagesPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("contact_message_admin")
-        .select("id, created_at, email, nom_complet, message");
+        .select("id, created_at, email, nom_complet, message")
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data || [];
     },

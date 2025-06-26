@@ -450,9 +450,13 @@ export default function AgencyHomePage() {
     setIsFilterSidebarOpen(false);
   };
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleContactSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!agency?.id) return;
+    if (!agency?.id || isSubmitting) return;
+
+    setIsSubmitting(true);
 
     try {
       // Enregistrer le message de contact dans la base de données
@@ -469,15 +473,6 @@ export default function AgencyHomePage() {
 
       // Envoyer les données au webhook spécifique à l'agence
       try {
-        console.log('Envoi de données au webhook spécifique à l\'agence:', {
-          name,
-          email,
-          phone,
-          message,
-          agencyName: agency?.agency_name,
-          agencyId: agency?.id
-        });
-        
         const response = await fetch('https://lycs.app.n8n.cloud/webhook/specAg', {
           method: 'POST',
           headers: {
@@ -494,15 +489,13 @@ export default function AgencyHomePage() {
           })
         });
 
-        const data = await response.json();
-        console.log('Réponse complète du webhook spécifique à l\'agence:', data);
-        console.log('Statut de la réponse:', response.status, response.statusText);
+        await response.json(); // On attend la réponse mais on ne la traite pas
       } catch (webhookError) {
         console.error('Erreur lors de l\'envoi au webhook:', webhookError);
-        console.error('Détails de l\'erreur:', JSON.stringify(webhookError));
         // On continue même si le webhook échoue, car les données sont déjà sauvegardées dans la base de données
       }
 
+      // Réinitialiser les champs du formulaire
       setName('');
       setEmail('');
       setPhone('');
@@ -524,6 +517,8 @@ export default function AgencyHomePage() {
         description: "Une erreur est survenue lors de l'envoi du formulaire.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -974,9 +969,11 @@ export default function AgencyHomePage() {
                   style={{
                     backgroundColor: agency?.primary_color || '#000000',
                     color: 'white',
+                    opacity: isSubmitting ? 0.7 : 1
                   }}
+                  disabled={isSubmitting}
                 >
-                  Envoyer
+                  {isSubmitting ? "Envoi en cours..." : "Envoyer"}
                 </Button>
               </form>
               <Button
