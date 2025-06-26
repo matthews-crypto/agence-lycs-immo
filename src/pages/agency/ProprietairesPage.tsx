@@ -163,7 +163,8 @@ export default function ProprietairesPage() {
   // Gérer la soumission du formulaire d'ajout de propriétaire
   const onSubmit = async (data: ProprietaireFormValues) => {
     try {
-      const { error } = await supabase
+      // 1. Création du propriétaire dans la table
+      const { error: insertError } = await supabase
         .from('proprietaire')
         .insert([
           {
@@ -175,15 +176,33 @@ export default function ProprietairesPage() {
           },
         ]);
 
-      if (error) throw error;
+      if (insertError) throw insertError;
 
-      toast.success("Propriétaire ajouté avec succès");
+      // 2. Création du compte utilisateur via la fonction Edge si email fourni
+      if (data.adresse_email) {
+        try {
+          const resp = await fetch('https://lgwywyrakwzoztcutxkc.supabase.co/functions/v1/create-proprietaire-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: data.adresse_email })
+          });
+          const result = await resp.json();
+          if (!resp.ok) {
+            toast.error("Le propriétaire a été ajouté, mais la création du compte utilisateur a échoué : " + (result.error || 'Erreur inconnue'));
+            return;
+          }
+        } catch (err) {
+          toast.error("Le propriétaire a été ajouté, mais la création du compte utilisateur a échoué (erreur réseau)." );
+          return;
+        }
+      }
+      toast.success("Propriétaire et compte utilisateur créés avec succès");
       form.reset();
       setAddDialogOpen(false);
-      refetch(); // Rafraîchir la liste des propriétaires
+      refetch();
     } catch (error) {
-      console.error("Error adding proprietaire:", error);
-      toast.error("Erreur lors de l'ajout du propriétaire");
+      console.error("Error adding proprietaire or user:", error);
+      toast.error("Erreur lors de l'ajout du propriétaire ou du compte utilisateur");
     }
   };
 

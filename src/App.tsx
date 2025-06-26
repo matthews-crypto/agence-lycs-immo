@@ -7,8 +7,6 @@ import { HelmetProvider } from 'react-helmet-async'
 import RootLayout from "@/layouts/RootLayout"
 import AdminLayout from "@/layouts/AdminLayout"
 import AgencyLayout from "@/layouts/AgencyLayout"
-import AgentLayout from "@/layouts/AgentLayout"
-import ClientLayout from "@/layouts/ClientLayout"
 import ImmoLayout from "@/layouts/ImmoLayout"
 import LocativeLayout from "@/layouts/LocativeLayout"
 import CoproLayout from "@/layouts/CoproLayout"
@@ -52,16 +50,31 @@ import PaymentsPage from "@/pages/agency/PaymentsPage"
 import PaymentDetailsPage from "@/pages/agency/PaymentDetailsPage"
 import CoproprieteePage from "@/pages/agency/CoproprieteePage"
 import AppelDeFondPage from "@/pages/agency/AppelDeFondPage"
-import AppelDeFondDetailPage from "@/pages/agency/AppelDeFondDetailPage"
+
 import SalesPage from "@/pages/agency/SalesPage"
 import ResetPasswordPage from "@/pages/agency/ResetPasswordPage"
 import ContractEditorPage from "@/pages/agency/ContractEditorPage"
 import ContactRequestsPage from "@/pages/agency/ContactRequestsPage"
+import SaleOpportunityDetailPage from "@/pages/agency/SaleOpportunityDetailPage"
 import ServicesPage from "@/pages/agency/ServicesPage"
 import ImmoDashboardPage from "@/pages/immo/DashboardPage"
 import LocativeDashboardPage from "@/pages/locative/DashboardPage"
 import CoproDashboardPage from "@/pages/copro/DashboardPage"
+import AppelsDeFondListPage from "@/pages/copro/AppelsDeFondListPage"
+import AppelDeFondDetailPage from "@/pages/copro/AppelDeFondDetailPage"
+import AppelDeFondCreatePage from "@/pages/copro/AppelDeFondCreatePage"
+import LotsListPage from "@/pages/copro/LotsListPage";
+import DemandesListPage from "@/pages/copro/DemandesListPage";
+import PaiementsListPage from "@/pages/copro/PaiementsListPage";
 import ServiceDetailsPage from "@/pages/services/ServiceDetailsPage"
+import ChangePasswordPage from "@/pages/agency/ChangePasswordPage"
+import ProprietaireDashboardPage from "@/pages/proprietaire/DashboardPage"
+import ProprietaireLayout from "@/layouts/ProprietaireLayout"
+import ProprietaireDemandesPage from "@/pages/proprietaire/DemandesPage"
+import ProprietaireAppelDeFondDetailPage from "@/pages/proprietaire/AppelDeFondDetailPage"
+import ProprietairePaiementsPage from "@/pages/proprietaire/PaiementsPage"
+import ProprietaireAppelDeFondPage from "@/pages/proprietaire/AppelDeFondPage"
+import ProprietaireProfilPage from "@/pages/proprietaire/ProfilPage"
 
 const queryClient = new QueryClient()
 
@@ -108,6 +121,7 @@ const App = () => (
                 <Route index element={<AgencyHomePage />} />
                 <Route path="auth" element={<AgencyAuthPage />} />
                 <Route path="reset-password" element={<ResetPasswordPage />} />
+                <Route path="change-password" element={<ChangePasswordPage />} />
                 <Route path="properties" element={<AgencyPropertiesPage />} />
                 <Route
                   path="properties/:propertyId"
@@ -146,8 +160,12 @@ const App = () => (
                 <Route path="copro" element={<CoproLayout />}>
                   <Route index element={<Navigate to="dashboard" replace />} />
                   <Route path="dashboard" element={<CoproDashboardPage />} />
-                  <Route path="lots" element={<CoproprieteePage />} />
-                  <Route path="appel-de-fond" element={<AppelDeFondPage />} />
+                  <Route path="lots" element={<LotsListPage />} />
+                  <Route path="demandes" element={<DemandesListPage />} />
+                  <Route path="paiements" element={<PaiementsListPage />} />
+                  <Route path="appels-de-fond" element={<AppelsDeFondListPage />} />
+                  <Route path="appels-de-fond/create" element={<AppelDeFondCreatePage />} />
+                  <Route path="appels-de-fond/:id" element={<AppelDeFondDetailPage />} />
                 </Route>
 
                 {/* Agency admin routes */}
@@ -168,6 +186,7 @@ const App = () => (
                   <Route path="payments/:locationId" element={<PaymentDetailsPage />} />
                   <Route path="settings" element={<AgencySettingsPage />} />
                   <Route path="contract-editor" element={<ContractEditorPage />} />
+                  <Route path="change-password" element={<ChangePasswordPage />} />
                   <Route
                     path="properties"
                     element={<AgencyPropertiesPage />}
@@ -177,6 +196,7 @@ const App = () => (
                   <Route path="copropriete" element={<CoproprieteePage />} />
                   <Route path="appel-de-fond" element={<AppelDeFondPage />} />
                   <Route path="appel-de-fond/:id" element={<AppelDeFondDetailPage />} />
+                  <Route path="opportunities/sale/:opportunityId" element={<SaleOpportunityDetailPage />} />
                   <Route path="contact-requests" element={<ContactRequestsPage />} />
                 </Route>
 
@@ -195,6 +215,20 @@ const App = () => (
                     path="appointments"
                     element={<AgentAppointmentsPage />}
                   />
+                </Route>
+
+                {/* Propriétaire routes */}
+                <Route path="proprietaire" element={<ProprietaireLayout />}>
+                  <Route
+                    index
+                    element={<Navigate to="dashboard" replace />}
+                  />
+                  <Route path="dashboard" element={<ProprietaireDashboardPage />} />
+                  <Route path="profil" element={<ProprietaireProfilPage />} />
+                  <Route path="demandes" element={<ProprietaireDemandesPage />} />
+                  <Route path="paiements" element={<ProprietairePaiementsPage />} />
+                  <Route path="appels-de-fond" element={<ProprietaireAppelDeFondPage />} />
+                  <Route path="appels-de-fond/:id" element={<ProprietaireAppelDeFondDetailPage />} />
                 </Route>
 
                 {/* Client routes */}

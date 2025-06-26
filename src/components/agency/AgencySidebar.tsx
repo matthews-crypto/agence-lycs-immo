@@ -293,18 +293,20 @@ export function AgencySidebar() {
   ]
 
   // Filtrer les groupes de menu en fonction du chemin actuel
+  // Hide Gestion Locative and Copropriété only on sale opportunity detail page
+  const isSaleOpportunityDetail = /\/agency\/opportunities\/sale\//.test(currentPath);
   const filteredMenuGroups = menuGroups.filter(group => {
+    if (isSaleOpportunityDetail) {
+      // Hide Gestion Locative and Copropriété
+      return group.label !== "Gestion Locative" && group.label !== "Gestion Copropriété";
+    }
     if (isImmoSection) {
-      // Si on est dans une section Immo, n'afficher que la section Gestion Immobilière (avec Dashboard inclus)
       return group.label === "Gestion Immobilière";
     } else if (isLocativeSection) {
-      // Si on est dans une section Locative, n'afficher que la section Gestion Locative (avec Dashboard inclus)
       return group.label === "Gestion Locative";
     } else if (isCoproSection) {
-      // Si on est dans une section Copro, n'afficher que la section Gestion Copropriété (avec Dashboard inclus)
       return group.label === "Gestion Copropriété";
     }
-    // Si on n'est pas dans une section spécifique, afficher tous les groupes
     return true;
   });
 

@@ -60,7 +60,7 @@
     "embla-carousel-react": "^8.3.0",
     "framer-motion": "^12.11.0",
     "input-otp": "^1.2.4",
-    "jspdf": "^3.0.0",
+    "jspdf": "^3.0.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.462.0",
     "marked": "^15.0.11",

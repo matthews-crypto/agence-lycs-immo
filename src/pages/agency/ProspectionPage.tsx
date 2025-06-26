@@ -37,6 +37,8 @@ interface Reservation {
     reference_number: string;
     price: number;
     type_location: string;
+    surface_area?: number; // Ajouté
+    bedrooms?: number; // Ajouté
   };
 }
 
@@ -72,6 +74,7 @@ const normalizeString = (str: string | null | undefined): string => {
 };
 
 const ProspectionPage = () => {
+  const navigate = useNavigate();
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [filteredReservations, setFilteredReservations] = useState<Reservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -102,7 +105,6 @@ const ProspectionPage = () => {
   
   const { agency } = useAgencyContext();
   const location = useLocation();
-  const navigate = useNavigate();
   const { agencySlug } = useParams();
   const queryParams = new URLSearchParams(location.search);
   const reservationParam = queryParams.get('reservation');
@@ -387,7 +389,9 @@ const ProspectionPage = () => {
             address,
             reference_number,
             price,
-            type_location
+            type_location,
+            surface_area,
+            bedrooms
           )
         `)
         .eq('agency_id', agency.id)
@@ -884,7 +888,7 @@ const ProspectionPage = () => {
       const showAgencyName = templateData.template_json.settings.showAgencyName !== false; // Par défaut true si non défini
       
       if (showAgencyName && agency?.agency_name) {
-        const agencyNamePosition = templateData.template_json.settings.agencyNamePosition || 'center';
+        const agencyNamePosition = templateData.template_json.settings.agencyNamePosition ?? 'center';
         let xPos = 20; // Position par défaut (gauche)
         const textOptions: TextOptions = { align: 'left' };
         
@@ -1186,40 +1190,50 @@ const ProspectionPage = () => {
   };
 
   const handleReservationClick = (reservation: Reservation) => {
-    setSelectedReservation(reservation);
-    
-    // Initialiser la date de rendez-vous
-    setAppointmentDate(reservation.appointment_date ? new Date(reservation.appointment_date) : null);
-    
-    // Initialiser la note de visite
-    setVisitNote(reservation.note_rv || "");
-    
-    // Initialiser les dates de location
-    if (reservation.type === 'Location') {
-      if (reservation.rental_start_date) {
-        setRentalStartDate(format(new Date(reservation.rental_start_date), 'yyyy-MM-dd'));
+    if (reservation.type && reservation.type.toLowerCase() === 'vente') {
+      // Pour les ventes, naviguer vers la nouvelle page de détail de l'opportunité de vente
+      if (agencySlug && reservation.id) {
+        navigate(`/${agencySlug}/agency/opportunities/sale/${reservation.id}`);
       } else {
-        setRentalStartDate("");
-      }
-      
-      if (reservation.rental_end_date) {
-        setRentalEndDate(format(new Date(reservation.rental_end_date), 'yyyy-MM-dd'));
-      } else {
-        setRentalEndDate("");
+        console.error('Agency slug or reservation ID is missing for navigation');
+        toast.error('Erreur lors de la navigation vers la page de vente.');
       }
     } else {
-      setRentalStartDate("");
-      setRentalEndDate("");
+      // Pour les locations (ou type non défini/vente), conserver le comportement actuel (ouvrir le dialogue)
+      setSelectedReservation(reservation);
+
+      // Initialiser la date de rendez-vous
+      setAppointmentDate(reservation.appointment_date ? new Date(reservation.appointment_date) : null);
+
+      // Initialiser la note de visite
+      setVisitNote(reservation.note_rv || "");
+
+      // Initialiser les dates de location si c'est une location
+      if (reservation.type && reservation.type.toLowerCase() === 'location') {
+        if (reservation.rental_start_date) {
+          setRentalStartDate(format(new Date(reservation.rental_start_date), 'yyyy-MM-dd'));
+        } else {
+          setRentalStartDate("");
+        }
+        if (reservation.rental_end_date) {
+          setRentalEndDate(format(new Date(reservation.rental_end_date), 'yyyy-MM-dd'));
+        } else {
+          setRentalEndDate("");
+        }
+      } else {
+        // Pour les autres types (ou si les dates ne sont pas pertinentes), réinitialiser
+        setRentalStartDate("");
+        setRentalEndDate("");
+      }
+
+      if (reservation.client_phone) {
+        fetchClientDetails(reservation.client_phone);
+        fetchClientReservations(reservation.client_phone);
+      }
+
+      setIsDialogOpen(true);
+      resetContractFields();
     }
-    
-    if (reservation.client_phone) {
-      fetchClientDetails(reservation.client_phone);
-      fetchClientReservations(reservation.client_phone);
-    }
-    
-    setIsDialogOpen(true);
-    
-    resetContractFields();
   };
 
   const handleClientReservationsClick = () => {
