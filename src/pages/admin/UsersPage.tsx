@@ -99,57 +99,61 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="container mx-auto p-8">
-      <h1 className="text-2xl font-bold mb-8">Utilisateurs</h1>
-
-      <div className="flex gap-4 mb-6">
-        <Input
-          placeholder="Rechercher par nom..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-sm"
-        />
-        <Select
-          value={roleFilter}
-          onValueChange={setRoleFilter}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filtrer par rôle" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous les rôles</SelectItem>
-            <SelectItem value="agent">Agents</SelectItem>
-            <SelectItem value="client">Clients</SelectItem>
-          </SelectContent>
-        </Select>
+    <div className="min-h-screen bg-gradient-to-br from-[#f7c1e0] via-[#f5e6fa] to-[#e8d3fc] font-sans">
+      <div className="sticky top-0 z-20 bg-white/80 backdrop-blur border-b border-[#f472b6]/30 shadow-sm mb-8">
+        <div className="container mx-auto flex items-center py-7 px-4">
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#f472b6] via-[#e879f9] to-[#a21caf]">Utilisateurs</h1>
+        </div>
       </div>
 
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nom</TableHead>
-              <TableHead>Rôle</TableHead>
-              <TableHead>Agence</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Téléphone</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredUsers?.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell>
-                  {user.first_name || ''} {user.last_name || ''}
-                </TableCell>
-                <TableCell>{user.role}</TableCell>
-                <TableCell>{user.agencyName}</TableCell>
-                <TableCell>{user.email || ''}</TableCell>
-                <TableCell>{user.phone_number || ''}</TableCell>
+      <main className="container mx-auto px-2 md:px-4 pb-10">
+        <div className="flex flex-col md:flex-row gap-4 mb-8">
+          <Input
+            placeholder="Rechercher par nom..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full md:max-w-xs rounded-xl border border-[#f472b6]/20 focus:border-[#a21caf] focus:ring-2 focus:ring-[#f472b6]/30 px-4 py-2 text-base transition outline-none shadow-sm"
+          />
+          <Select
+            value={roleFilter}
+            onValueChange={setRoleFilter}
+          >
+            <SelectTrigger className="w-full md:w-[200px] rounded-xl border border-[#f472b6]/20 focus:border-[#a21caf] focus:ring-2 focus:ring-[#f472b6]/30">
+              <SelectValue placeholder="Filtrer par rôle" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les rôles</SelectItem>
+              <SelectItem value="admin">Admins</SelectItem>
+              <SelectItem value="propriétaire">Propriétaires</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="rounded-3xl shadow-lg bg-white/95 p-4 md:p-8 border border-[#f472b6]/20 hover:shadow-2xl transition-all">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nom</TableHead>
+                <TableHead>Rôle</TableHead>
+                <TableHead>Agence</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Téléphone</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {filteredUsers?.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell className="font-semibold text-[#a21caf]">{user.first_name || ''} {user.last_name || ''}</TableCell>
+                  <TableCell>{user.role}</TableCell>
+                  <TableCell>{user.agencyName}</TableCell>
+                  <TableCell>{user.email || ''}</TableCell>
+                  <TableCell>{user.phone_number || ''}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </main>
     </div>
   )
 }

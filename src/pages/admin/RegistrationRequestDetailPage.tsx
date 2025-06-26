@@ -146,6 +146,13 @@ export default function RegistrationRequestDetailPage() {
   return (
     <div className="container mx-auto p-8">
       <div className="max-w-3xl mx-auto">
+        <button
+          onClick={() => navigate('/admin/registration-requests')}
+          className="mb-6 flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-tr from-[#f472b6] to-[#a21caf] text-white font-semibold shadow hover:brightness-110 transition-all"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+          Retour aux demandes
+        </button>
         <Card>
           <CardHeader>
             <CardTitle>Demande d'inscription - {request.agency_name}</CardTitle>

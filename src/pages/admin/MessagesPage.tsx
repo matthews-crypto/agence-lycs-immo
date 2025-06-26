@@ -60,42 +60,45 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="container mx-auto max-w-2xl p-4 md:p-8">
-      {/* Sticky header */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur pb-4 mb-6 flex items-center border-b">
-        <Mail className="h-7 w-7 text-primary mr-3" />
-        <h1 className="text-2xl font-bold tracking-tight">Messages de contact</h1>
+    <div className="min-h-screen bg-gradient-to-br from-[#f7c1e0] via-[#f5e6fa] to-[#e8d3fc] font-sans">
+      <div className="sticky top-0 z-20 bg-white/80 backdrop-blur border-b border-[#f472b6]/30 shadow-sm mb-8">
+        <div className="container mx-auto flex items-center py-7 px-4">
+          <Mail className="h-7 w-7 text-[#f472b6] mr-3" />
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#f472b6] via-[#e879f9] to-[#a21caf]">Messages de contact</h1>
+        </div>
       </div>
-      <div className="flex flex-col gap-4 max-h-[70vh] overflow-y-auto pr-2">
-        {messages.length === 0 && (
-          <Card className="shadow-none border-dashed">
-            <CardContent className="py-8 text-center text-muted-foreground">
-              Aucun message pour le moment.
-            </CardContent>
-          </Card>
-        )}
-        {messages.map((msg) => (
-          <Card key={msg.id} className="hover:shadow-md transition-all border-l-4 border-primary/70">
-            <div className="flex items-center p-4 pb-2">
-              <AvatarInitials name={msg.nom_complet} email={msg.email} />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold truncate text-lg">{msg.nom_complet || msg.email}</span>
-                  <span className="ml-2 px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-medium">{msg.email}</span>
-                </div>
-                <div className="text-xs text-muted-foreground mt-0.5">
-                  {new Date(msg.created_at).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}
+      <main className="container mx-auto max-w-2xl px-2 md:px-4 pb-10">
+        <div className="flex flex-col gap-4 max-h-[70vh] overflow-y-auto pr-2">
+          {messages.length === 0 && (
+            <Card className="shadow-none border-dashed">
+              <CardContent className="py-8 text-center text-muted-foreground">
+                Aucun message pour le moment.
+              </CardContent>
+            </Card>
+          )}
+          {messages.map((msg) => (
+            <Card key={msg.id} className="rounded-3xl bg-white/95 hover:shadow-xl transition-all border-l-4 border-[#f472b6]/70">
+              <div className="flex items-center p-4 pb-2">
+                <AvatarInitials name={msg.nom_complet} email={msg.email} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold truncate text-lg text-[#a21caf]">{msg.nom_complet || msg.email}</span>
+                    <span className="ml-2 px-2 py-0.5 rounded bg-[#f472b6]/10 text-[#f472b6] text-xs font-medium">{msg.email}</span>
+                  </div>
+                  <div className="text-xs text-[#a21caf] mt-0.5">
+                    {new Date(msg.created_at).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}
+                  </div>
                 </div>
               </div>
-            </div>
-            <CardContent className="pt-1 pb-3 px-6">
-              <div className="whitespace-pre-line text-base leading-relaxed text-gray-800 dark:text-gray-100">
-                {msg.message}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              <CardContent className="pt-1 pb-3 px-6">
+                <div className="whitespace-pre-line text-base leading-relaxed text-gray-800 dark:text-gray-100">
+                  {msg.message}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </main>
     </div>
   );
 }
