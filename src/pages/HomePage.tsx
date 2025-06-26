@@ -84,16 +84,14 @@ export default function HomePage() {
       // Simulation d'envoi de message (à remplacer par l'appel API réel)
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Envoi du message à la table contact_messages
+      // Envoi du message à la table contact_message_admin
       const { data, error } = await supabase
-        .from('contact_messages')
+        .from('contact_message_admin')
         .insert([
           {
-            name: contactForm.name,
+            nom_complet: contactForm.name,
             email: contactForm.email,
-            message: contactForm.message,
-            subject: "Demande d'information depuis la page d'accueil",
-            agency_id: null // Sera attribué manuellement par l'admin
+            message: contactForm.message
           }
         ]);
       
@@ -390,88 +388,7 @@ export default function HomePage() {
           </div>
         </div>
         
-        {/* Barre de recherche flottante */}
-        <div className="absolute bottom-0 left-0 right-0 transform translate-y-1/2">
-          <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-xl p-6 animate-fadeInUp">
-              <Tabs defaultValue="all" className="w-full" onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-2 mb-6">
-                  <TabsTrigger value="all" className="text-base">Tous les biens</TabsTrigger>
-                  <TabsTrigger value="filter" className="text-base">Recherche avancée</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="all" className="space-y-4">
-                  <div className="flex flex-col md:flex-row gap-4">
-                    <div className="flex-1 relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Search className="h-5 w-5 text-gray-400" />
-                      </div>
-                      <Input
-                        placeholder="Rechercher par ville, quartier, type de bien..."
-                        className="pl-10 py-6 text-base"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                    </div>
-                    
-                    <Button 
-                      className="w-full md:w-auto gap-2 bg-[#aa1ca0] hover:bg-[#c71585] text-white py-6"
-                    >
-                      <Search className="h-4 w-4" />
-                      Rechercher
-                    </Button>
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="filter" className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Type de bien</label>
-                      <select className="w-full rounded-md border border-input bg-background px-3 py-2">
-                        <option value="">Tous les types</option>
-                        {propertyTypes.map(type => (
-                          <option key={type.value} value={type.value}>{type.label}</option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Localisation</label>
-                      <select className="w-full rounded-md border border-input bg-background px-3 py-2">
-                        <option value="">Toutes les zones</option>
-                        {regions?.map(region => (
-                          <option key={region.id} value={region.id}>{region.nom}</option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Budget max</label>
-                      <select className="w-full rounded-md border border-input bg-background px-3 py-2">
-                        <option value="">Tous les prix</option>
-                        <option value="500000">Jusqu'à 500 000 FCFA</option>
-                        <option value="1000000">Jusqu'à 1 000 000 FCFA</option>
-                        <option value="5000000">Jusqu'à 5 000 000 FCFA</option>
-                        <option value="10000000">Jusqu'à 10 000 000 FCFA</option>
-                        <option value="50000000">Jusqu'à 50 000 000 FCFA</option>
-                        <option value="100000000">Jusqu'à 100 000 000 FCFA</option>
-                      </select>
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-end mt-4">
-                    <Button 
-                      className="gap-2 bg-[#aa1ca0] hover:bg-[#c71585] text-white"
-                    >
-                      <Filter className="h-4 w-4" />
-                      Filtrer les résultats
-                    </Button>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </div>
-          </div>
-        </div>
+        
       </section>
 
       {searchTerm.length > 0 && filteredProperties && (

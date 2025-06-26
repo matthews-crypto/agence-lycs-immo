@@ -44,7 +44,11 @@ export function CoproSidebar() {
   const handleLogout = async () => {
     try {
       await logout();
-      navigate('/');
+      if (agency?.slug) {
+        navigate(`/${agency.slug}`);
+      } else {
+        navigate('/');
+      }
       toast.success('Vous avez été déconnecté avec succès');
     } catch (error) {
       toast.error('Une erreur est survenue lors de la déconnexion');
