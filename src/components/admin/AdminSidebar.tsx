@@ -33,9 +33,9 @@ const menuItems = [
     icon: Users,
   },
   {
-    title: "Paramètres",
-    url: "/admin/settings",
-    icon: Settings,
+    title: "Messages",
+    url: "/admin/messages",
+    icon: Bell,
   },
 ]
 

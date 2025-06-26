@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Plus, RefreshCw, Settings } from "lucide-react"
+import { Plus, RefreshCw } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
 export function QuickActions() {
@@ -16,10 +16,7 @@ export function QuickActions() {
     navigate("/admin/agencies")
   }
 
-  const handleSettings = () => {
-    console.log("Navigating to settings page...")
-    navigate("/admin/settings")
-  }
+
 
   return (
     <Card>
@@ -41,14 +38,6 @@ export function QuickActions() {
         >
           <RefreshCw className="mr-2 h-4 w-4" />
           Gérer les Agences
-        </Button>
-        <Button 
-          variant="outline"
-          onClick={handleSettings}
-          className="flex-1"
-        >
-          <Settings className="mr-2 h-4 w-4" />
-          Paramètres
         </Button>
       </CardContent>
     </Card>

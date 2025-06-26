@@ -42,6 +42,7 @@ import ClientFavoritesPage from "@/pages/agency/client/FavoritesPage"
 import ClientAppointmentsPage from "@/pages/agency/client/AppointmentsPage"
 import NotFoundPage from "@/pages/NotFoundPage"
 import UsersPage from "@/pages/admin/UsersPage"
+import MessagesPage from "@/pages/admin/MessagesPage"
 import ClientsPage from "@/pages/agency/ClientsPage"
 import PlanningPage from "@/pages/agency/PlanningPage"
 import LocationDetailPage from "@/pages/agency/LocationDetailPage"
@@ -98,6 +99,7 @@ const App = () => (
               {/* Admin routes */}
               <Route path="admin/auth" element={<AdminAuthPage />} />
               <Route path="admin" element={<AdminLayout />}>
+  <Route path="messages" element={<MessagesPage />} />
                 <Route index element={<Navigate to="services" replace />} />
                 <Route path="dashboard" element={<AdminDashboardPage />} />
                 <Route path="agencies" element={<AdminAgenciesPage />} />
