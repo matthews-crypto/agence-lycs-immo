@@ -39,53 +39,43 @@ export default function UsersPage() {
   const { data: users, isLoading } = useQuery({
     queryKey: ["admin", "users"],
     queryFn: async () => {
-      // Fetch agents with their user data and agency info
-      const { data: agents, error: agentsError } = await supabase
-        .from("real_estate_agents")
-        .select(`
-          *,
-          agencies (
-            agency_name
-          )
-        `)
-      
-      if (agentsError) throw agentsError
+      // Récupérer les admins d'agence
+      const { data: agencies, error: agenciesError } = await supabase
+        .from("agencies")
+        .select("id, agency_name, admin_first_name, admin_last_name, admin_email, admin_phone");
+      if (agenciesError) throw agenciesError;
 
-      // Fetch clients with their user data and agency info
-      const { data: clients, error: clientsError } = await supabase
-        .from("clients")
-        .select(`
-          *,
-          agencies (
-            agency_name
-          )
-        `)
-      
-      if (clientsError) throw clientsError
+      // Récupérer les propriétaires
+      const { data: proprietaires, error: proprietairesError } = await supabase
+        .from("proprietaire")
+        .select("id, prenom, nom, numero_telephone, adresse_email, agenceID");
+      if (proprietairesError) throw proprietairesError;
 
-      // Format agents data
-      const formattedAgents: UserData[] = (agents || []).map(agent => ({
-        id: agent.id,
-        role: 'Agent',
-        agencyName: agent.agencies?.agency_name,
-        first_name: null, // These will come from your profile data if needed
-        last_name: null,
-        email: null,
-        phone_number: null
-      }))
+      // Formater les admins d'agence
+      const admins: UserData[] = (agencies || []).map(agency => ({
+        id: agency.id,
+        role: 'Admin',
+        agencyName: agency.agency_name,
+        first_name: agency.admin_first_name || '',
+        last_name: agency.admin_last_name || '',
+        email: agency.admin_email || '',
+        phone_number: agency.admin_phone || ''
+      }));
 
-      // Format clients data
-      const formattedClients: UserData[] = (clients || []).map(client => ({
-        id: client.id,
-        role: 'Client',
-        agencyName: client.agencies?.agency_name,
-        first_name: client.first_name,
-        last_name: client.last_name,
-        email: null,
-        phone_number: client.phone_number
-      }))
+      // Formater les propriétaires
+      // On essaie de retrouver le nom de l'agence associée si possible
+      const agenciesById = Object.fromEntries((agencies || []).map(a => [a.id, a.agency_name]));
+      const proprietairesList: UserData[] = (proprietaires || []).map(proprio => ({
+        id: proprio.id,
+        role: 'Propriétaire',
+        agencyName: agenciesById[proprio.agenceID] || '',
+        first_name: proprio.prenom || '',
+        last_name: proprio.nom || '',
+        email: proprio.adresse_email || '',
+        phone_number: proprio.numero_telephone || ''
+      }));
 
-      return [...formattedAgents, ...formattedClients]
+      return [...admins, ...proprietairesList];
     },
   })
 
