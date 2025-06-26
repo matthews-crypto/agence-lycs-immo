@@ -8,10 +8,14 @@ import {
   SheetContent, 
   SheetHeader, 
   SheetTitle, 
-  SheetTrigger 
+  SheetTrigger,
+  SheetPortal,
+  SheetOverlay,
+  SheetPrimitive
 } from "@/components/ui/sheet";
 import { MapPin, X, Filter, Check } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import { 
   Select, 
   SelectContent, 
@@ -456,7 +460,7 @@ export function FilterSidebar({ agencyId, onFilterApply, open, onOpenChange }: F
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="left" className="w-[90vw] sm:w-[400px] p-0 overflow-y-auto">
+      <SheetContent side="left" className="w-[90vw] sm:w-[400px] p-0 overflow-y-auto" showCloseButton={false}>
         <SheetHeader className="p-4 border-b">
           <div className="flex justify-between items-center">
             <SheetTitle className="flex items-center gap-2">
