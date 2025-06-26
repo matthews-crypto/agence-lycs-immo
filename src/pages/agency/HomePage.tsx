@@ -1,24 +1,25 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { MapPin, User, BedDouble, ChevronUp, Phone, Mail, ChevronDown, Briefcase, Search, Filter, Home, Tags, Info, MessageCircle } from "lucide-react";
 import { useAgencyContext } from "@/contexts/AgencyContext";
 import { useNavigate } from "react-router-dom";
-import { AuthDrawer } from "@/components/agency/AuthDrawer";
-import { FilterSidebar, FilterType } from "@/components/property/FilterSidebar";
-import { 
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
+import { Home, ChevronUp, ChevronDown, MapPin, BedDouble, Tags, Info, MessageCircle, Phone, Mail, User, Search, Filter, Briefcase } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { FilterSidebar, FilterType } from "@/components/property/FilterSidebar";
+import { AuthDrawer } from "@/components/agency/AuthDrawer";
 import { AgencyChatDialog } from "@/components/ui/agency-chat-dialog";
+import { HeroSection } from "@/components/agency/HeroSection";
+import { AgencyPresentation } from "@/components/agency/AgencyPresentation";
+import { ServicesSection } from "@/components/agency/ServicesSection";
+import { PropertiesCarousel } from "@/components/agency/PropertiesCarousel";
+import { TestimonialsSection } from "@/components/agency/TestimonialsSection";
+import { ContactSection } from "@/components/agency/ContactSection";
+import { ModernFooter } from "@/components/agency/ModernFooter";
 
 const propertyTypeLabels: { [key: string]: string } = {
   "APARTMENT": "Appartement",
@@ -29,14 +30,6 @@ const propertyTypeLabels: { [key: string]: string } = {
   "OTHER": "Autre"
 };
 
-const propertyTypes = [
-  { value: "APARTMENT", label: "Appartement" },
-  { value: "HOUSE", label: "Maison" },
-  { value: "LAND", label: "Terrain" },
-  { value: "COMMERCIAL", label: "Local commercial" },
-  { value: "OFFICE", label: "Bureau" },
-  { value: "OTHER", label: "Autre" },
-];
 
 function useIntersectionObserver(options = {}) {
   const [isVisible, setIsVisible] = useState(false);
