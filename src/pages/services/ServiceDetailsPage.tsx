@@ -19,6 +19,14 @@ export default function ServiceDetailsPage() {
   return (
     <div className="min-h-screen bg-white py-16">
       <div className="container mx-auto px-4 max-w-4xl">
+        <button
+          type="button"
+          onClick={() => window.location.href = '/'}
+          className="mb-6 flex items-center gap-2 px-4 py-2 rounded bg-[#aa1ca0] text-white font-semibold hover:bg-[#c71585] transition-colors"
+        >
+          <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+          Retour
+        </button>
         <h1 className="text-4xl font-bold mb-6 text-center text-[#aa1ca0]">Nos solutions immobilières & digitales</h1>
         <p className="text-center mb-12 text-lg text-gray-700">Découvrez l'ensemble de nos services pour valoriser, sécuriser et digitaliser votre patrimoine immobilier. Une offre complète, flexible et innovante pour répondre à tous vos besoins !</p>
 

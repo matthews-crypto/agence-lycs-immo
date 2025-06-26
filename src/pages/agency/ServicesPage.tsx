@@ -142,6 +142,7 @@ const ServicesPage: React.FC = () => {
                     void btn.offsetWidth;
                     btn.classList.add('animate-pulse-btn');
                     setTimeout(() => btn.classList.remove('animate-pulse-btn'), 350);
+                    setTimeout(() => navigateToApp(service.id), 220);
                   }
                 }}
                 className="w-full font-semibold text-base transition-all duration-300 group-hover:scale-105"
